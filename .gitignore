@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Build
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
