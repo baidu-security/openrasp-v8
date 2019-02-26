@@ -157,3 +157,40 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv *en
 
   return isolate->Check(type, request_params);
 }
+
+/*
+ * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Method:    ExecuteScript
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNIEnv *env, jclass cls, jstring jsource, jstring jfilename)
+{
+  Isolate *isolate = GetIsolate();
+  if (!isolate)
+  {
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
+    return nullptr;
+  }
+  v8::HandleScope handle_scope(isolate);
+  v8::TryCatch try_catch(isolate);
+  const char *source = env->GetStringUTFChars(jsource, nullptr);
+  const size_t source_len = env->GetStringLength(jsource);
+  const char *filename = env->GetStringUTFChars(jfilename, nullptr);
+  const size_t filename_len = env->GetStringLength(jfilename);
+  auto maybe_rst = isolate->ExecScript({source, source_len}, {filename, filename_len});
+  env->ReleaseStringUTFChars(jsource, source);
+  env->ReleaseStringUTFChars(jfilename, filename);
+  v8::Local<v8::Value> rst;
+  v8::Local<v8::String> string;
+  if (!maybe_rst.ToLocal(&rst) ||
+      !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string))
+  {
+    Exception e(isolate, try_catch);
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, e.c_str());
+    return nullptr;
+  }
+  v8::String::Value string_value(isolate, string);
+  return env->NewString(*string_value, string_value.length());
+}

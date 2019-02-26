@@ -139,7 +139,7 @@ inline void log_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
   for (int i = 0; i < info.Length(); i++)
   {
     v8::String::Utf8Value message(isolate, info[i]);
-    plugin_info(isolate, std::string(*message, message.length()));
+    plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
   }
 }
 inline void plugin_info(Isolate *isolate, v8::Local<v8::Value> value)
