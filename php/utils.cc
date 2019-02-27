@@ -27,7 +27,7 @@ bool ExtractBuildinAction(Isolate *isolate, std::map<std::string, std::string> &
         auto iter = buildin_action_map.find({*key, static_cast<size_t>(key.length())});
         if (iter != buildin_action_map.end())
         {
-            iter->second = std::string(*value, value.length());
+            iter->second = std::string(*value, static_cast<size_t>(value.length()));
         }
     }
     return true;

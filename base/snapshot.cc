@@ -16,11 +16,56 @@
 
 #include "bundle.h"
 #include "js/js.h"
+#include "flex/flex.h"
 #include <cstdio>
 
 namespace openrasp
 {
-intptr_t Snapshot::external_references[2] = {reinterpret_cast<intptr_t>(log_callback), 0};
+static void log_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
+{
+    Isolate *isolate = reinterpret_cast<Isolate *>(info.GetIsolate());
+    for (int i = 0; i < info.Length(); i++)
+    {
+        v8::String::Utf8Value message(isolate, info[i]);
+        plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
+    }
+}
+static void sql_flex_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
+{
+    if (info.Length() < 1 ||
+        !info[0]->IsString())
+    {
+        return;
+    }
+    Isolate *isolate = reinterpret_cast<Isolate *>(info.GetIsolate());
+    v8::String::Utf8Value str(isolate, info[0]);
+    flex_sql_token_result token_result = flex_sql_lexing(*str, str.length());
+
+    int *sql_tokens = token_result.result;
+    int length = token_result.result_len;
+
+    v8::Local<v8::Array> arr = v8::Array::New(isolate, (length - 1) / 2);
+    for (int i = 0; i < length; i += 2)
+    {
+        auto item = v8::Object::New(isolate);
+        item->Set(openrasp::NewV8String(isolate, "start"), v8::Integer::New(isolate, *(sql_tokens + i)));
+        item->Set(openrasp::NewV8String(isolate, "stop"), v8::Integer::New(isolate, *(sql_tokens + i + 1)));
+        item->Set(
+            openrasp::NewV8String(isolate, "text"),
+            openrasp::NewV8String(
+                isolate,
+                *str + *(sql_tokens + i),
+                static_cast<size_t>(*(sql_tokens + i + 1) - *(sql_tokens + i) + 1)));
+
+        arr->Set(i / 2, item);
+    }
+    free(sql_tokens);
+    info.GetReturnValue().Set(arr);
+}
+intptr_t Snapshot::external_references[3] = {
+    reinterpret_cast<intptr_t>(log_callback),
+    reinterpret_cast<intptr_t>(sql_flex_callback),
+    0};
 Snapshot::Snapshot(const char *data, size_t raw_size, uint64_t timestamp)
 {
     this->data = data;
@@ -72,19 +117,17 @@ Snapshot::Snapshot(const std::string &config, const std::vector<PluginFile> &plu
         v8::Local<v8::Object> global = context->Global();
         global->Set(NewV8String(isolate, "global"), global);
         global->Set(NewV8String(isolate, "window"), global);
-        v8::Local<v8::Function> log = v8::Function::New(isolate, log_callback);
         v8::Local<v8::Object> v8_stdout = v8::Object::New(isolate);
-        v8_stdout->Set(NewV8String(isolate, "write"), log);
+        v8_stdout->Set(NewV8String(isolate, "write"), v8::Function::New(isolate, log_callback));
         global->Set(NewV8String(isolate, "stdout"), v8_stdout);
         global->Set(NewV8String(isolate, "stderr"), v8_stdout);
+        global->Set(NewV8String(isolate, "sql_flex"), v8::Function::New(isolate, sql_flex_callback));
 
         std::vector<PluginFile> internal_js_list = {
             PluginFile{"console.js", {reinterpret_cast<const char *>(console_js), console_js_len}},
             PluginFile{"checkpoint.js", {reinterpret_cast<const char *>(checkpoint_js), checkpoint_js_len}},
             PluginFile{"error.js", {reinterpret_cast<const char *>(error_js), error_js_len}},
             PluginFile{"context.js", {reinterpret_cast<const char *>(context_js), context_js_len}},
-            PluginFile{"sql_tokenize.js", {reinterpret_cast<const char *>(sql_tokenize_js), sql_tokenize_js_len}},
-            PluginFile{"cmd_tokenize.js", {reinterpret_cast<const char *>(cmd_tokenize_js), cmd_tokenize_js_len}},
             PluginFile{"rasp.js", {reinterpret_cast<const char *>(rasp_js), rasp_js_len}},
         };
         for (auto &js_src : internal_js_list)

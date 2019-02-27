@@ -103,7 +103,7 @@ class Snapshot : public v8::StartupData
 {
 public:
   uint64_t timestamp = 0;
-  static intptr_t external_references[2];
+  static intptr_t external_references[3];
   Snapshot(const char *data = nullptr, size_t raw_size = 0, uint64_t timestamp = 0);
   Snapshot(const v8::StartupData &blob) : Snapshot(blob.data, blob.raw_size){};
   Snapshot(const std::string &path, uint64_t timestamp = 0);
@@ -133,15 +133,6 @@ v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate);
 void plugin_info(Isolate *isolate, const std::string &message);
 void alarm_info(Isolate *isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, v8::Local<v8::Object> result);
 
-inline void log_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
-{
-  Isolate *isolate = reinterpret_cast<Isolate *>(info.GetIsolate());
-  for (int i = 0; i < info.Length(); i++)
-  {
-    v8::String::Utf8Value message(isolate, info[i]);
-    plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
-  }
-}
 inline void plugin_info(Isolate *isolate, v8::Local<v8::Value> value)
 {
   v8::HandleScope handle_scope(isolate);

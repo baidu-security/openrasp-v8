@@ -53,9 +53,9 @@ const RASP = class {
             });
     }
 
-    static sql_tokenize(query) {
-        if (sql_tokenize) {
-            return sql_tokenize(query)
+    static sql_flex(query) {
+        if (sql_flex) {
+            return sql_flex(query)
         } else {
             return []
         }
