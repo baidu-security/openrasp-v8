@@ -162,6 +162,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv *en
  * Class:     com_baidu_openrasp_plugin_v8_V8
  * Method:    ExecuteScript
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
  */
 JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNIEnv *env, jclass cls, jstring jsource, jstring jfilename)
 {
