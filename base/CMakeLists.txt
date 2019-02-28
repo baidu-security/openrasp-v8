@@ -23,6 +23,16 @@ if(XXD)
     endif()
 endif()
 
-aux_source_directory(. DIR_SRCS)
+aux_source_directory(. BASE_SRCS)
 
-add_library(base OBJECT ${DIR_SRCS})
+add_library(base OBJECT ${BASE_SRCS})
+
+# test #
+find_package(Catch2 REQUIRED PATHS "${PROJECT_SOURCE_DIR}/../vendors/Catch2")
+aux_source_directory(tests BASE_TESTS_SRCS)
+add_executable(tests ${BASE_TESTS_SRCS})
+target_link_libraries(tests base ${V8_PATH}/lib/libv8_monolith.a Catch2::Catch2)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(tests)
