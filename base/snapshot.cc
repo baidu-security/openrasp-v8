@@ -27,7 +27,7 @@ Snapshot::Snapshot(const char *data, size_t raw_size, uint64_t timestamp)
     this->raw_size = raw_size;
     this->timestamp = timestamp;
 }
-Snapshot::Snapshot(const std::string &path, uint64_t timestamp) : Snapshot()
+Snapshot::Snapshot(const std::string &path, uint64_t timestamp)
 {
     char *buffer = nullptr;
     size_t size;
@@ -51,7 +51,7 @@ Snapshot::Snapshot(const std::string &path, uint64_t timestamp) : Snapshot()
     this->raw_size = size;
     this->timestamp = timestamp;
 }
-Snapshot::Snapshot(const std::string &config, const std::vector<PluginFile> &plugin_list, uint64_t timestamp, void *custom_data) : Snapshot()
+Snapshot::Snapshot(const std::string &config, const std::vector<PluginFile> &plugin_list, uint64_t timestamp, void *custom_data)
 {
     v8::SnapshotCreator creator(external_references);
     Isolate *isolate = reinterpret_cast<Isolate *>(creator.GetIsolate());

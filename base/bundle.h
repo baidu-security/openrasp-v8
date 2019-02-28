@@ -104,10 +104,10 @@ class Snapshot : public v8::StartupData
 public:
   uint64_t timestamp = 0;
   static intptr_t external_references[2];
-  Snapshot(const char *data = nullptr, size_t raw_size = 0, uint64_t timestamp = 0);
-  Snapshot(const v8::StartupData &blob) : Snapshot(blob.data, blob.raw_size){};
-  Snapshot(const std::string &path, uint64_t timestamp = 0);
-  Snapshot(const std::string &config, const std::vector<PluginFile> &plugin_list, uint64_t timestamp = 0, void *custom_data = nullptr);
+  Snapshot() = delete;
+  Snapshot(const char *data, size_t raw_size, uint64_t timestamp);
+  Snapshot(const std::string &path, uint64_t timestamp);
+  Snapshot(const std::string &config, const std::vector<PluginFile> &plugin_list, uint64_t timestamp, void *custom_data = nullptr);
   ~Snapshot();
   bool Save(const std::string &path) const; // check errno when return value is false
   bool IsOk() const { return data && raw_size; };
@@ -117,7 +117,7 @@ public:
 class Isolate : public v8::Isolate
 {
 public:
-  static Isolate *New(Snapshot *snapshot_blob, uint64_t timestamp = 0);
+  static Isolate *New(Snapshot *snapshot_blob, uint64_t timestamp);
   IsolateData *GetData();
   void SetData(IsolateData *data);
   void Dispose();
