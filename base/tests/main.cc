@@ -201,11 +201,11 @@ TEST_CASE("TimeoutTask")
 
     SECTION("Not Timeout")
     {
-        TimeoutTask task(isolate, 10);
+        TimeoutTask task(isolate, 100);
         auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
         task.Run();
         auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
-        REQUIRE(end - start < 10);
+        REQUIRE(end - start < 100);
     }
 
     SECTION("Timeout")
@@ -215,7 +215,7 @@ TEST_CASE("TimeoutTask")
             std::lock_guard<std::timed_mutex> lock(task.GetMtx());
             std::this_thread::sleep_for(std::chrono::microseconds(100));
         }).detach();
-        std::this_thread::yield();
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
         auto start = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
         task.Run();
         auto end = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
