@@ -2,13 +2,11 @@
 
 using namespace openrasp;
 
-JavaVM *jvm = nullptr;
+JavaVM* jvm = nullptr;
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
-{
-  JNIEnv *env;
-  if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) != JNI_OK || !env)
-  {
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+  JNIEnv* env;
+  if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK || !env) {
     return -1;
   }
   jvm = vm;
@@ -18,11 +16,9 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
   return JNI_VERSION_1_6;
 }
 
-JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
-{
-  JNIEnv *env;
-  if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK && !env)
-  {
+JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
+  JNIEnv* env;
+  if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK && !env) {
     Java_com_baidu_openrasp_plugin_v8_V8_Dispose(env, nullptr);
   }
 }
@@ -32,10 +28,8 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
  * Method:    Initialize
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEnv *env, jclass cls)
-{
-  if (!isInitialized)
-  {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEnv* env, jclass cls) {
+  if (!isInitialized) {
     Platform::Initialize();
     v8::V8::Initialize();
     isInitialized = true;
@@ -48,10 +42,8 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEn
  * Method:    Dispose
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Dispose(JNIEnv *env, jclass cls)
-{
-  if (isInitialized)
-  {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Dispose(JNIEnv* env, jclass cls) {
+  if (isInitialized) {
     delete snapshot;
     Platform::Shutdown();
     v8::V8::Dispose();
@@ -65,21 +57,22 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Dispose(JNIEnv *
  * Method:    CreateSnapshot
  * Signature: (Ljava/lang/String;[Ljava/lang/Object;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(JNIEnv *env, jclass cls, jstring jconfig, jobjectArray jplugins)
-{
-  const char *raw_config = env->GetStringUTFChars(jconfig, 0);
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(JNIEnv* env,
+                                                                               jclass cls,
+                                                                               jstring jconfig,
+                                                                               jobjectArray jplugins) {
+  const char* raw_config = env->GetStringUTFChars(jconfig, 0);
   std::string config(raw_config);
   env->ReleaseStringUTFChars(jconfig, raw_config);
 
   std::vector<PluginFile> plugin_list;
   const size_t plugin_len = env->GetArrayLength(jplugins);
-  for (int i = 0; i < plugin_len; i++)
-  {
+  for (int i = 0; i < plugin_len; i++) {
     jobjectArray plugin = (jobjectArray)env->GetObjectArrayElement(jplugins, i);
     jstring name = (jstring)env->GetObjectArrayElement(plugin, 0);
     jstring source = (jstring)env->GetObjectArrayElement(plugin, 1);
-    const char *raw_name = env->GetStringUTFChars(name, 0);
-    const char *raw_source = env->GetStringUTFChars(source, 0);
+    const char* raw_name = env->GetStringUTFChars(name, 0);
+    const char* raw_source = env->GetStringUTFChars(source, 0);
     plugin_list.emplace_back(raw_name, raw_source);
     env->ReleaseStringUTFChars(name, raw_name);
     env->ReleaseStringUTFChars(source, raw_source);
@@ -88,13 +81,10 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(J
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   CustomData custom_data;
   custom_data.env = env;
-  Snapshot *blob = new Snapshot(config, plugin_list, millis, &custom_data);
-  if (!blob->IsOk())
-  {
+  Snapshot* blob = new Snapshot(config, plugin_list, millis, &custom_data);
+  if (!blob->IsOk()) {
     delete blob;
-  }
-  else
-  {
+  } else {
     std::lock_guard<std::mutex> lock(mtx);
     delete snapshot;
     snapshot = blob;
@@ -107,11 +97,15 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(J
  * Method:    Check
  * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv *env, jclass cls, jstring jtype, jbyteArray jparams, jint jparams_size, jobject jcontext, jboolean jnew_request)
-{
-  Isolate *isolate = GetIsolate();
-  if (!isolate)
-  {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env,
+                                                                      jclass cls,
+                                                                      jstring jtype,
+                                                                      jbyteArray jparams,
+                                                                      jint jparams_size,
+                                                                      jobject jcontext,
+                                                                      jboolean jnew_request) {
+  Isolate* isolate = GetIsolate();
+  if (!isolate) {
     return false;
   }
   auto data = isolate->GetData();
@@ -123,34 +117,30 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv *en
   v8::Local<v8::Object> request_params;
 
   {
-    const jchar *raw = env->GetStringCritical(jtype, nullptr);
+    const jchar* raw = env->GetStringCritical(jtype, nullptr);
     const size_t len = env->GetStringLength(jtype);
     bool rst = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len).ToLocal(&type);
     env->ReleaseStringCritical(jtype, raw);
-    if (!rst)
-    {
+    if (!rst) {
       return false;
     }
   }
 
   {
-    char *raw = static_cast<char *>(env->GetPrimitiveArrayCritical(jparams, nullptr));
+    char* raw = static_cast<char*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
     auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jparams_size);
     env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
-    if (maybe_string.IsEmpty())
-    {
+    if (maybe_string.IsEmpty()) {
       return false;
     }
     auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
-    if (maybe_obj.IsEmpty())
-    {
+    if (maybe_obj.IsEmpty()) {
       return false;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
   }
 
-  if (jnew_request)
-  {
+  if (jnew_request) {
     auto request_context = data->request_context_templ.Get(isolate)->NewInstance();
     isolate->GetData()->request_context.Reset(isolate, request_context);
   }
@@ -164,29 +154,28 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv *en
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNIEnv *env, jclass cls, jstring jsource, jstring jfilename)
-{
-  Isolate *isolate = GetIsolate();
-  if (!isolate)
-  {
+JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNIEnv* env,
+                                                                             jclass cls,
+                                                                             jstring jsource,
+                                                                             jstring jfilename) {
+  Isolate* isolate = GetIsolate();
+  if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
-  const char *source = env->GetStringUTFChars(jsource, nullptr);
+  const char* source = env->GetStringUTFChars(jsource, nullptr);
   const size_t source_len = env->GetStringLength(jsource);
-  const char *filename = env->GetStringUTFChars(jfilename, nullptr);
+  const char* filename = env->GetStringUTFChars(jfilename, nullptr);
   const size_t filename_len = env->GetStringLength(jfilename);
   auto maybe_rst = isolate->ExecScript({source, source_len}, {filename, filename_len});
   env->ReleaseStringUTFChars(jsource, source);
   env->ReleaseStringUTFChars(jfilename, filename);
   v8::Local<v8::Value> rst;
   v8::Local<v8::String> string;
-  if (!maybe_rst.ToLocal(&rst) ||
-      !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string))
-  {
+  if (!maybe_rst.ToLocal(&rst) || !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string)) {
     Exception e(isolate, try_catch);
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, e.c_str());

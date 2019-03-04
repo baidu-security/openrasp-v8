@@ -15,10 +15,8 @@
  */
 #include "header.h"
 
-namespace openrasp
-{
-enum FieldIndex
-{
+namespace openrasp {
+enum FieldIndex {
   kUrl = 0,
   kHeader,
   kParameter,
@@ -33,17 +31,14 @@ enum FieldIndex
   kJson,
   kEndForCount
 };
-inline Isolate *GetIsolate(const v8::PropertyCallbackInfo<v8::Value> &info)
-{
-  return reinterpret_cast<Isolate *>(info.GetIsolate());
+inline Isolate* GetIsolate(const v8::PropertyCallbackInfo<v8::Value>& info) {
+  return reinterpret_cast<Isolate*>(info.GetIsolate());
 }
-static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kUrl);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -53,16 +48,14 @@ static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getUrl);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -70,13 +63,11 @@ static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<
   returnValue.Set(obj);
   self->SetInternalField(kUrl, obj);
 }
-static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kMethod);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -86,16 +77,14 @@ static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getMethod);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -103,13 +92,11 @@ static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   returnValue.Set(obj);
   self->SetInternalField(kMethod, obj);
 }
-static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kQuerystring);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -119,16 +106,14 @@ static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getQuerystring);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -136,13 +121,11 @@ static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
   returnValue.Set(obj);
   self->SetInternalField(kQuerystring, obj);
 }
-static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kAppBasePath);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -152,16 +135,14 @@ static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getAppBasePath);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -169,13 +150,11 @@ static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
   returnValue.Set(obj);
   self->SetInternalField(kAppBasePath, obj);
 }
-static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kProtocol);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -185,16 +164,14 @@ static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallback
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getProtocol);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -202,13 +179,11 @@ static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallback
   returnValue.Set(obj);
   self->SetInternalField(kProtocol, obj);
 }
-static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kRemoteAddr);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -218,16 +193,14 @@ static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallba
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getRemoteAddr);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -235,13 +208,11 @@ static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallba
   returnValue.Set(obj);
   self->SetInternalField(kRemoteAddr, obj);
 }
-static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kPath);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -251,16 +222,14 @@ static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
 
   auto custom_data = GetCustomData(isolate);
   jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getPath);
-  if (!jstr)
-  {
+  if (!jstr) {
     return;
   }
-  const jchar *raw = custom_data->env->GetStringCritical(jstr, nullptr);
+  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
   const size_t len = custom_data->env->GetStringLength(jstr);
   auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
   custom_data->env->ReleaseStringCritical(jstr, raw);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
 
@@ -268,13 +237,11 @@ static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   returnValue.Set(obj);
   self->SetInternalField(kPath, obj);
 }
-static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kParameter);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -284,23 +251,21 @@ static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
 
   auto custom_data = GetCustomData(isolate);
   jintArray jsize = custom_data->env->NewIntArray(1);
-  jbyteArray jbuffer = (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getParameter, jsize);
-  if (!jbuffer)
-  {
+  jbyteArray jbuffer =
+      (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getParameter, jsize);
+  if (!jbuffer) {
     return;
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char *raw = static_cast<char *>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
   auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
-  if (maybe_obj.IsEmpty())
-  {
+  if (maybe_obj.IsEmpty()) {
     return;
   }
 
@@ -308,13 +273,11 @@ static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
   returnValue.Set(obj);
   self->SetInternalField(kParameter, obj);
 }
-static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kHeader);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -325,22 +288,19 @@ static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   auto custom_data = GetCustomData(isolate);
   jintArray jsize = custom_data->env->NewIntArray(1);
   jbyteArray jbuffer = (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getHeader, jsize);
-  if (!jbuffer)
-  {
+  if (!jbuffer) {
     return;
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char *raw = static_cast<char *>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
   auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
-  if (maybe_obj.IsEmpty())
-  {
+  if (maybe_obj.IsEmpty()) {
     return;
   }
 
@@ -348,13 +308,11 @@ static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   returnValue.Set(obj);
   self->SetInternalField(kHeader, obj);
 }
-static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kBody);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -365,26 +323,23 @@ static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   auto custom_data = GetCustomData(isolate);
   jintArray jsize = custom_data->env->NewIntArray(1);
   jbyteArray jbuffer = (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getBody, jsize);
-  if (!jbuffer)
-  {
+  if (!jbuffer) {
     return;
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char *raw = static_cast<char *>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto body = v8::ArrayBuffer::New(isolate, raw, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
 
   returnValue.Set(body);
   self->SetInternalField(kBody, body);
 }
-static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kServer);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -395,22 +350,19 @@ static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   auto custom_data = GetCustomData(isolate);
   jintArray jsize = custom_data->env->NewIntArray(1);
   jbyteArray jbuffer = (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getServer, jsize);
-  if (!jbuffer)
-  {
+  if (!jbuffer) {
     return;
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char *raw = static_cast<char *>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
   auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
-  if (maybe_obj.IsEmpty())
-  {
+  if (maybe_obj.IsEmpty()) {
     return;
   }
 
@@ -419,13 +371,11 @@ static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   self->SetInternalField(kServer, obj);
 }
 
-static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value> &info)
-{
+static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kJson);
-  if (!cache->IsUndefined())
-  {
+  if (!cache->IsUndefined()) {
     returnValue.Set(cache);
     return;
   }
@@ -436,22 +386,19 @@ static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
   auto custom_data = GetCustomData(isolate);
   jintArray jsize = custom_data->env->NewIntArray(1);
   jbyteArray jbuffer = (jbyteArray)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getJson, jsize);
-  if (!jbuffer)
-  {
+  if (!jbuffer) {
     return;
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char *raw = static_cast<char *>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
-  if (maybe_string.IsEmpty())
-  {
+  if (maybe_string.IsEmpty()) {
     return;
   }
   auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
-  if (maybe_obj.IsEmpty())
-  {
+  if (maybe_obj.IsEmpty()) {
     return;
   }
 
@@ -460,8 +407,7 @@ static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
   self->SetInternalField(kJson, obj);
 }
 
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate)
-{
+v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate) {
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   obj_templ->SetAccessor(NewV8String(isolate, "url"), url_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "header"), header_getter);
@@ -478,4 +424,4 @@ v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate)
   obj_templ->SetInternalFieldCount(kEndForCount);
   return obj_templ;
 }
-} // namespace openrasp
+}  // namespace openrasp
