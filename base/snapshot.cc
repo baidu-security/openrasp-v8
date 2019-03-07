@@ -30,41 +30,49 @@ static void log_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
         plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
     }
 }
-static void sql_flex_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
+static void flex_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
 {
-    if (info.Length() < 1 ||
-        !info[0]->IsString())
+    if (info.Length() < 2 || 
+        !info[0]->IsString() || 
+        !info[1]->IsString())
     {
         return;
     }
-    Isolate *isolate = reinterpret_cast<Isolate *>(info.GetIsolate());
-    v8::String::Utf8Value str(isolate, info[0]);
-    flex_sql_token_result token_result = flex_sql_lexing(*str, str.length());
+    v8::String::Utf8Value str(info[0]);
+    v8::String::Utf8Value lexer_mode(info[1]);
+    
+    char* input = *str;
+    int input_len = str.length();
 
-    int *sql_tokens = token_result.result;
+    flex_token_result token_result = flex_lexing(input, input_len, *lexer_mode);
+
+    int * tokens = token_result.result;
     int length = token_result.result_len;
-
-    v8::Local<v8::Array> arr = v8::Array::New(isolate, (length - 1) / 2);
+    v8::Isolate *isolate = info.GetIsolate();
+    v8::Local<v8::Array> arr = v8::Array::New(isolate, (length - 1)/2);
     for (int i = 0; i < length; i += 2)
     {
+        v8::Local<v8::Integer> token_start = v8::Integer::New(isolate, *(tokens + i));
+        v8::Local<v8::Integer> token_stop = v8::Integer::New(isolate, *(tokens + i + 1));
         auto item = v8::Object::New(isolate);
-        item->Set(openrasp::NewV8String(isolate, "start"), v8::Integer::New(isolate, *(sql_tokens + i)));
-        item->Set(openrasp::NewV8String(isolate, "stop"), v8::Integer::New(isolate, *(sql_tokens + i + 1)));
+        item->Set(openrasp::NewV8String(isolate, "start"), token_start);
+        item->Set(openrasp::NewV8String(isolate, "stop"), token_stop);
         item->Set(
             openrasp::NewV8String(isolate, "text"),
             openrasp::NewV8String(
                 isolate,
-                *str + *(sql_tokens + i),
-                static_cast<size_t>(*(sql_tokens + i + 1) - *(sql_tokens + i) + 1)));
-
-        arr->Set(i / 2, item);
+                input + *(tokens + i),
+                size_t(sizeof(char) * (*(tokens + i + 1) - *(tokens + i) + 1))
+            )
+        );
+        arr->Set(i/2, item);
     }
-    free(sql_tokens);
+    free(tokens);
     info.GetReturnValue().Set(arr);
 }
 intptr_t Snapshot::external_references[3] = {
     reinterpret_cast<intptr_t>(log_callback),
-    reinterpret_cast<intptr_t>(sql_flex_callback),
+    reinterpret_cast<intptr_t>(flex_callback),
     0};
 Snapshot::Snapshot(const char *data, size_t raw_size, uint64_t timestamp)
 {
@@ -121,7 +129,7 @@ Snapshot::Snapshot(const std::string &config, const std::vector<PluginFile> &plu
         v8_stdout->Set(NewV8String(isolate, "write"), v8::Function::New(isolate, log_callback));
         global->Set(NewV8String(isolate, "stdout"), v8_stdout);
         global->Set(NewV8String(isolate, "stderr"), v8_stdout);
-        global->Set(NewV8String(isolate, "sql_flex"), v8::Function::New(isolate, sql_flex_callback));
+        global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
 
         std::vector<PluginFile> internal_js_list = {
             PluginFile{"console.js", {reinterpret_cast<const char *>(console_js), console_js_len}},

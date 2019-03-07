@@ -53,9 +53,17 @@ const RASP = class {
             });
     }
 
-    static sql_flex(query) {
-        if (sql_flex) {
-            return sql_flex(query)
+    static sql_tokenize(query, server) {
+        if (flex_tokenize) {
+            return flex_tokenize(query, "sql")
+        } else {
+            return []
+        }
+    }
+
+    static cmd_tokenize(query, server) {
+        if (flex_tokenize) {
+            return flex_tokenize(query, "bash")
         } else {
             return []
         }
