@@ -35,6 +35,12 @@ void CreateV8ArrayBuffer(void* isolate, void* maybe, Buffer buf) {
   *reinterpret_cast<v8::MaybeLocal<v8::ArrayBuffer>*>(maybe) = v8::MaybeLocal<v8::ArrayBuffer>(ab);
 }
 
+void* GetContextGetters(void* i) {
+  auto isolate = reinterpret_cast<Isolate*>(i);
+  auto custom_data = GetCustomData(isolate);
+  return custom_data->context_getters;
+}
+
 char Initialize() {
   if (!is_initialized) {
     Platform::Initialize();
@@ -127,27 +133,4 @@ Buffer ExecScript(Buffer source, Buffer name) {
   char* str = new char[len]{0};
   string->WriteUtf8(isolate, str, len);
   return {str, len};
-}
-
-void Print(void* ptr) {
-  Isolate* isolate = GetIsolate();
-  if (!isolate) {
-    return;
-  }
-  auto custom_data = GetCustomData(isolate);
-  custom_data->context_getters = ptr;
-  v8::HandleScope handle_scope(isolate);
-  v8::TryCatch try_catch(isolate);
-  v8::MaybeLocal<v8::String> maybe;
-  pathGetter((void*)isolate, (void*)&maybe);
-  if (!maybe.IsEmpty()) {
-    v8::String::Utf8Value value(isolate, maybe.ToLocalChecked());
-    printf("%s\n", *value);
-  }
-}
-
-void* GetContextGetters(void* i) {
-  auto isolate = reinterpret_cast<Isolate*>(i);
-  auto custom_data = GetCustomData(isolate);
-  return custom_data->context_getters;
 }

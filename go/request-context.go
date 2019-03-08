@@ -101,6 +101,14 @@ func headerGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
 	}
 }
 
+//export jsonGetter
+func jsonGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
+	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
+	if getters.json != nil {
+		C.CreateV8String(isolate, maybe, underlying(getters.json()))
+	}
+}
+
 //export parameterGetter
 func parameterGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
 	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
@@ -130,13 +138,5 @@ func bodyGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
 	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
 	if getters.body != nil {
 		C.CreateV8ArrayBuffer(isolate, maybe, underlying(getters.body()))
-	}
-}
-
-//export jsonGetter
-func jsonGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.json != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.json()))
 	}
 }

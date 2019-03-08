@@ -55,3 +55,9 @@ func CreateSnapshot(config string, plugins []Plugin) bool {
 func Check(requestType string, requestParams []byte, requestContextGetters ContextGetters) {
 	C.Check(underlyingString(requestType), underlyingBytes(requestParams), unsafe.Pointer(&requestContextGetters))
 }
+
+//ExecScript execute any script
+func ExecScript(source string, filename string) string {
+	buf := C.ExecScript(underlyingString(source), underlyingString(filename))
+	return C.GoStringN((*C.char)(buf.data), C.int(buf.raw_size))
+}
