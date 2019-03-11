@@ -15,7 +15,8 @@
  */
 #include "header.h"
 
-namespace openrasp {
+using namespace openrasp;
+
 enum FieldIndex {
   kUrl = 0,
   kHeader,
@@ -371,7 +372,7 @@ static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   self->SetInternalField(kServer, obj);
 }
 
-static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
+static void json_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
   auto cache = self->GetInternalField(kJson);
@@ -407,7 +408,7 @@ static void json_body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
   self->SetInternalField(kJson, obj);
 }
 
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate) {
+v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* isolate) {
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   obj_templ->SetAccessor(NewV8String(isolate, "url"), url_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "header"), header_getter);
@@ -420,8 +421,7 @@ v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate) {
   obj_templ->SetAccessor(NewV8String(isolate, "appBasePath"), appBasePath_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "body"), body_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "server"), server_getter);
-  obj_templ->SetAccessor(NewV8String(isolate, "json"), json_body_getter);
+  obj_templ->SetAccessor(NewV8String(isolate, "json"), json_getter);
   obj_templ->SetInternalFieldCount(kEndForCount);
   return obj_templ;
 }
-}  // namespace openrasp

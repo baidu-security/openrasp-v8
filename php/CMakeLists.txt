@@ -12,6 +12,4 @@ include_directories(${V8_PATH}/include)
 
 add_subdirectory(../base base)
 
-add_library(openrasp_v8_php $<TARGET_OBJECTS:base> STATIC utils.cc)
-
-target_link_libraries(openrasp_v8_php base)
+add_library(openrasp_v8_php STATIC $<TARGET_OBJECTS:base> utils.cc)

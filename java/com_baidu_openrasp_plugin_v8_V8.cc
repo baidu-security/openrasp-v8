@@ -109,8 +109,9 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* en
     return false;
   }
   auto data = isolate->GetData();
-  GetCustomData(isolate)->env = env;
-  GetCustomData(isolate)->context = jcontext;
+  auto custom_data = GetCustomData(isolate);
+  custom_data->env = env;
+  custom_data->context = jcontext;
 
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::String> type;
