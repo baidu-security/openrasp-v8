@@ -18,9 +18,7 @@
 
 using namespace openrasp;
 
-bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex mtx;
 std::vector<PluginFile> plugin_list;
 
 void CreateV8String(void* isolate, void* maybe, Buffer buf) {
@@ -42,22 +40,16 @@ void* GetContextGetters(void* i) {
 }
 
 char Initialize() {
-  if (!is_initialized) {
-    Platform::Initialize();
-    v8::V8::Initialize();
-    is_initialized = true;
-  }
-  return is_initialized;
+  Platform::Initialize();
+  v8::V8::Initialize();
+  return true;
 }
 
 char Dispose() {
-  if (is_initialized) {
-    delete snapshot;
-    Platform::Shutdown();
-    v8::V8::Dispose();
-    is_initialized = false;
-  }
-  return !is_initialized;
+  delete snapshot;
+  Platform::Shutdown();
+  v8::V8::Dispose();
+  return true;
 }
 
 char ClearPlugin() {
@@ -76,11 +68,10 @@ char CreateSnapshot(Buffer config) {
   Snapshot* blob = new Snapshot({*config, config.length()}, plugin_list, millis, nullptr);
   if (!blob->IsOk()) {
     delete blob;
-  } else {
-    std::lock_guard<std::mutex> lock(mtx);
-    delete snapshot;
-    snapshot = blob;
+    return false;
   }
+  delete snapshot;
+  snapshot = blob;
   return true;
 }
 
@@ -126,6 +117,7 @@ Buffer ExecScript(Buffer source, Buffer name) {
   v8::Local<v8::String> string;
   if (!maybe_rst.ToLocal(&rst) || !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string)) {
     Exception e(isolate, try_catch);
+    plugin_info(isolate, e);
     return {nullptr, 0};
   }
   size_t len = string->Utf8Length(isolate);

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-#include "_cgo_export.h"
 #include "base/bundle.h"
-#include "export.h"
+#include "header.h"
 using namespace openrasp;
 
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {

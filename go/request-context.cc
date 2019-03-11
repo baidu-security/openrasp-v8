@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-#include "_cgo_export.h"
 #include "base/bundle.h"
-#include "export.h"
+#include "header.h"
 
 using namespace openrasp;
 
-inline Isolate* GetIsolate(const v8::PropertyCallbackInfo<v8::Value>& info) {
-  return reinterpret_cast<Isolate*>(info.GetIsolate());
-}
-
 static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   urlGetter((void*)isolate, (void*)&maybe);
@@ -40,7 +35,7 @@ static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<
 
 static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   pathGetter((void*)isolate, (void*)&maybe);
@@ -54,7 +49,7 @@ static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
 
 static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   methodGetter((void*)isolate, (void*)&maybe);
@@ -68,7 +63,7 @@ static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   querystringGetter((void*)isolate, (void*)&maybe);
@@ -82,7 +77,7 @@ static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
 
 static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   protocolGetter((void*)isolate, (void*)&maybe);
@@ -96,7 +91,7 @@ static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallback
 
 static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   remoteAddrGetter((void*)isolate, (void*)&maybe);
@@ -110,7 +105,7 @@ static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallba
 
 static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
 
   v8::MaybeLocal<v8::String> maybe;
   appBasePathGetter((void*)isolate, (void*)&maybe);
@@ -124,7 +119,7 @@ static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
 
 static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   auto obj = v8::Object::New(isolate).As<v8::Value>();
 
   v8::MaybeLocal<v8::String> maybe;
@@ -139,7 +134,7 @@ static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   auto obj = v8::Object::New(isolate).As<v8::Value>();
 
   v8::MaybeLocal<v8::String> maybe;
@@ -154,7 +149,7 @@ static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
 
 static void json_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   auto obj = v8::Object::New(isolate).As<v8::Value>();
 
   v8::MaybeLocal<v8::ArrayBuffer> maybe;
@@ -169,7 +164,7 @@ static void json_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
 
 static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   auto obj = v8::Object::New(isolate).As<v8::Value>();
 
   v8::MaybeLocal<v8::String> maybe;
@@ -184,7 +179,7 @@ static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto returnValue = info.GetReturnValue();
-  auto isolate = GetIsolate(info);
+  auto isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   auto obj = v8::Object::New(isolate).As<v8::Value>();
 
   v8::MaybeLocal<v8::ArrayBuffer> maybe;

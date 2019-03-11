@@ -20,9 +20,7 @@
 #include "base/bundle.h"
 #include "export.h"
 
-extern bool is_initialized;
 extern openrasp::Snapshot* snapshot;
-extern std::mutex mtx;
 extern std::vector<openrasp::PluginFile> plugin_list;
 class CustomData {
  public:
@@ -47,14 +45,11 @@ inline openrasp::Isolate* GetIsolate() {
   auto isolate = isolate_ptr.get();
   if (snapshot) {
     if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock(mtx, std::try_to_lock);
-      if (lock) {
-        auto duration = std::chrono::system_clock::now().time_since_epoch();
-        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate = openrasp::Isolate::New(snapshot, millis);
-        isolate->GetData()->custom_data = new CustomData();
-        isolate_ptr.reset(isolate);
-      }
+      auto duration = std::chrono::system_clock::now().time_since_epoch();
+      auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+      isolate = openrasp::Isolate::New(snapshot, millis);
+      isolate->GetData()->custom_data = new CustomData();
+      isolate_ptr.reset(isolate);
     }
   }
   return isolate;

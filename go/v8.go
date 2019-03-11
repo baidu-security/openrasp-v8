@@ -26,6 +26,7 @@ package v8
 */
 import "C"
 import (
+	"sync"
 	"unsafe"
 )
 
@@ -35,15 +36,28 @@ type Plugin struct {
 	filename string
 }
 
+var rw sync.RWMutex
+
 //Initialize initialize V8
 func Initialize(cb1 PluginLogCB, cb2 AlarmLogCB) bool {
+	rw.Lock()
+	defer rw.Unlock()
 	pluginLogCB = cb1
 	alarmLogCB = cb2
 	return C.Initialize() != 0
 }
 
+//Dispose dispose V8, can not reinitialze
+func Dispose() bool {
+	rw.Lock()
+	defer rw.Unlock()
+	return C.Dispose() != 0
+}
+
 //CreateSnapshot create snapshot with config and plugins
 func CreateSnapshot(config string, plugins []Plugin) bool {
+	rw.Lock()
+	defer rw.Unlock()
 	C.ClearPlugin()
 	for _, plugin := range plugins {
 		C.AddPlugin(underlyingString(plugin.source), underlyingString(plugin.filename))
@@ -53,11 +67,15 @@ func CreateSnapshot(config string, plugins []Plugin) bool {
 
 //Check check request
 func Check(requestType string, requestParams []byte, requestContextGetters ContextGetters) {
+	rw.RLock()
+	defer rw.RUnlock()
 	C.Check(underlyingString(requestType), underlyingBytes(requestParams), unsafe.Pointer(&requestContextGetters))
 }
 
 //ExecScript execute any script
 func ExecScript(source string, filename string) string {
+	rw.RLock()
+	defer rw.RUnlock()
 	buf := C.ExecScript(underlyingString(source), underlyingString(filename))
 	return C.GoStringN((*C.char)(buf.data), C.int(buf.raw_size))
 }
