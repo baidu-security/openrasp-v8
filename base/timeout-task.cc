@@ -14,43 +14,36 @@
  * limitations under the License.
  */
 
-#include "bundle.h"
+#include <chrono>
 #include <mutex>
 #include <thread>
-#include <chrono>
+#include "bundle.h"
 
-namespace openrasp
-{
-TimeoutTask::TimeoutTask(v8::Isolate *_isolate, int _milliseconds)
-    : isolate(_isolate)
-{
-    time_point = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(_milliseconds);
+namespace openrasp {
+TimeoutTask::TimeoutTask(v8::Isolate* _isolate, int _milliseconds) : isolate(_isolate) {
+  time_point = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(_milliseconds);
 }
 
-void TimeoutTask::Run()
-{
-    do
-    {
-        // try_lock_until is allowed to fail spuriously and return false
-        // even if the mutex is not currently locked by any other thread
-        // http://en.cppreference.com/w/cpp/thread/timed_mutex/try_lock_until
-        if (mtx.try_lock_until(time_point))
-        {
-            mtx.unlock();
-            return;
-        }
-    } while (std::chrono::high_resolution_clock::now() < time_point);
+void TimeoutTask::Run() {
+  do {
+    // try_lock_until is allowed to fail spuriously and return false
+    // even if the mutex is not currently locked by any other thread
+    // http://en.cppreference.com/w/cpp/thread/timed_mutex/try_lock_until
+    if (mtx.try_lock_until(time_point)) {
+      mtx.unlock();
+      return;
+    }
+  } while (std::chrono::high_resolution_clock::now() < time_point);
 
-    // TerminateExecution can be used by any thread
-    // even if that thread has not acquired the V8 lock with a Locker object
-    isolate->TerminateExecution();
+  // TerminateExecution can be used by any thread
+  // even if that thread has not acquired the V8 lock with a Locker object
+  isolate->TerminateExecution();
 
-    // wait until check process exited
-    std::lock_guard<std::timed_mutex> lock(mtx);
+  // wait until check process exited
+  std::lock_guard<std::timed_mutex> lock(mtx);
 }
 
-std::timed_mutex &TimeoutTask::GetMtx()
-{
-    return mtx;
+std::timed_mutex& TimeoutTask::GetMtx() {
+  return mtx;
 }
-} // namespace openrasp
+}  // namespace openrasp

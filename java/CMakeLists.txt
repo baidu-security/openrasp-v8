@@ -7,9 +7,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(..)
 
-find_package(JNI REQUIRED)
-include_directories(${JAVA_INCLUDE_PATH})
-include_directories(${JAVA_INCLUDE_PATH2})
+include(FindJNI)
+include_directories(${JNI_INCLUDE_DIRS})
 
 find_path(V8_PATH include/v8.h)
 include_directories(${V8_PATH}/include)

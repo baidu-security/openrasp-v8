@@ -16,71 +16,63 @@
 
 #pragma once
 
-#undef COMPILER // mabey conflict with v8 defination
-#include <v8.h>
-#include <v8-platform.h>
+#undef COMPILER  // mabey conflict with v8 defination
 #include <libplatform/libplatform.h>
-#include <mutex>
-#include <vector>
+#include <v8-platform.h>
+#include <v8.h>
 #include <chrono>
-#include <string>
-#include <map>
 #include <functional>
+#include <map>
+#include <mutex>
+#include <string>
+#include <vector>
 
-namespace openrasp
-{
-inline v8::Local<v8::String> NewV8String(v8::Isolate *isolate, const char *str, size_t len = -1)
-{
+namespace openrasp {
+inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, size_t len = -1) {
   return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, len).ToLocalChecked();
 }
 
-inline v8::Local<v8::String> NewV8String(v8::Isolate *isolate, const std::string &str)
-{
+inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const std::string& str) {
   return NewV8String(isolate, str.c_str(), str.length());
 }
 
-class Exception : public std::string
-{
-public:
-  Exception(v8::Isolate *isolate, v8::TryCatch &try_catch);
+class Exception : public std::string {
+ public:
+  Exception(v8::Isolate* isolate, v8::TryCatch& try_catch);
 };
 
-class Platform
-{
-public:
+class Platform {
+ public:
   Platform() = delete;
-  static v8::Platform *platform;
+  static v8::Platform* platform;
   static void Initialize();
   static void Shutdown();
 
-private:
+ private:
   static std::mutex mtx;
 };
 
-class TimeoutTask : public v8::Task
-{
-public:
-  TimeoutTask(v8::Isolate *_isolate, int _milliseconds = 100);
+class TimeoutTask : public v8::Task {
+ public:
+  TimeoutTask(v8::Isolate* _isolate, int _milliseconds = 100);
   void Run() override;
-  std::timed_mutex &GetMtx();
+  std::timed_mutex& GetMtx();
 
-private:
-  v8::Isolate *isolate;
+ private:
+  v8::Isolate* isolate;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
   std::timed_mutex mtx;
 };
 
-class PluginFile
-{
-public:
-  PluginFile(const std::string &filename, const std::string &source) : filename(filename), source(source){};
+class PluginFile {
+ public:
+  PluginFile(const std::string& filename, const std::string& source) : filename(filename), source(source){};
   std::string filename;
   std::string source;
 };
 
-class IsolateData
-{
-public:
+class IsolateData {
+ public:
   v8::Isolate::CreateParams create_params;
   v8::Persistent<v8::Object> RASP;
   v8::Persistent<v8::Function> check;
@@ -96,51 +88,57 @@ public:
   int action_hash_log = 0;
   int action_hash_block = 0;
   uint64_t timestamp = 0;
-  void *custom_data = nullptr;
+  void* custom_data = nullptr;
 };
 
-class Snapshot : public v8::StartupData
-{
-public:
+class Snapshot : public v8::StartupData {
+ public:
   uint64_t timestamp = 0;
   static intptr_t external_references[3];
-  Snapshot(const char *data = nullptr, size_t raw_size = 0, uint64_t timestamp = 0);
-  Snapshot(const v8::StartupData &blob) : Snapshot(blob.data, blob.raw_size){};
-  Snapshot(const std::string &path, uint64_t timestamp = 0);
-  Snapshot(const std::string &config, const std::vector<PluginFile> &plugin_list, uint64_t timestamp = 0, void *custom_data = nullptr);
+  Snapshot() = delete;
+  Snapshot(const char* data, size_t raw_size, uint64_t timestamp);
+  Snapshot(const std::string& path, uint64_t timestamp);
+  Snapshot(const std::string& config,
+           const std::vector<PluginFile>& plugin_list,
+           uint64_t timestamp,
+           void* custom_data = nullptr);
   ~Snapshot();
-  bool Save(const std::string &path) const; // check errno when return value is false
+  bool Save(const std::string& path) const;  // check errno when return value is false
   bool IsOk() const { return data && raw_size; };
   bool IsExpired(uint64_t timestamp) const { return timestamp > this->timestamp; };
 };
 
-class Isolate : public v8::Isolate
-{
-public:
-  static Isolate *New(Snapshot *snapshot_blob, uint64_t timestamp = 0);
-  IsolateData *GetData();
-  void SetData(IsolateData *data);
+class Isolate : public v8::Isolate {
+ public:
+  static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp);
+  IsolateData* GetData();
+  void SetData(IsolateData* data);
   void Dispose();
   bool IsExpired(uint64_t timestamp);
-  static bool Check(Isolate *isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
+  static bool Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
   bool Check(v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
-  static v8::MaybeLocal<v8::Value> ExecScript(Isolate *isolate, std::string source, std::string filename, int line_offset = 0);
+  static v8::MaybeLocal<v8::Value> ExecScript(Isolate* isolate,
+                                              std::string source,
+                                              std::string filename,
+                                              int line_offset = 0);
   v8::MaybeLocal<v8::Value> ExecScript(std::string source, std::string filename, int line_offset = 0);
 };
 
 // To be implemented
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate);
-void plugin_info(Isolate *isolate, const std::string &message);
-void alarm_info(Isolate *isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, v8::Local<v8::Object> result);
+v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate);
+void plugin_info(Isolate* isolate, const std::string& message);
+void alarm_info(Isolate* isolate,
+                v8::Local<v8::String> type,
+                v8::Local<v8::Object> params,
+                v8::Local<v8::Object> result);
 
-inline void plugin_info(Isolate *isolate, v8::Local<v8::Value> value)
-{
+inline void plugin_info(Isolate* isolate, v8::Local<v8::Value> value) {
   v8::HandleScope handle_scope(isolate);
   auto context = isolate->GetCurrentContext();
   auto console_log = isolate->GetData()->console_log.Get(isolate);
   (void)console_log->Call(context, console_log, 1, &value).IsEmpty();
 }
-} // namespace openrasp
+}  // namespace openrasp
 
 #ifdef UNLIKELY
 #undef UNLIKELY
