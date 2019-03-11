@@ -32,14 +32,15 @@ static void log_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
 }
 static void flex_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
 {
+    v8::Isolate *isolate = info.GetIsolate();
     if (info.Length() < 2 || 
         !info[0]->IsString() || 
         !info[1]->IsString())
     {
         return;
     }
-    v8::String::Utf8Value str(info[0]);
-    v8::String::Utf8Value lexer_mode(info[1]);
+    v8::String::Utf8Value str(isolate, info[0]);
+    v8::String::Utf8Value lexer_mode(isolate, info[1]);
     
     char* input = *str;
     int input_len = str.length();
@@ -48,7 +49,6 @@ static void flex_callback(const v8::FunctionCallbackInfo<v8::Value> &info)
 
     int * tokens = token_result.result;
     int length = token_result.result_len;
-    v8::Isolate *isolate = info.GetIsolate();
     v8::Local<v8::Array> arr = v8::Array::New(isolate, (length - 1)/2);
     for (int i = 0; i < length; i += 2)
     {

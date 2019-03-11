@@ -1075,7 +1075,7 @@ typedef struct token_info {
 #line 37 "flexLexer/lex.l"
 #include<time.h>
 #include <stdlib.h>
-#include "openrasp_flex.h"
+#include "flex.h"
 
 #define ADD_TOKEN \
     if(add_token(yyextra, yyleng)!=0) \
