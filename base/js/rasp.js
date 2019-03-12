@@ -38,7 +38,7 @@ const RASP = class {
             result.name = result.name || checkProcess.plugin.name;
             result.confidence = result.confidence || 0;
             return result;
-        });
+        }).filter(result => result.action != 'ignore');
         return results;
     }
 

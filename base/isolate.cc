@@ -93,6 +93,39 @@ bool Isolate::IsExpired(uint64_t timestamp) {
   return timestamp > GetData()->timestamp;
 }
 
+v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
+                                    v8::Local<v8::Object> params,
+                                    v8::Local<v8::Object> context,
+                                    int timeout) {
+  auto isolate = this;
+  auto data = isolate->GetData();
+  v8::TryCatch try_catch(isolate);
+  auto check = data->check.Get(isolate);
+  v8::Local<v8::Value> argv[]{type, params, context};
+
+  v8::Local<v8::Value> rst;
+  auto task = new TimeoutTask(isolate, timeout);
+  task->GetMtx().lock();
+  Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+  auto maybe_rst = check->Call(isolate->GetCurrentContext(), check, 3, argv);
+  task->GetMtx().unlock();
+  if (UNLIKELY(maybe_rst.IsEmpty())) {
+    auto maybe_msg = try_catch.StackTrace(isolate->GetCurrentContext());
+    if (maybe_msg.IsEmpty()) {
+      auto msg = v8::Object::New(isolate);
+      msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+      msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
+      v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
+      return v8::Array::New(isolate, argv, 1);
+    } else {
+      plugin_info(isolate, maybe_msg.ToLocalChecked());
+      return v8::Array::New(isolate);
+    }
+  } else {
+    return maybe_rst.ToLocalChecked().As<v8::Array>();
+  }
+}
+
 bool Isolate::Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout) {
   IsolateData* data = isolate->GetData();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();

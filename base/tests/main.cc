@@ -31,8 +31,7 @@ TEST_CASE("Snapshot") {
       REQUIRE(snapshot.timestamp == 1000);
     }
     {
-      Snapshot snapshot("wrong syntax", std::vector<PluginFile>(), 1000,
-                        nullptr);
+      Snapshot snapshot("wrong syntax", std::vector<PluginFile>(), 1000, nullptr);
       REQUIRE(snapshot.data != nullptr);
       REQUIRE(snapshot.raw_size > 0);
       REQUIRE(snapshot.timestamp == 1000);
@@ -119,7 +118,7 @@ TEST_CASE("Isolate") {
     REQUIRE_FALSE(isolate->IsExpired(snapshot.timestamp));
   }
 
-  SECTION("Check") {
+  SECTION("Check1") {
     v8::HandleScope handle_scope(isolate);
     auto type = NewV8String(isolate, "request");
     auto params = v8::Object::New(isolate);
@@ -133,9 +132,47 @@ TEST_CASE("Isolate") {
     params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
     REQUIRE(isolate->Check(type, params));
 
-    params->Set(NewV8String(isolate, "timeout"),
-                v8::Boolean::New(isolate, true));
+    params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
     REQUIRE_FALSE(isolate->Check(type, params));
+  }
+
+  SECTION("Check2") {
+    v8::HandleScope handle_scope(isolate);
+    auto type = NewV8String(isolate, "request");
+    auto params = v8::Object::New(isolate);
+    auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+
+    {
+      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
+      auto arr = isolate->Check(type, params, context);
+      REQUIRE(arr->Length() == 0);
+    }
+
+    {
+      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+      auto arr = isolate->Check(type, params, context);
+      REQUIRE(arr->Length() == 1);
+      REQUIRE(arr->Get(0)->Equals(isolate->GetCurrentContext(), params).ToChecked());
+    }
+
+    {
+      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
+      auto arr = isolate->Check(type, params, context);
+      REQUIRE(arr->Length() == 1);
+      REQUIRE(arr->Get(0)->Equals(isolate->GetCurrentContext(), params).ToChecked());
+    }
+
+    {
+      params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
+      auto arr = isolate->Check(type, params, context);
+      REQUIRE(arr->Length() == 1);
+      auto rst = arr->Get(0);
+      REQUIRE(rst->IsObject());
+      REQUIRE(rst.As<v8::Object>()
+                  ->Get(NewV8String(isolate, "message"))
+                  ->Equals(isolate->GetCurrentContext(), NewV8String(isolate, "Javascript plugin execution timeout"))
+                  .ToChecked());
+    }
   }
 
   SECTION("ExecScript") {
@@ -150,9 +187,7 @@ TEST_CASE("Isolate") {
       auto maybe_rst = isolate->ExecScript("1+1", "test");
       REQUIRE_FALSE(maybe_rst.IsEmpty());
       REQUIRE(maybe_rst.ToLocalChecked()->IsNumber());
-      REQUIRE(maybe_rst.ToLocalChecked()
-                  ->NumberValue(isolate->GetCurrentContext())
-                  .ToChecked() == 2);
+      REQUIRE(maybe_rst.ToLocalChecked()->NumberValue(isolate->GetCurrentContext()).ToChecked() == 2);
     }
   }
 
@@ -188,13 +223,9 @@ TEST_CASE("TimeoutTask") {
 
   SECTION("Not Timeout") {
     TimeoutTask task(isolate, 100);
-    auto start =
-        std::chrono::high_resolution_clock::now().time_since_epoch().count() /
-        1000;
+    auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     task.Run();
-    auto end =
-        std::chrono::high_resolution_clock::now().time_since_epoch().count() /
-        1000;
+    auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     REQUIRE(end - start < 100);
   }
 
@@ -206,11 +237,9 @@ TEST_CASE("TimeoutTask") {
     })
         .detach();
     std::this_thread::sleep_for(std::chrono::microseconds(10));
-    auto start =
-        std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
+    auto start = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
     task.Run();
-    auto end =
-        std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
+    auto end = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
     REQUIRE(end - start > 100);
   }
 
