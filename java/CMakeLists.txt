@@ -10,10 +10,8 @@ include_directories(..)
 include(FindJNI)
 include_directories(${JNI_INCLUDE_DIRS})
 
-find_path(V8_PATH include/v8.h)
-include_directories(${V8_PATH}/include)
-
 add_subdirectory(../base base)
+include_directories(${V8_PATH}/include)
 
 add_library(openrasp_v8_java SHARED $<TARGET_OBJECTS:base> com_baidu_openrasp_plugin_v8_V8.cc utils.cc context.cc)
 

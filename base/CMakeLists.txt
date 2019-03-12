@@ -5,7 +5,8 @@ project(base LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_path(V8_PATH include/v8.h)
+string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
+find_path(V8_PATH lib/libv8_monolith.a HINTS ${PROJECT_SOURCE_DIR}/../vendors/libv8-7.2-${SYSTEM_NAME})
 include_directories(${V8_PATH}/include)
 
 find_program(XXD xxd)
