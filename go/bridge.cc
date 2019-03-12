@@ -75,7 +75,7 @@ char CreateSnapshot(Buffer config) {
   return true;
 }
 
-char Check(Buffer type, Buffer params, void* context_getters) {
+char Check(Buffer type, Buffer params, void* context_getters, int timeout) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
     return false;
@@ -102,7 +102,7 @@ char Check(Buffer type, Buffer params, void* context_getters) {
 
   data->request_context.Reset(isolate, data->request_context_templ.Get(isolate)->NewInstance());
 
-  return isolate->Check(request_type, request_params.As<v8::Object>());
+  return isolate->Check(request_type, request_params.As<v8::Object>(), timeout);
 }
 
 Buffer ExecScript(Buffer source, Buffer name) {

@@ -66,10 +66,10 @@ func CreateSnapshot(config string, plugins []Plugin) bool {
 }
 
 //Check check request
-func Check(requestType string, requestParams []byte, requestContextGetters ContextGetters) {
+func Check(requestType string, requestParams []byte, requestContextGetters ContextGetters, timeout int) bool {
 	rw.RLock()
 	defer rw.RUnlock()
-	C.Check(underlyingString(requestType), underlyingBytes(requestParams), unsafe.Pointer(&requestContextGetters))
+	return C.Check(underlyingString(requestType), underlyingBytes(requestParams), unsafe.Pointer(&requestContextGetters), C.int(timeout)) != 0
 }
 
 //ExecScript execute any script
