@@ -93,36 +93,52 @@ bool Isolate::IsExpired(uint64_t timestamp) {
   return timestamp > GetData()->timestamp;
 }
 
-v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
-                                    v8::Local<v8::Object> params,
-                                    v8::Local<v8::Object> context,
-                                    int timeout) {
+v8::Local<v8::String> Isolate::Check(v8::Local<v8::String> type,
+                                     v8::Local<v8::Object> params,
+                                     v8::Local<v8::Object> context,
+                                     int timeout) {
   auto isolate = this;
   auto data = isolate->GetData();
+  auto v8_context = isolate->GetCurrentContext();
   v8::TryCatch try_catch(isolate);
   auto check = data->check.Get(isolate);
   v8::Local<v8::Value> argv[]{type, params, context};
-
   v8::Local<v8::Value> rst;
+
   auto task = new TimeoutTask(isolate, timeout);
   task->GetMtx().lock();
   Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
-  auto maybe_rst = check->Call(isolate->GetCurrentContext(), check, 3, argv);
+  auto maybe_rst = check->Call(v8_context, check, 3, argv);
   task->GetMtx().unlock();
+
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    auto maybe_msg = try_catch.StackTrace(isolate->GetCurrentContext());
+    auto maybe_msg = try_catch.StackTrace(v8_context);
     if (maybe_msg.IsEmpty()) {
       auto msg = v8::Object::New(isolate);
       msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
       msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
       v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
-      return v8::Array::New(isolate, argv, 1);
+      rst = v8::Array::New(isolate, argv, 1);
     } else {
       plugin_info(isolate, maybe_msg.ToLocalChecked());
-      return v8::Array::New(isolate);
+      return v8::String::Empty(isolate);
     }
   } else {
-    return maybe_rst.ToLocalChecked().As<v8::Array>();
+    auto tmp = maybe_rst.ToLocalChecked();
+    if (UNLIKELY(tmp->IsArray() && tmp.As<v8::Array>()->Length() > 0)) {
+      rst = tmp;
+    } else {
+      return v8::String::Empty(isolate);
+    }
+  }
+
+  auto maybe_json = v8::JSON::Stringify(v8_context, rst);
+  if (maybe_json.IsEmpty()) {
+    Exception e(isolate, try_catch);
+    plugin_info(isolate, e);
+    return v8::String::Empty(isolate);
+  } else {
+    return maybe_json.ToLocalChecked();
   }
 }
 

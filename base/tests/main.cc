@@ -144,34 +144,32 @@ TEST_CASE("Isolate") {
 
     {
       params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
-      auto arr = isolate->Check(type, params, context);
-      REQUIRE(arr->Length() == 0);
+      auto rst = isolate->Check(type, params, context);
+      REQUIRE(rst->Length() == 0);
     }
 
     {
       params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
-      auto arr = isolate->Check(type, params, context);
-      REQUIRE(arr->Length() == 1);
-      REQUIRE(arr->Get(0)->Equals(isolate->GetCurrentContext(), params).ToChecked());
+      auto rst = isolate->Check(type, params, context);
+      REQUIRE(rst->Length() > 0);
+      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+              R"([{"action":"log","message":"","name":"test","confidence":0}])");
     }
 
     {
       params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
-      auto arr = isolate->Check(type, params, context);
-      REQUIRE(arr->Length() == 1);
-      REQUIRE(arr->Get(0)->Equals(isolate->GetCurrentContext(), params).ToChecked());
+      auto rst = isolate->Check(type, params, context);
+      REQUIRE(rst->Length() > 0);
+      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+              R"([{"action":"block","message":"","name":"test","confidence":0}])");
     }
 
     {
       params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
-      auto arr = isolate->Check(type, params, context);
-      REQUIRE(arr->Length() == 1);
-      auto rst = arr->Get(0);
-      REQUIRE(rst->IsObject());
-      REQUIRE(rst.As<v8::Object>()
-                  ->Get(NewV8String(isolate, "message"))
-                  ->Equals(isolate->GetCurrentContext(), NewV8String(isolate, "Javascript plugin execution timeout"))
-                  .ToChecked());
+      auto rst = isolate->Check(type, params, context);
+      REQUIRE(rst->Length() > 0);
+      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+              R"([{"action":"log","message":"Javascript plugin execution timeout"}])");
     }
   }
 
