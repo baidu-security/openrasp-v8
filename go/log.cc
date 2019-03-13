@@ -24,10 +24,4 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
 void openrasp::alarm_info(Isolate* isolate,
                           v8::Local<v8::String> type,
                           v8::Local<v8::Object> params,
-                          v8::Local<v8::Object> result) {
-  v8::Local<v8::Value> val;
-  if (v8::JSON::Stringify(isolate->GetCurrentContext(), result).ToLocal(&val)) {
-    v8::String::Utf8Value value(isolate, val);
-    alarmLog({*value, static_cast<size_t>(value.length())});
-  }
-}
+                          v8::Local<v8::Object> result) {}

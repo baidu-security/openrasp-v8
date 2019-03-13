@@ -21,24 +21,6 @@ using namespace openrasp;
 Snapshot* snapshot = nullptr;
 std::vector<PluginFile> plugin_list;
 
-void CreateV8String(void* isolate, void* maybe, Buffer buf) {
-  *reinterpret_cast<v8::MaybeLocal<v8::String>*>(maybe) =
-      v8::String::NewFromUtf8(reinterpret_cast<Isolate*>(isolate), *buf, v8::NewStringType::kNormal, buf.length());
-}
-
-void CreateV8ArrayBuffer(void* isolate, void* maybe, Buffer buf) {
-  auto ab = v8::ArrayBuffer::New(reinterpret_cast<Isolate*>(isolate), buf.raw_size);
-  auto contents = ab->GetContents();
-  memcpy(contents.Data(), buf.data, buf.raw_size);
-  *reinterpret_cast<v8::MaybeLocal<v8::ArrayBuffer>*>(maybe) = v8::MaybeLocal<v8::ArrayBuffer>(ab);
-}
-
-void* GetContextGetters(void* i) {
-  auto isolate = reinterpret_cast<Isolate*>(i);
-  auto custom_data = GetCustomData(isolate);
-  return custom_data->context_getters;
-}
-
 char Initialize() {
   Platform::Initialize();
   v8::V8::Initialize();
@@ -75,34 +57,47 @@ char CreateSnapshot(Buffer config) {
   return true;
 }
 
-char Check(Buffer type, Buffer params, void* context_getters, int timeout) {
+Buffer Check(Buffer type, Buffer params, int context_index, int timeout) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
-    return false;
+    return {nullptr, 0};
   }
   auto data = isolate->GetData();
   auto custom_data = GetCustomData(data);
-  custom_data->context_getters = context_getters;
+  custom_data->context_index = context_index;
   v8::HandleScope handle_scope(isolate);
+  auto context = isolate->GetCurrentContext();
   v8::Local<v8::String> tmp_str;
   v8::Local<v8::String> request_type;
   v8::Local<v8::Value> request_params;
-  v8::Local<v8::Value> request_context;
+  v8::Local<v8::Object> request_context;
 
   if (!v8::String::NewFromUtf8(isolate, *type, v8::NewStringType::kNormal, type.length()).ToLocal(&request_type)) {
-    return false;
+    return {nullptr, 0};
   }
 
   if (!v8::String::NewFromUtf8(isolate, *params, v8::NewStringType::kNormal, params.length()).ToLocal(&tmp_str)) {
-    return false;
+    return {nullptr, 0};
   }
-  if (!v8::JSON::Parse(isolate->GetCurrentContext(), tmp_str).ToLocal(&request_params)) {
-    return false;
+  if (!v8::JSON::Parse(context, tmp_str).ToLocal(&request_params)) {
+    return {nullptr, 0};
   }
 
-  data->request_context.Reset(isolate, data->request_context_templ.Get(isolate)->NewInstance());
+  if (!data->request_context_templ.Get(isolate)->NewInstance(context).ToLocal(&request_context)) {
+    return {nullptr, 0};
+  }
 
-  return isolate->Check(request_type, request_params.As<v8::Object>(), timeout);
+  auto rst = isolate->Check(request_type, request_params.As<v8::Object>(), request_context, timeout);
+
+  if (rst->Length() == 0) {
+    return {nullptr, 0};
+  } else {
+    size_t len = rst->Utf8Length(isolate);
+    // no trailing 0
+    char* str = new char[len];
+    rst->WriteUtf8(isolate, str, len);
+    return {str, len};
+  }
 }
 
 Buffer ExecScript(Buffer source, Buffer name) {
@@ -122,7 +117,7 @@ Buffer ExecScript(Buffer source, Buffer name) {
   }
   size_t len = string->Utf8Length(isolate);
   // no trailing 0
-  char* str = new char[len]{0};
+  char* str = new char[len];
   string->WriteUtf8(isolate, str, len);
   return {str, len};
 }

@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,16 +30,15 @@ typedef struct {
 #endif
 } Buffer;
 
-void CreateV8String(void* isolate, void* maybe, Buffer buf);
-void CreateV8ArrayBuffer(void* isolate, void* maybe, Buffer buf);
-void* GetContextGetters(void* i);
+void* CreateV8String(void* isolate, Buffer buf);
+void* CreateV8ArrayBuffer(void* isolate, Buffer buf);
 
 char Initialize();
 char Dispose();
 char ClearPlugin();
 char AddPlugin(Buffer source, Buffer name);
 char CreateSnapshot(Buffer config);
-char Check(Buffer type, Buffer params, void* context_getters, int timeout);
+Buffer Check(Buffer type, Buffer params, int context_index, int timeout);
 Buffer ExecScript(Buffer source, Buffer name);
 
 #ifdef __cplusplus

@@ -26,6 +26,7 @@ package v8
 */
 import "C"
 import (
+	"sync"
 	"unsafe"
 )
 
@@ -45,98 +46,140 @@ type ContextGetters struct {
 	body        func() interface{}
 }
 
-//export urlGetter
-func urlGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.url != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.url()))
+var mu sync.Mutex
+var index int
+var contexts = make(map[int]*ContextGetters)
+
+// RegisterContext register a context to contexts map and get an index
+func RegisterContext(context *ContextGetters) int {
+	mu.Lock()
+	defer mu.Unlock()
+	index++
+	for contexts[index] != nil || index == 0 {
+		index++
 	}
+	contexts[index] = context
+	return index
+}
+
+// LookupContext lookup a context by index
+func LookupContext(i int) *ContextGetters {
+	mu.Lock()
+	defer mu.Unlock()
+	return contexts[i]
+}
+
+// UnregisterContext unregister a context by index
+func UnregisterContext(i int) {
+	mu.Lock()
+	defer mu.Unlock()
+	delete(contexts, i)
+}
+
+//export urlGetter
+func urlGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.url != nil {
+		return C.CreateV8String(isolate, underlying(context.url()))
+	}
+	return nil
 }
 
 //export pathGetter
-func pathGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.path != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.path()))
+func pathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.path != nil {
+		return C.CreateV8String(isolate, underlying(context.path()))
 	}
+	return nil
 }
 
 //export querystringGetter
-func querystringGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.querystring != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.querystring()))
+func querystringGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.querystring != nil {
+		return C.CreateV8String(isolate, underlying(context.querystring()))
 	}
+	return nil
 }
 
 //export methodGetter
-func methodGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.method != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.method()))
+func methodGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.method != nil {
+		return C.CreateV8String(isolate, underlying(context.method()))
 	}
+	return nil
 }
 
 //export protocolGetter
-func protocolGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.protocol != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.protocol()))
+func protocolGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.protocol != nil {
+		return C.CreateV8String(isolate, underlying(context.protocol()))
 	}
+	return nil
 }
 
 //export remoteAddrGetter
-func remoteAddrGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.remoteAddr != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.remoteAddr()))
+func remoteAddrGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.remoteAddr != nil {
+		return C.CreateV8String(isolate, underlying(context.remoteAddr()))
 	}
+	return nil
 }
 
 //export headerGetter
-func headerGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.header != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.header()))
+func headerGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.header != nil {
+		return C.CreateV8String(isolate, underlying(context.header()))
 	}
+	return nil
 }
 
 //export jsonGetter
-func jsonGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.json != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.json()))
+func jsonGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.json != nil {
+		return C.CreateV8String(isolate, underlying(context.json()))
 	}
+	return nil
 }
 
 //export parameterGetter
-func parameterGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.parameter != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.parameter()))
+func parameterGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.parameter != nil {
+		return C.CreateV8String(isolate, underlying(context.parameter()))
 	}
+	return nil
 }
 
 //export serverGetter
-func serverGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.server != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.server()))
+func serverGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.server != nil {
+		return C.CreateV8String(isolate, underlying(context.server()))
 	}
+	return nil
 }
 
 //export appBasePathGetter
-func appBasePathGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.appBasePath != nil {
-		C.CreateV8String(isolate, maybe, underlying(getters.appBasePath()))
+func appBasePathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.appBasePath != nil {
+		return C.CreateV8String(isolate, underlying(context.appBasePath()))
 	}
+	return nil
 }
 
 //export bodyGetter
-func bodyGetter(isolate unsafe.Pointer, maybe unsafe.Pointer) {
-	getters := *(*ContextGetters)(C.GetContextGetters(isolate))
-	if getters.body != nil {
-		C.CreateV8ArrayBuffer(isolate, maybe, underlying(getters.body()))
+func bodyGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
+	context := LookupContext(index)
+	if context != nil && context.body != nil {
+		return C.CreateV8ArrayBuffer(isolate, underlying(context.body()))
 	}
+	return nil
 }

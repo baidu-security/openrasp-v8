@@ -31,21 +31,9 @@ type PluginLogCB func(str string)
 
 var pluginLogCB PluginLogCB
 
-//AlarmLogCB the alarm log callback, json string, could be parsed and modified
-type AlarmLogCB func(str string)
-
-var alarmLogCB AlarmLogCB
-
 //export pluginLog
 func pluginLog(buf C.Buffer) {
 	if pluginLogCB != nil {
 		pluginLogCB(C.GoStringN((*C.char)(buf.data), C.int(buf.raw_size)))
-	}
-}
-
-//export alarmLog
-func alarmLog(buf C.Buffer) {
-	if alarmLogCB != nil {
-		alarmLogCB(C.GoStringN((*C.char)(buf.data), C.int(buf.raw_size)))
 	}
 }

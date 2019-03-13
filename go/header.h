@@ -24,7 +24,7 @@ extern openrasp::Snapshot* snapshot;
 extern std::vector<openrasp::PluginFile> plugin_list;
 class CustomData {
  public:
-  void* context_getters = nullptr;
+  int context_index = 0;
 };
 inline CustomData* GetCustomData(openrasp::IsolateData* data) {
   return reinterpret_cast<CustomData*>(data->custom_data);

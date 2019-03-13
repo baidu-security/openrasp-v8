@@ -39,11 +39,10 @@ type Plugin struct {
 var rw sync.RWMutex
 
 //Initialize initialize V8
-func Initialize(cb1 PluginLogCB, cb2 AlarmLogCB) bool {
+func Initialize(cb PluginLogCB) bool {
 	rw.Lock()
 	defer rw.Unlock()
-	pluginLogCB = cb1
-	alarmLogCB = cb2
+	pluginLogCB = cb
 	return C.Initialize() != 0
 }
 
@@ -66,10 +65,14 @@ func CreateSnapshot(config string, plugins []Plugin) bool {
 }
 
 //Check check request
-func Check(requestType string, requestParams []byte, requestContextGetters ContextGetters, timeout int) bool {
+func Check(requestType string, requestParams []byte, requestContext *ContextGetters, timeout int) []byte {
 	rw.RLock()
 	defer rw.RUnlock()
-	return C.Check(underlyingString(requestType), underlyingBytes(requestParams), unsafe.Pointer(&requestContextGetters), C.int(timeout)) != 0
+	contextIndex := RegisterContext(requestContext)
+	defer UnregisterContext(contextIndex)
+	buf := C.Check(underlyingString(requestType), underlyingBytes(requestParams), C.int(contextIndex), C.int(timeout))
+	defer C.free(unsafe.Pointer(buf.data))
+	return C.GoBytes(unsafe.Pointer(buf.data), C.int(buf.raw_size))
 }
 
 //ExecScript execute any script
