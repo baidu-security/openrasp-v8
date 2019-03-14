@@ -16,6 +16,7 @@
 
 #include "base/bundle.h"
 #include "header.h"
+#include "string.h"
 
 using namespace openrasp;
 
