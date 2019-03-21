@@ -32,18 +32,18 @@ import (
 
 // ContextGetters request context top fields getter
 type ContextGetters struct {
-	url         func() interface{}
-	path        func() interface{}
-	querystring func() interface{}
-	method      func() interface{}
-	protocol    func() interface{}
-	remoteAddr  func() interface{}
-	header      func() interface{}
-	parameter   func() interface{}
-	json        func() interface{}
-	server      func() interface{}
-	appBasePath func() interface{}
-	body        func() interface{}
+	Url         func() interface{}
+	Path        func() interface{}
+	Querystring func() interface{}
+	Method      func() interface{}
+	Protocol    func() interface{}
+	RemoteAddr  func() interface{}
+	Header      func() interface{}
+	Parameter   func() interface{}
+	Json        func() interface{}
+	Server      func() interface{}
+	AppBasePath func() interface{}
+	Body        func() interface{}
 }
 
 var mu sync.Mutex
@@ -79,8 +79,8 @@ func UnregisterContext(i int) {
 //export urlGetter
 func urlGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.url != nil {
-		return C.CreateV8String(isolate, underlying(context.url()))
+	if context != nil && context.Url != nil {
+		return C.CreateV8String(isolate, underlying(context.Url()))
 	}
 	return nil
 }
@@ -88,8 +88,8 @@ func urlGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export pathGetter
 func pathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.path != nil {
-		return C.CreateV8String(isolate, underlying(context.path()))
+	if context != nil && context.Path != nil {
+		return C.CreateV8String(isolate, underlying(context.Path()))
 	}
 	return nil
 }
@@ -97,8 +97,8 @@ func pathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export querystringGetter
 func querystringGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.querystring != nil {
-		return C.CreateV8String(isolate, underlying(context.querystring()))
+	if context != nil && context.Querystring != nil {
+		return C.CreateV8String(isolate, underlying(context.Querystring()))
 	}
 	return nil
 }
@@ -106,8 +106,8 @@ func querystringGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export methodGetter
 func methodGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.method != nil {
-		return C.CreateV8String(isolate, underlying(context.method()))
+	if context != nil && context.Method != nil {
+		return C.CreateV8String(isolate, underlying(context.Method()))
 	}
 	return nil
 }
@@ -115,8 +115,8 @@ func methodGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export protocolGetter
 func protocolGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.protocol != nil {
-		return C.CreateV8String(isolate, underlying(context.protocol()))
+	if context != nil && context.Protocol != nil {
+		return C.CreateV8String(isolate, underlying(context.Protocol()))
 	}
 	return nil
 }
@@ -124,8 +124,8 @@ func protocolGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export remoteAddrGetter
 func remoteAddrGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.remoteAddr != nil {
-		return C.CreateV8String(isolate, underlying(context.remoteAddr()))
+	if context != nil && context.RemoteAddr != nil {
+		return C.CreateV8String(isolate, underlying(context.RemoteAddr()))
 	}
 	return nil
 }
@@ -133,8 +133,8 @@ func remoteAddrGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export headerGetter
 func headerGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.header != nil {
-		return C.CreateV8String(isolate, underlying(context.header()))
+	if context != nil && context.Header != nil {
+		return C.CreateV8String(isolate, underlying(context.Header()))
 	}
 	return nil
 }
@@ -142,8 +142,8 @@ func headerGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export jsonGetter
 func jsonGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.json != nil {
-		return C.CreateV8String(isolate, underlying(context.json()))
+	if context != nil && context.Json != nil {
+		return C.CreateV8String(isolate, underlying(context.Json()))
 	}
 	return nil
 }
@@ -151,8 +151,8 @@ func jsonGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export parameterGetter
 func parameterGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.parameter != nil {
-		return C.CreateV8String(isolate, underlying(context.parameter()))
+	if context != nil && context.Parameter != nil {
+		return C.CreateV8String(isolate, underlying(context.Parameter()))
 	}
 	return nil
 }
@@ -160,8 +160,8 @@ func parameterGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export serverGetter
 func serverGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.server != nil {
-		return C.CreateV8String(isolate, underlying(context.server()))
+	if context != nil && context.Server != nil {
+		return C.CreateV8String(isolate, underlying(context.Server()))
 	}
 	return nil
 }
@@ -169,8 +169,8 @@ func serverGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export appBasePathGetter
 func appBasePathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.appBasePath != nil {
-		return C.CreateV8String(isolate, underlying(context.appBasePath()))
+	if context != nil && context.AppBasePath != nil {
+		return C.CreateV8String(isolate, underlying(context.AppBasePath()))
 	}
 	return nil
 }
@@ -178,8 +178,8 @@ func appBasePathGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 //export bodyGetter
 func bodyGetter(isolate unsafe.Pointer, index int) unsafe.Pointer {
 	context := LookupContext(index)
-	if context != nil && context.body != nil {
-		return C.CreateV8ArrayBuffer(isolate, underlying(context.body()))
+	if context != nil && context.Body != nil {
+		return C.CreateV8ArrayBuffer(isolate, underlying(context.Body()))
 	}
 	return nil
 }
