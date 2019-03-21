@@ -44,10 +44,10 @@ func TestCreateSnapshot(t *testing.T) {
 	})
 	rst := CreateSnapshot("const ok = 'ok'", []Plugin{
 		Plugin{
-			source: `const plugin = new RASP('test')
+			Source: `const plugin = new RASP('test')
 			plugin.register('request', () => {})
 			plugin.log(ok)`,
-			filename: "plugin.js",
+			Filename: "plugin.js",
 		},
 	})
 	assert.True(t, rst)
@@ -68,29 +68,29 @@ func TestCheck(t *testing.T) {
 	Initialize(nil)
 	CreateSnapshot("", []Plugin{
 		Plugin{
-			source: `const plugin = new RASP('test1')
+			Source: `const plugin = new RASP('test1')
 			plugin.register('request', () => {
 				return {
 					action: 'ignore'
 				}
 			})`,
-			filename: "plugin1.js",
+			Filename: "plugin1.js",
 		},
 		Plugin{
-			source: `const plugin = new RASP('test2')
+			Source: `const plugin = new RASP('test2')
 			plugin.register('command', () => {
 				return {
 					action: 'block'
 				}
 			})`,
-			filename: "plugin2.js",
+			Filename: "plugin2.js",
 		},
 		Plugin{
-			source: `const plugin = new RASP('test3')
+			Source: `const plugin = new RASP('test3')
 			plugin.register('directory', () => {
 				for(;;){}
 			})`,
-			filename: "plugin3.js",
+			Filename: "plugin3.js",
 		},
 	})
 	params := []byte("{}")
@@ -120,14 +120,14 @@ func TestParams(t *testing.T) {
 	})
 	CreateSnapshot("", []Plugin{
 		Plugin{
-			source: `const plugin = new RASP('test')
+			Source: `const plugin = new RASP('test')
 			plugin.register('request', (params, context) => {
 				console.log(JSON.stringify(params))
 				return {
 					action: 'ignore'
 				}
 			})`,
-			filename: "plugin1.js",
+			Filename: "plugin1.js",
 		},
 	})
 	params := []byte(jsonStr)
@@ -171,14 +171,14 @@ func TestContext(t *testing.T) {
 	})
 	CreateSnapshot("", []Plugin{
 		Plugin{
-			source: `const plugin = new RASP('test')
+			Source: `const plugin = new RASP('test')
 			plugin.register('request', (params, context) => {
 				console.log(JSON.stringify(context))
 				return {
 					action: 'ignore'
 				}
 			})`,
-			filename: "plugin1.js",
+			Filename: "plugin1.js",
 		},
 	})
 	params := []byte("{}")

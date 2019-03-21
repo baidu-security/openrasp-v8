@@ -32,8 +32,8 @@ import (
 
 //Plugin plugin source and filename
 type Plugin struct {
-	source   string
-	filename string
+	Source   string
+	Filename string
 }
 
 var rw sync.RWMutex
@@ -59,7 +59,7 @@ func CreateSnapshot(config string, plugins []Plugin) bool {
 	defer rw.Unlock()
 	C.ClearPlugin()
 	for _, plugin := range plugins {
-		C.AddPlugin(underlyingString(plugin.source), underlyingString(plugin.filename))
+		C.AddPlugin(underlyingString(plugin.Source), underlyingString(plugin.Filename))
 	}
 	return C.CreateSnapshot(underlyingString(config)) != 0
 }
