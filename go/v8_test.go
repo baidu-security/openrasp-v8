@@ -141,27 +141,27 @@ func TestContext(t *testing.T) {
 	context := map[string]interface{}{}
 	json.Unmarshal([]byte(jsonStr), &context)
 	contextGetters := &ContextGetters{
-		url:         func() interface{} { return context["url"] },
-		path:        func() interface{} { return context["path"] },
-		querystring: func() interface{} { return context["querystring"] },
-		method:      func() interface{} { return context["method"] },
-		protocol:    func() interface{} { return context["protocol"] },
-		remoteAddr:  func() interface{} { return context["remoteAddr"] },
-		appBasePath: func() interface{} { return context["appBasePath"] },
-		body:        func() interface{} { return context["body"] },
-		header: func() interface{} {
+		Url:         func() interface{} { return context["url"] },
+		Path:        func() interface{} { return context["path"] },
+		Querystring: func() interface{} { return context["querystring"] },
+		Method:      func() interface{} { return context["method"] },
+		Protocol:    func() interface{} { return context["protocol"] },
+		RemoteAddr:  func() interface{} { return context["remoteAddr"] },
+		AppBasePath: func() interface{} { return context["appBasePath"] },
+		Body:        func() interface{} { return context["body"] },
+		Header: func() interface{} {
 			ret, _ := json.Marshal(context["header"])
 			return ret
 		},
-		parameter: func() interface{} {
+		Parameter: func() interface{} {
 			ret, _ := json.Marshal(context["parameter"])
 			return ret
 		},
-		server: func() interface{} {
+		Server: func() interface{} {
 			ret, _ := json.Marshal(context["server"])
 			return ret
 		},
-		json: func() interface{} {
+		Json: func() interface{} {
 			ret, _ := json.Marshal(context["json"])
 			return ret
 		},
