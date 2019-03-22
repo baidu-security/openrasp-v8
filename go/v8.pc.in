@@ -1,5 +1,5 @@
 Name: v8
 Description: v8
 Version: x
-Cflags: -I${V8_PATH}/include
-Libs: ${V8_PATH}/lib/libv8_monolith.a
+Cflags: -I${V8_INC_DIR}
+Libs: ${V8_LINK_LIBS}

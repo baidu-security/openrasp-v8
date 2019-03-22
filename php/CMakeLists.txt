@@ -8,6 +8,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include_directories(..)
 
 add_subdirectory(../base base)
-include_directories(${V8_PATH}/include)
 
-add_library(openrasp_v8_php STATIC $<TARGET_OBJECTS:base> utils.cc)
+add_library(openrasp_v8_php STATIC utils.cc)
+target_link_libraries(openrasp_v8_php base)

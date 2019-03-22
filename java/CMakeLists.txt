@@ -11,12 +11,6 @@ include(FindJNI)
 include_directories(${JNI_INCLUDE_DIRS})
 
 add_subdirectory(../base base)
-include_directories(${V8_PATH}/include)
 
-add_library(openrasp_v8_java SHARED $<TARGET_OBJECTS:base> com_baidu_openrasp_plugin_v8_V8.cc utils.cc context.cc)
-
-target_link_libraries(openrasp_v8_java ${V8_PATH}/lib/libv8_monolith.a)  
-find_library(LIBRT rt)
-if(LIBRT)
-    target_link_libraries(openrasp_v8_java ${LIBRT})
-endif()
+add_library(openrasp_v8_java SHARED com_baidu_openrasp_plugin_v8_V8.cc utils.cc context.cc)
+target_link_libraries(openrasp_v8_java base)

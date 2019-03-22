@@ -7,13 +7,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(..)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/../base base)
-include_directories(${V8_PATH}/include)
+add_subdirectory(../base base)
 
-add_library(openrasp_v8_go STATIC $<TARGET_OBJECTS:base>)
+add_library(openrasp_v8_go)
+target_link_libraries(openrasp_v8_go base)
 
 add_custom_command(TARGET openrasp_v8_go POST_BUILD
   COMMAND ${CMAKE_COMMAND}
   -DOPENRASP_V8_PATH=${CMAKE_CURRENT_BINARY_DIR}
-  -DV8_PATH=${V8_PATH}
+  -DV8_INC_DIR="$<TARGET_PROPERTY:base,V8_INC_DIR>"
+  -DV8_LINK_LIBS="$<TARGET_PROPERTY:base,V8_LINK_LIBS>"
   -P ${PROJECT_SOURCE_DIR}/PkgConfig.cmake)
