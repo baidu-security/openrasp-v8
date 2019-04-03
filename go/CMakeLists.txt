@@ -7,7 +7,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(..)
 
-add_subdirectory(../base base)
+if (NOT TARGET base)
+    add_subdirectory(../base base)
+endif() 
 
 add_library(openrasp_v8_go)
 target_link_libraries(openrasp_v8_go base)
