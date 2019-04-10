@@ -44,7 +44,8 @@ class Exception : public std::string {
 class Platform {
  public:
   Platform() = delete;
-  static v8::Platform* platform;
+  static bool isInitialized;
+  static std::unique_ptr<v8::Platform> platform;
   static void Initialize();
   static void Shutdown();
 
@@ -116,9 +117,9 @@ class Isolate : public v8::Isolate {
   void Dispose();
   bool IsExpired(uint64_t timestamp);
   v8::Local<v8::String> Check(v8::Local<v8::String> type,
-                                  v8::Local<v8::Object> params,
-                                  v8::Local<v8::Object> context,
-                                  int timeout = 100);
+                              v8::Local<v8::Object> params,
+                              v8::Local<v8::Object> context,
+                              int timeout = 100);
   static bool Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
   bool Check(v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
   static v8::MaybeLocal<v8::Value> ExecScript(Isolate* isolate,
@@ -128,13 +129,14 @@ class Isolate : public v8::Isolate {
   v8::MaybeLocal<v8::Value> ExecScript(std::string source, std::string filename, int line_offset = 0);
 };
 
-// To be implemented
+// To be implemented Start
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate);
 void plugin_info(Isolate* isolate, const std::string& message);
 void alarm_info(Isolate* isolate,
                 v8::Local<v8::String> type,
                 v8::Local<v8::Object> params,
                 v8::Local<v8::Object> result);
+// To be implemented End
 
 inline void plugin_info(Isolate* isolate, v8::Local<v8::Value> value) {
   v8::HandleScope handle_scope(isolate);

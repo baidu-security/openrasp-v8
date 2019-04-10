@@ -19,23 +19,26 @@
 namespace openrasp {
 using namespace std;
 
+bool Platform::isInitialized = false;
 std::mutex Platform::mtx;
-v8::Platform* Platform::platform = nullptr;
+std::unique_ptr<v8::Platform> Platform::platform = nullptr;
 
 void Platform::Initialize() {
   lock_guard<mutex> lock(mtx);
-  if (!platform) {
-    platform = v8::platform::CreateDefaultPlatform(1);
-    v8::V8::InitializePlatform(platform);
+  if (!isInitialized) {
+    if (!platform) {
+      platform.reset(v8::platform::CreateDefaultPlatform(1));
+    }
+    v8::V8::InitializePlatform(platform.get());
+    isInitialized = true;
   }
 }
 
 void Platform::Shutdown() {
   lock_guard<mutex> lock(mtx);
-  if (platform) {
+  if (isInitialized) {
     v8::V8::ShutdownPlatform();
-    delete platform;
-    platform = nullptr;
+    isInitialized = false;
   }
 }
 }  // namespace openrasp
