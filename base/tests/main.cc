@@ -151,24 +151,24 @@ TEST_CASE("Isolate") {
     {
       params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
       auto rst = isolate->Check(type, params, context);
-      REQUIRE(rst->Length() > 0);
-      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+      REQUIRE(std::string(*v8::String::Utf8Value(
+                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
               R"([{"action":"log","message":"","name":"test","confidence":0}])");
     }
 
     {
       params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
       auto rst = isolate->Check(type, params, context);
-      REQUIRE(rst->Length() > 0);
-      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+      REQUIRE(std::string(*v8::String::Utf8Value(
+                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
               R"([{"action":"block","message":"","name":"test","confidence":0}])");
     }
 
     {
       params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
       auto rst = isolate->Check(type, params, context);
-      REQUIRE(rst->Length() > 0);
-      REQUIRE(std::string(*v8::String::Utf8Value(isolate, rst)) ==
+      REQUIRE(std::string(*v8::String::Utf8Value(
+                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
               R"([{"action":"log","message":"Javascript plugin execution timeout"}])");
     }
   }

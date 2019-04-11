@@ -91,13 +91,16 @@ Buffer Check(Buffer type, Buffer params, int context_index, int timeout) {
 
   if (rst->Length() == 0) {
     return {nullptr, 0};
-  } else {
-    size_t len = rst->Utf8Length(isolate);
-    // no trailing 0
-    char* str = new char[len];
-    rst->WriteUtf8(isolate, str, len);
-    return {str, len};
   }
+  v8::Local<v8::String> json;
+  if (!v8::JSON::Stringify(context, rst).ToLocal(&json)) {
+    return {nullptr, 0};
+  }
+  size_t len = json->Utf8Length(isolate);
+  // no trailing 0
+  char* str = new char[len];
+  json->WriteUtf8(isolate, str, len);
+  return {str, len};
 }
 
 Buffer ExecScript(Buffer source, Buffer name) {

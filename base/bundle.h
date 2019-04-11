@@ -116,7 +116,7 @@ class Isolate : public v8::Isolate {
   void SetData(IsolateData* data);
   void Dispose();
   bool IsExpired(uint64_t timestamp);
-  v8::Local<v8::String> Check(v8::Local<v8::String> type,
+  v8::Local<v8::Array> Check(v8::Local<v8::String> type,
                               v8::Local<v8::Object> params,
                               v8::Local<v8::Object> context,
                               int timeout = 100);
