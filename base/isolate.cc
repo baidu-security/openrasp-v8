@@ -94,9 +94,9 @@ bool Isolate::IsExpired(uint64_t timestamp) {
 }
 
 v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
-                                         v8::Local<v8::Object> params,
-                                         v8::Local<v8::Object> context,
-                                         int timeout) {
+                                    v8::Local<v8::Object> params,
+                                    v8::Local<v8::Object> context,
+                                    int timeout) {
   auto isolate = this;
   auto data = isolate->GetData();
   auto v8_context = isolate->GetCurrentContext();

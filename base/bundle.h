@@ -117,9 +117,9 @@ class Isolate : public v8::Isolate {
   void Dispose();
   bool IsExpired(uint64_t timestamp);
   v8::Local<v8::Array> Check(v8::Local<v8::String> type,
-                              v8::Local<v8::Object> params,
-                              v8::Local<v8::Object> context,
-                              int timeout = 100);
+                             v8::Local<v8::Object> params,
+                             v8::Local<v8::Object> context,
+                             int timeout = 100);
   static bool Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
   bool Check(v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout = 100);
   static v8::MaybeLocal<v8::Value> ExecScript(Isolate* isolate,

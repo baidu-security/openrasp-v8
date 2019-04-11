@@ -1,5 +1,5 @@
 Name: openrasp-v8
 Description: openrasp-v8
 Version: x
-Cflags: -I..
-Libs: ${OPENRASP_V8_PATH}/libopenrasp_v8_go.a
+Cflags: ${CFLAGS}
+Libs: ${LDFLAGS}

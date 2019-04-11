@@ -20,7 +20,6 @@ package v8
 #cgo CFLAGS: -std=c11
 #cgo CXXFLAGS: -std=c++11
 #cgo pkg-config: openrasp-v8.pc
-#cgo pkg-config: v8.pc
 #include "export.h"
 #include "stdlib.h"
 */

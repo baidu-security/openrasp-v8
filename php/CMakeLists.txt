@@ -5,10 +5,10 @@ project(php CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-include_directories(..)
+include_directories(${PROJECT_SOURCE_DIR}/..)
 
 if (NOT TARGET base)
-    add_subdirectory(../base base)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/../base base)
 endif() 
 
 add_library(openrasp_v8_php STATIC utils.cc)
