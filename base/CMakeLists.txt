@@ -39,8 +39,7 @@ if(LIBRT)
 endif()
 if(LIBCXX_PATH)
     target_include_directories(base INTERFACE ${LIBCXX_PATH}/include/c++/v1)
-    target_link_directories(base INTERFACE ${LIBCXX_PATH}/lib)
-    target_link_libraries(base INTERFACE -stdlib=libc++ -Wl,--whole-archive -lc++ -lc++abi -Wl,--no-whole-archive)
+    target_link_libraries(base INTERFACE -nodefaultlibs -lm -lc -lgcc_s -lgcc -Wl,--whole-archive ${LIBCXX_PATH}/lib/libc++.a ${LIBCXX_PATH}/lib/libc++abi.a -Wl,--no-whole-archive)
 endif()
 
 # testing #
