@@ -76,6 +76,20 @@ Object.defineProperty(global, 'CheckPointRequest', {
     enumerable: true
 });
 
+const CheckPointRequestEnd = class {
+    constructor(data) {
+        this.request = data.request;
+    }
+
+    static get name() {
+        return 'requestEnd';
+    }
+};
+Object.defineProperty(global, 'CheckPointRequestEnd', {
+    value: CheckPointRequestEnd,
+    enumerable: true
+});
+
 const CheckPointSQL = class {
     constructor(data) {
         this.query = data.query;
