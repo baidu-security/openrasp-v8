@@ -83,30 +83,30 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(J
   custom_data.env = env;
   Snapshot* blob = new Snapshot(config, plugin_list, millis, &custom_data);
   if (!blob->IsOk()) {
+    return false;
     delete blob;
-  } else {
-    std::lock_guard<std::mutex> lock(mtx);
-    delete snapshot;
-    snapshot = blob;
   }
+  std::lock_guard<std::mutex> lock(mtx);
+  delete snapshot;
+  snapshot = blob;
   return true;
 }
 
 /*
  * Class:     com_baidu_openrasp_plugin_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Z
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Ljava/lang/String;
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env,
-                                                                      jclass cls,
-                                                                      jstring jtype,
-                                                                      jbyteArray jparams,
-                                                                      jint jparams_size,
-                                                                      jobject jcontext,
-                                                                      jboolean jnew_request) {
+JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env,
+                                                                     jclass cls,
+                                                                     jstring jtype,
+                                                                     jbyteArray jparams,
+                                                                     jint jparams_size,
+                                                                     jobject jcontext,
+                                                                     jboolean jnew_request) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
-    return false;
+    return nullptr;
   }
   auto data = isolate->GetData();
   auto custom_data = GetCustomData(isolate);
@@ -114,16 +114,17 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* en
   custom_data->context = jcontext;
 
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::String> type;
+  v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
+  v8::Local<v8::Object> request_context;
 
   {
     const jchar* raw = env->GetStringCritical(jtype, nullptr);
     const size_t len = env->GetStringLength(jtype);
-    bool rst = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len).ToLocal(&type);
+    bool rst = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len).ToLocal(&request_type);
     env->ReleaseStringCritical(jtype, raw);
     if (!rst) {
-      return false;
+      return nullptr;
     }
   }
 
@@ -132,21 +133,35 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* en
     auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jparams_size);
     env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
     if (maybe_string.IsEmpty()) {
-      return false;
+      return nullptr;
     }
     auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
     if (maybe_obj.IsEmpty()) {
-      return false;
+      return nullptr;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
   }
 
   if (jnew_request) {
-    auto request_context = data->request_context_templ.Get(isolate)->NewInstance();
-    isolate->GetData()->request_context.Reset(isolate, request_context);
+    request_context = data->request_context_templ.Get(isolate)->NewInstance();
+    data->request_context.Reset(isolate, request_context);
+  } else {
+    request_context = data->request_context.Get(isolate);
   }
 
-  return isolate->Check(type, request_params);
+  auto rst = isolate->Check(request_type, request_params, request_context);
+
+  if (rst->Length() == 0) {
+    return nullptr;
+  }
+
+  v8::Local<v8::String> json;
+  if (!v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&json)) {
+    return nullptr;
+  }
+
+  v8::String::Value string_value(isolate, json);
+  return env->NewString(*string_value, string_value.length());
 }
 
 /*

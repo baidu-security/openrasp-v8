@@ -37,19 +37,7 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
 void openrasp::alarm_info(Isolate* isolate,
                           v8::Local<v8::String> type,
                           v8::Local<v8::Object> params,
-                          v8::Local<v8::Object> result) {
-  auto custom_data = GetCustomData(isolate);
-  if (!custom_data || !custom_data->env) {
-    return;
-  }
-  auto env = custom_data->env;
-  v8::Local<v8::Value> val;
-  if (v8::JSON::Stringify(isolate->GetCurrentContext(), result).ToLocal(&val)) {
-    v8::String::Value value(isolate, val);
-    auto msg = env->NewString(*value, value.length());
-    env->CallStaticVoidMethod(v8_class.cls, v8_class.alarm_log, msg);
-  }
-}
+                          v8::Local<v8::Object> result) {}
 
 Isolate* GetIsolate() {
   static thread_local IsolatePtr isolate_ptr;

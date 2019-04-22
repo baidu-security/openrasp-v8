@@ -30,11 +30,9 @@ class V8Class {
   V8Class(JNIEnv* env) {
     cls = env->FindClass("com/baidu/openrasp/plugin/v8/V8");
     plugin_log = env->GetStaticMethodID(cls, "PluginLog", "(Ljava/lang/String;)V");
-    alarm_log = env->GetStaticMethodID(cls, "AlarmLog", "(Ljava/lang/String;)V");
   }
   jclass cls;
   jmethodID plugin_log;
-  jmethodID alarm_log;
 };
 
 class ContextClass {
