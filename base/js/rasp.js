@@ -53,20 +53,12 @@ const RASP = class {
             });
     }
 
-    static sql_tokenize(query, server) {
-        if (flex_tokenize) {
-            return flex_tokenize(query, "sql")
-        } else {
-            return []
-        }
+    static sql_tokenize(query) {
+        return tokenize(query, "sql")
     }
 
-    static cmd_tokenize(query, server) {
-        if (flex_tokenize) {
-            return flex_tokenize(query, "bash")
-        } else {
-            return []
-        }
+    static cmd_tokenize(query) {
+        return tokenize(query, 'bash')
     }
 
     static get_jsengine() {

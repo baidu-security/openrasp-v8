@@ -243,3 +243,18 @@ TEST_CASE("TimeoutTask") {
 
   isolate->Dispose();
 }
+
+TEST_CASE("Flex") {
+  Platform::Initialize();
+  v8::V8::Initialize();
+  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  auto maybe_rst = isolate->ExecScript("JSON.stringify(RASP.sql_tokenize('a bb       ccc dddd   '))", "flex");
+  REQUIRE_FALSE(maybe_rst.IsEmpty());
+  REQUIRE(maybe_rst.ToLocalChecked()->IsString());
+  REQUIRE(
+      std::string(*v8::String::Utf8Value(isolate, maybe_rst.ToLocalChecked())) ==
+      R"([{"start":0,"stop":1,"text":"a"},{"start":2,"stop":4,"text":"bb"},{"start":11,"stop":14,"text":"ccc"},{"start":15,"stop":19,"text":"dddd"}])");
+  isolate->Dispose();
+}

@@ -40,21 +40,11 @@ static void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   flex_token_result token_result = flex_lexing(input, input_len, *lexer_mode);
 
-  int* tokens = token_result.result;
-  int length = token_result.result_len;
-  v8::Local<v8::Array> arr = v8::Array::New(isolate, (length - 1) / 2);
-  for (int i = 0; i < length; i += 2) {
-    v8::Local<v8::Integer> token_start = v8::Integer::New(isolate, *(tokens + i));
-    v8::Local<v8::Integer> token_stop = v8::Integer::New(isolate, *(tokens + i + 1));
-    auto item = v8::Object::New(isolate);
-    item->Set(openrasp::NewV8String(isolate, "start"), token_start);
-    item->Set(openrasp::NewV8String(isolate, "stop"), token_stop);
-    item->Set(openrasp::NewV8String(isolate, "text"),
-              openrasp::NewV8String(isolate, input + *(tokens + i),
-                                    size_t(sizeof(char) * (*(tokens + i + 1) - *(tokens + i) + 1))));
-    arr->Set(i / 2, item);
+  auto arr = v8::Array::New(isolate, token_result.result_len);
+  for (int i = 0; i < token_result.result_len; i++) {
+    arr->Set(i, v8::Integer::New(isolate, token_result.result[i]));
   }
-  free(tokens);
+  free(token_result.result);
   info.GetReturnValue().Set(arr);
 }
 intptr_t Snapshot::external_references[3] = {reinterpret_cast<intptr_t>(log_callback),
@@ -119,6 +109,7 @@ Snapshot::Snapshot(const std::string& config,
       PluginFile{"checkpoint.js", {reinterpret_cast<const char *>(checkpoint_js), checkpoint_js_len}},
       PluginFile{"error.js", {reinterpret_cast<const char *>(error_js), error_js_len}},
       PluginFile{"context.js", {reinterpret_cast<const char *>(context_js), context_js_len}},
+      PluginFile{"flex.js", {reinterpret_cast<const char *>(flex_js), flex_js_len}},
       PluginFile{"rasp.js", {reinterpret_cast<const char *>(rasp_js), rasp_js_len}},
     };
     // clang-format on
