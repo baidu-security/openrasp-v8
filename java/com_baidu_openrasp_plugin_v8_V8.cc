@@ -142,7 +142,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
   }
 
-  if (jnew_request) {
+  if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
     request_context = data->request_context_templ.Get(isolate)->NewInstance();
     data->request_context.Reset(isolate, request_context);
   } else {
