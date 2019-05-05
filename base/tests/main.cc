@@ -220,25 +220,25 @@ TEST_CASE("TimeoutTask") {
   REQUIRE(isolate != nullptr);
 
   SECTION("Not Timeout") {
-    TimeoutTask task(isolate, 100);
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
-    task.Run();
+    auto task = new TimeoutTask(isolate, 1000);
+    task->GetMtx().lock();
+    Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    isolate->ExecScript("for(let i=0;i<10;i++);", "loop");
+    task->GetMtx().unlock();
     auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
-    REQUIRE(end - start < 100);
+    REQUIRE(end - start <= 1000);
   }
 
   SECTION("Timeout") {
-    TimeoutTask task(isolate, 10);
-    std::thread([&task] {
-      std::lock_guard<std::timed_mutex> lock(task.GetMtx());
-      std::this_thread::sleep_for(std::chrono::microseconds(100));
-    })
-        .detach();
-    std::this_thread::sleep_for(std::chrono::microseconds(10));
-    auto start = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
-    task.Run();
-    auto end = std::chrono::steady_clock::now().time_since_epoch().count() / 1000;
-    REQUIRE(end - start > 100);
+    auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
+    auto task = new TimeoutTask(isolate, 100);
+    task->GetMtx().lock();
+    Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    isolate->ExecScript("for(;;);", "loop");
+    task->GetMtx().unlock();
+    auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
+    REQUIRE(end - start >= 100);
   }
 
   isolate->Dispose();
