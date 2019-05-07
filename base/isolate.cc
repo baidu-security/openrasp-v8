@@ -124,11 +124,11 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
       return v8::Array::New(isolate, 0);
     }
   }
-  auto tmp = maybe_rst.ToLocalChecked();
-  if (UNLIKELY(!tmp->IsArray())) {
+  rst = maybe_rst.ToLocalChecked();
+  if (UNLIKELY(!rst->IsArray())) {
     return v8::Array::New(isolate, 0);
   }
-  return tmp.As<v8::Array>();
+  return rst.As<v8::Array>();
 }
 
 bool Isolate::Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout) {
@@ -149,9 +149,9 @@ bool Isolate::Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::
   auto task = new TimeoutTask(isolate, timeout);
   task->GetMtx().lock();
   Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
-  (void)check->Call(context, check, 3, argv).ToLocal(&rst);
+  auto maybe_rst = check->Call(context, check, 3, argv);
   task->GetMtx().unlock();
-  if (UNLIKELY(rst.IsEmpty())) {
+  if (UNLIKELY(maybe_rst.IsEmpty())) {
     auto maybe_msg = try_catch.StackTrace(context);
     if (maybe_msg.IsEmpty()) {
       auto msg = v8::Object::New(isolate);
@@ -165,6 +165,7 @@ bool Isolate::Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::
     }
     return false;
   }
+  rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
     return false;
   }

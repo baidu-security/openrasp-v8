@@ -35,3 +35,6 @@
 [Bb]uild/
 [Dd]ebug/
 [Rr]elease/
+
+.vscode
+.DS_Store
