@@ -2,27 +2,6 @@
 
 using namespace openrasp;
 
-JavaVM* jvm = nullptr;
-
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
-  JNIEnv* env;
-  if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK || !env) {
-    return -1;
-  }
-  jvm = vm;
-  v8_class = V8Class(env);
-  ctx_class = ContextClass(env);
-  Java_com_baidu_openrasp_plugin_v8_V8_Initialize(env, nullptr);
-  return JNI_VERSION_1_6;
-}
-
-JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* vm, void* reserved) {
-  JNIEnv* env;
-  if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK && !env) {
-    Java_com_baidu_openrasp_plugin_v8_V8_Dispose(env, nullptr);
-  }
-}
-
 /*
  * Class:     com_baidu_openrasp_plugin_v8_V8
  * Method:    Initialize
@@ -32,6 +11,8 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEn
   if (!isInitialized) {
     Platform::Initialize();
     v8::V8::Initialize();
+    v8_class = V8Class(env);
+    ctx_class = ContextClass(env);
     isInitialized = true;
   }
   return isInitialized;

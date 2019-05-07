@@ -87,7 +87,6 @@ class IsolateDeleter {
 };
 typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
-extern JavaVM* jvm;
 extern V8Class v8_class;
 extern ContextClass ctx_class;
 extern bool isInitialized;
