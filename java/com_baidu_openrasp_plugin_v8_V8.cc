@@ -168,12 +168,10 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNI
   auto maybe_rst = isolate->ExecScript({source, source_len}, {filename, filename_len});
   env->ReleaseStringUTFChars(jsource, source);
   env->ReleaseStringUTFChars(jfilename, filename);
-  v8::Local<v8::Value> rst;
-  v8::Local<v8::String> string;
-  if (!maybe_rst.ToLocal(&rst) || !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string)) {
+  if (maybe_rst.IsEmpty()) {
     Exception e(isolate, try_catch);
     return env->NewStringUTF(e.c_str());
   }
-  v8::String::Value string_value(isolate, string);
+  v8::String::Value string_value(isolate, maybe_rst.ToLocalChecked());
   return env->NewString(*string_value, string_value.length());
 }
