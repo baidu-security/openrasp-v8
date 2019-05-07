@@ -157,9 +157,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNI
                                                                              jstring jfilename) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
-    jclass ExceptionClass = env->FindClass("java/lang/Exception");
-    env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
-    return nullptr;
+    return env->NewStringUTF("Get v8 isolate failed");
   }
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
@@ -174,9 +172,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNI
   v8::Local<v8::String> string;
   if (!maybe_rst.ToLocal(&rst) || !v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&string)) {
     Exception e(isolate, try_catch);
-    jclass ExceptionClass = env->FindClass("java/lang/Exception");
-    env->ThrowNew(ExceptionClass, e.c_str());
-    return nullptr;
+    return env->NewStringUTF(e.c_str());
   }
   v8::String::Value string_value(isolate, string);
   return env->NewString(*string_value, string_value.length());
