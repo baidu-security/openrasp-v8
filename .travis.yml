@@ -11,5 +11,6 @@ go:
   - master
 script:
   - mkdir build-base && pushd build-base
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_COVERAGE=ON -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 ../base
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_COVERAGE=ON -DCMAKE_CXX_COMPILER=g++-5 ../base
   - make && make test && make coverage
+  - ldd tests
