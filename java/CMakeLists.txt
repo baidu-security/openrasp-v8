@@ -16,5 +16,5 @@ endif()
 include(FindJNI)
 include_directories(${JNI_INCLUDE_DIRS})
 
-add_library(openrasp_v8_java SHARED com_baidu_openrasp_plugin_v8_V8.cc utils.cc context.cc)
+add_library(openrasp_v8_java SHARED com_baidu_openrasp_v8_V8.cc utils.cc context.cc)
 target_link_libraries(openrasp_v8_java base)

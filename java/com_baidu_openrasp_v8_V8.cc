@@ -3,11 +3,11 @@
 using namespace openrasp;
 
 /*
- * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEnv* env, jclass cls) {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
   if (!isInitialized) {
     Platform::Initialize();
     v8::V8::Initialize();
@@ -19,11 +19,11 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Initialize(JNIEn
 }
 
 /*
- * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Class:     com_baidu_openrasp_v8_V8
  * Method:    Dispose
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Dispose(JNIEnv* env, jclass cls) {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jclass cls) {
   if (isInitialized) {
     delete snapshot;
     Platform::Shutdown();
@@ -34,14 +34,14 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Dispose(JNIEnv* 
 }
 
 /*
- * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Class:     com_baidu_openrasp_v8_V8
  * Method:    CreateSnapshot
  * Signature: (Ljava/lang/String;[Ljava/lang/Object;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(JNIEnv* env,
-                                                                               jclass cls,
-                                                                               jstring jconfig,
-                                                                               jobjectArray jplugins) {
+JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* env,
+                                                                        jclass cls,
+                                                                        jstring jconfig,
+                                                                        jobjectArray jplugins) {
   const char* raw_config = env->GetStringUTFChars(jconfig, 0);
   std::string config(raw_config);
   env->ReleaseStringUTFChars(jconfig, raw_config);
@@ -74,17 +74,17 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_plugin_v8_V8_CreateSnapshot(J
 }
 
 /*
- * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
  * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env,
-                                                                     jclass cls,
-                                                                     jstring jtype,
-                                                                     jbyteArray jparams,
-                                                                     jint jparams_size,
-                                                                     jobject jcontext,
-                                                                     jboolean jnew_request) {
+JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
+                                                              jclass cls,
+                                                              jstring jtype,
+                                                              jbyteArray jparams,
+                                                              jint jparams_size,
+                                                              jobject jcontext,
+                                                              jboolean jnew_request) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
     return nullptr;
@@ -146,18 +146,20 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_Check(JNIEnv* env
 }
 
 /*
- * Class:     com_baidu_openrasp_plugin_v8_V8
+ * Class:     com_baidu_openrasp_v8_V8
  * Method:    ExecuteScript
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNIEnv* env,
-                                                                             jclass cls,
-                                                                             jstring jsource,
-                                                                             jstring jfilename) {
+JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
+                                                                      jclass cls,
+                                                                      jstring jsource,
+                                                                      jstring jfilename) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
-    return env->NewStringUTF("Get v8 isolate failed");
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
+    return nullptr;
   }
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
@@ -170,7 +172,9 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_plugin_v8_V8_ExecuteScript(JNI
   env->ReleaseStringUTFChars(jfilename, filename);
   if (maybe_rst.IsEmpty()) {
     Exception e(isolate, try_catch);
-    return env->NewStringUTF(e.c_str());
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, e.c_str());
+    return nullptr;
   }
   v8::String::Value string_value(isolate, maybe_rst.ToLocalChecked());
   return env->NewString(*string_value, string_value.length());

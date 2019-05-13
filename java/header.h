@@ -22,13 +22,13 @@
 #include <mutex>
 #include <thread>
 #include "base/bundle.h"
-#include "com_baidu_openrasp_plugin_v8_V8.h"
+#include "com_baidu_openrasp_v8_V8.h"
 
 class V8Class {
  public:
   V8Class() = default;
   V8Class(JNIEnv* env) {
-    cls = env->FindClass("com/baidu/openrasp/plugin/v8/V8");
+    cls = env->FindClass("com/baidu/openrasp/v8/V8");
     plugin_log = env->GetStaticMethodID(cls, "PluginLog", "(Ljava/lang/String;)V");
   }
   jclass cls;
@@ -39,7 +39,7 @@ class ContextClass {
  public:
   ContextClass() = default;
   ContextClass(JNIEnv* env) {
-    cls = env->FindClass("com/baidu/openrasp/plugin/v8/Context");
+    cls = env->FindClass("com/baidu/openrasp/v8/Context");
     getPath = env->GetMethodID(cls, "getPath", "()Ljava/lang/String;");
     getMethod = env->GetMethodID(cls, "getMethod", "()Ljava/lang/String;");
     getUrl = env->GetMethodID(cls, "getUrl", "()Ljava/lang/String;");
@@ -47,7 +47,7 @@ class ContextClass {
     getAppBasePath = env->GetMethodID(cls, "getAppBasePath", "()Ljava/lang/String;");
     getProtocol = env->GetMethodID(cls, "getProtocol", "()Ljava/lang/String;");
     getRemoteAddr = env->GetMethodID(cls, "getRemoteAddr", "()Ljava/lang/String;");
-    getJson = env->GetMethodID(cls, "getJson", "()Ljava/lang/String;");
+    getJson = env->GetMethodID(cls, "getJson", "([I)[B");
     getBody = env->GetMethodID(cls, "getBody", "([I)[B");
     getHeader = env->GetMethodID(cls, "getHeader", "([I)[B");
     getParameter = env->GetMethodID(cls, "getParameter", "([I)[B");
