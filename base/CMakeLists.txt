@@ -39,8 +39,9 @@ if(WIN32)
 endif()
 if(UNIX AND NOT APPLE)
     target_include_directories(base INTERFACE ${LIBCXX_PATH}/include/c++/v1)
+    target_compile_options(base INTERFACE -nostdinc++)
     target_link_libraries(base INTERFACE -Wl,--whole-archive ${LIBCXX_PATH}/lib/libc++.a ${LIBCXX_PATH}/lib/libc++abi.a -Wl,--no-whole-archive)
-    target_link_libraries(base INTERFACE -nodefaultlibs -lm -lc -ldl -lrt -lgcc_s)
+    target_link_libraries(base INTERFACE -nodefaultlibs -lm -lc -lrt -lgcc_s)
 endif()
 
 # testing #
