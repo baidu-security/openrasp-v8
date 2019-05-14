@@ -1,16 +1,17 @@
+language: cpp
+os: linux
+dist: xenial
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-5
-      - lcov
-jdk:
-  - openjdk7
-go:
-  - master
+      - g++-multilib
+before_install:
+  - tar zxf vendors/centos6-sysroot.tar.gz -C /tmp/
+  - source /tmp/centos6-sysroot/setx64.sh
 script:
-  - mkdir build-base && pushd build-base
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_COVERAGE=ON -DCMAKE_CXX_COMPILER=g++-5 ../base
-  - make && make test && make coverage
+  - mkdir build && pushd build
+  - cmake ../base
+  - make VERBOSE=1 && make test
   - ldd tests
