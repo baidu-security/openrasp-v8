@@ -17,7 +17,7 @@
 #include <cstdio>
 #include "bundle.h"
 #include "flex/flex.h"
-#include "js/js.h"
+#include "js/builtins.h"
 
 namespace openrasp {
 static void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -103,23 +103,11 @@ Snapshot::Snapshot(const std::string& config,
     global->Set(NewV8String(isolate, "stdout"), v8_stdout);
     global->Set(NewV8String(isolate, "stderr"), v8_stdout);
     global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
-    // clang-format off
-    std::vector<PluginFile> internal_js_list = {
-      PluginFile{"console.js", {reinterpret_cast<const char *>(console_js), console_js_len}},
-      PluginFile{"checkpoint.js", {reinterpret_cast<const char *>(checkpoint_js), checkpoint_js_len}},
-      PluginFile{"error.js", {reinterpret_cast<const char *>(error_js), error_js_len}},
-      PluginFile{"context.js", {reinterpret_cast<const char *>(context_js), context_js_len}},
-      PluginFile{"flex.js", {reinterpret_cast<const char *>(flex_js), flex_js_len}},
-      PluginFile{"rasp.js", {reinterpret_cast<const char *>(rasp_js), rasp_js_len}},
-    };
-    // clang-format on
-    for (auto& js_src : internal_js_list) {
-      if (isolate->ExecScript(js_src.source, js_src.filename).IsEmpty()) {
-        Exception e(isolate, try_catch);
-        plugin_info(isolate, e);
-        // no need to continue
-        return;
-      }
+    if (isolate->ExecScript({reinterpret_cast<const char*>(builtins), builtins_len}, "console.js").IsEmpty()) {
+      Exception e(isolate, try_catch);
+      plugin_info(isolate, e);
+      // no need to continue
+      return;
     }
     if (isolate->ExecScript(config, "config.js").IsEmpty()) {
       Exception e(isolate, try_catch);
