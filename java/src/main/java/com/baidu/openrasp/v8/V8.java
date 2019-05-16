@@ -17,16 +17,17 @@ public class V8 {
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
 
-    static {
+    public static boolean Load() {
         if (System.getProperty("java.vm.name").contains("JRockit")) {
             System.err.println("OpenRASP does not support Oracle JRockit JDK! Please contact us for more information.");
-            System.exit(1);
+            return false;
         }
         try {
             NativeLoader.loadLibrary("openrasp_v8_java");
+            return true;
         } catch (Exception e) {
             System.err.println(e);
-            System.exit(1);
+            return false;
         }
     }
 

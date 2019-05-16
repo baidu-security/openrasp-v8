@@ -8,6 +8,7 @@ public class V8Test {
 
   @BeforeClass
   public static void Initialize() {
+    assertTrue(V8.Load());
     assertTrue(V8.Initialize());
   }
 
@@ -51,7 +52,7 @@ public class V8Test {
         "[{\"action\":\"block\",\"message\":\"\",\"name\":\"test\",\"confidence\":0}]");
     params = "{\"timeout\":true}";
     assertEquals(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true),
-        "[{\"action\":\"log\",\"message\":\"Javascript plugin execution timeout\"}]");
+        "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]");
   }
 
   @Test
