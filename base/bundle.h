@@ -58,11 +58,13 @@ class TimeoutTask : public v8::Task {
   TimeoutTask(v8::Isolate* _isolate, int _milliseconds = 100);
   void Run() override;
   std::timed_mutex& GetMtx();
+  bool IsTimeout() { return is_timeout; }
 
  private:
   v8::Isolate* isolate;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
   std::timed_mutex mtx;
+  bool is_timeout = false;
 };
 
 class PluginFile {

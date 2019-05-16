@@ -38,7 +38,7 @@ void TimeoutTask::Run() {
   // TerminateExecution can be used by any thread
   // even if that thread has not acquired the V8 lock with a Locker object
   isolate->TerminateExecution();
-
+  is_timeout = true;
   // wait until check process exited
   std::lock_guard<std::timed_mutex> lock(mtx);
 }
