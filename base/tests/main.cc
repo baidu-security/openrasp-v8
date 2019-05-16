@@ -96,6 +96,7 @@ TEST_CASE("Isolate") {
   Snapshot snapshot("", {{"test", R"(
         const plugin = new RASP('test')
         plugin.register('request', (params) => {
+            if (params.throw) { a.a() }
             if (params.timeout) { for(;;) {} }
             return params
         })
@@ -118,25 +119,7 @@ TEST_CASE("Isolate") {
     REQUIRE_FALSE(isolate->IsExpired(snapshot.timestamp));
   }
 
-  SECTION("Check1") {
-    v8::HandleScope handle_scope(isolate);
-    auto type = NewV8String(isolate, "request");
-    auto params = v8::Object::New(isolate);
-
-    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
-    REQUIRE_FALSE(isolate->Check(type, params));
-
-    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
-    REQUIRE_FALSE(isolate->Check(type, params));
-
-    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
-    REQUIRE(isolate->Check(type, params));
-
-    params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
-    REQUIRE_FALSE(isolate->Check(type, params));
-  }
-
-  SECTION("Check2") {
+  SECTION("Check") {
     v8::HandleScope handle_scope(isolate);
     auto type = NewV8String(isolate, "request");
     auto params = v8::Object::New(isolate);
@@ -169,7 +152,15 @@ TEST_CASE("Isolate") {
       auto rst = isolate->Check(type, params, context);
       REQUIRE(std::string(*v8::String::Utf8Value(
                   isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-              R"([{"action":"log","message":"Javascript plugin execution timeout"}])");
+              R"([{"action":"exception","message":"Javascript plugin execution timeout"}])");
+    }
+
+    {
+      params->Set(NewV8String(isolate, "throw"), v8::Boolean::New(isolate, true));
+      auto rst = isolate->Check(type, params, context);
+      auto str = std::string(
+          *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
+      REQUIRE_THAT(str, Catch::Matchers::Matches(".*exception.*a is not defined.*"));
     }
   }
 

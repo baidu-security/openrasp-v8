@@ -20,18 +20,7 @@ const RASP = class {
             throw new Error('Unknown check point name \'' + checkPoint + '\'');
         }
         let results = RASP.checkPoints[checkPoint].map(checkProcess => {
-            let result = {};
-            try {
-                result = checkProcess.func(checkParams, checkContext);
-            } catch (e) {
-                if (e instanceof Attack) {
-                    result.action = 'block';
-                    result.message = e.stack;
-                } else {
-                    console.log(e.stack);
-                    result.action = 'ignore';
-                }
-            }
+            let result = checkProcess.func(checkParams, checkContext);
             result = typeof(result) === 'object' ? result : {};
             result.action = result.action || 'ignore';
             result.message = result.message || '';

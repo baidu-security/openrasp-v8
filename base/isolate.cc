@@ -109,90 +109,25 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   task->GetMtx().lock();
   Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
   auto maybe_rst = check->Call(v8_context, check, 3, argv);
+  auto is_timeout = task->IsTimeout();
   task->GetMtx().unlock();
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    auto maybe_msg = try_catch.StackTrace(v8_context);
-    if (maybe_msg.IsEmpty()) {
-      auto msg = v8::Object::New(isolate);
-      msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    auto msg = v8::Object::New(isolate);
+    msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "exception"));
+    if (is_timeout) {
       msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
-      v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
-      return v8::Array::New(isolate, argv, 1);
     } else {
-      plugin_info(isolate, maybe_msg.ToLocalChecked());
-      return v8::Array::New(isolate, 0);
+      msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
     }
+    v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
+    return v8::Array::New(isolate, argv, 1);
   }
   rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
     return v8::Array::New(isolate, 0);
   }
   return rst.As<v8::Array>();
-}
-
-bool Isolate::Check(Isolate* isolate, v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout) {
-  IsolateData* data = isolate->GetData();
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::TryCatch try_catch(isolate);
-  auto check = data->check.Get(isolate);
-  v8::Local<v8::Object> request_context;
-  if (data->request_context.IsEmpty()) {
-    request_context = data->request_context_templ.Get(isolate)->NewInstance();
-    data->request_context.Reset(isolate, request_context);
-  } else {
-    request_context = data->request_context.Get(isolate);
-  }
-  v8::Local<v8::Value> argv[]{type, params, request_context};
-
-  v8::Local<v8::Value> rst;
-  auto task = new TimeoutTask(isolate, timeout);
-  task->GetMtx().lock();
-  Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
-  auto maybe_rst = check->Call(context, check, 3, argv);
-  task->GetMtx().unlock();
-  if (UNLIKELY(maybe_rst.IsEmpty())) {
-    auto maybe_msg = try_catch.StackTrace(context);
-    if (maybe_msg.IsEmpty()) {
-      auto msg = v8::Object::New(isolate);
-      msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout."));
-      msg->Set(NewV8String(isolate, "type"), type);
-      msg->Set(NewV8String(isolate, "params"), params);
-      msg->Set(NewV8String(isolate, "context"), request_context);
-      plugin_info(isolate, msg);
-    } else {
-      plugin_info(isolate, maybe_msg.ToLocalChecked());
-    }
-    return false;
-  }
-  rst = maybe_rst.ToLocalChecked();
-  if (UNLIKELY(!rst->IsArray())) {
-    return false;
-  }
-  auto key_action = data->key_action.Get(isolate);
-
-  auto arr = v8::Local<v8::Array>::Cast(rst);
-  int len = arr->Length();
-  bool is_block = false;
-  for (int i = 0; i < len; i++) {
-    auto item = v8::Local<v8::Object>::Cast(arr->Get(i));
-    v8::Local<v8::Value> v8_action = item->Get(key_action);
-    if (UNLIKELY(!v8_action->IsString())) {
-      continue;
-    }
-    int action_hash = v8_action->ToString(context).ToLocalChecked()->GetIdentityHash();
-    if (LIKELY(data->action_hash_ignore == action_hash)) {
-      continue;
-    }
-    is_block = is_block || data->action_hash_block == action_hash;
-
-    alarm_info(isolate, type, params, item);
-  }
-  return is_block;
-}
-
-bool Isolate::Check(v8::Local<v8::String> type, v8::Local<v8::Object> params, int timeout) {
-  return Check(this, type, params, timeout);
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,

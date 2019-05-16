@@ -2,7 +2,7 @@
 
 set -ex
 
-cat console.js checkpoint.js context.js error.js flex.js rasp.js > builtins
+cat console.js checkpoint.js context.js flex.js rasp.js > builtins
 
 xxd -i builtins > builtins.h
 
