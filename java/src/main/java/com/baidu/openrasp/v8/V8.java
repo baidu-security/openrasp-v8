@@ -19,7 +19,7 @@ public class V8 {
 
     public static boolean Load() {
         if (System.getProperty("java.vm.name").contains("JRockit")) {
-            System.err.println("OpenRASP does not support Oracle JRockit JDK! Please contact us for more information.");
+            System.err.println("OpenRASP has temporarily removed support of Oracle JRockit JDK, please refer to the following document for details: https://rasp.baidu.com/doc/install/manual/weblogic.html#faq-jrockit");
             return false;
         }
         try {
