@@ -19,19 +19,9 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/flex FLEX_SRCS)
 
 add_library(base INTERFACE)
 target_sources(base INTERFACE ${BASE_SRCS} ${FLEX_SRCS})
-target_include_directories(base INTERFACE ${V8_PATH}/include)
-if(UNIX)
-    target_link_libraries(base INTERFACE ${V8_PATH}/lib/libv8_monolith.a pthread)
-endif()
-if(WIN32)
-    target_link_libraries(base INTERFACE ${V8_PATH}/lib/v8_monolith.lib winmm dbghelp shlwapi)
-endif()
-if(UNIX AND NOT APPLE)
-    target_include_directories(base INTERFACE ${LIBCXX_PATH}/include/c++/v1)
-    target_compile_options(base INTERFACE -nostdinc++)
-    target_link_libraries(base INTERFACE -Wl,--whole-archive ${LIBCXX_PATH}/lib/libc++.a ${LIBCXX_PATH}/lib/libc++abi.a -Wl,--no-whole-archive)
-    target_link_libraries(base INTERFACE -nodefaultlibs -lm -lc -lrt -lgcc_s)
-endif()
+
+add_subdirectory(../prebuilts prebuilts)
+target_link_libraries(base INTERFACE prebuilts)
 
 # testing #
 option(BUILD_TESTING "Build the testing tree." OFF)

@@ -1,0 +1,6 @@
+if(${CMAKE_SIZEOF_VOID_P} EQUAL "8")
+  MESSAGE("-- Detect 64 bit architecture")
+  set(ARCH64 true)
+ else() 
+  MESSAGE("-- Detect 32 bit architecture") 
+endif()
