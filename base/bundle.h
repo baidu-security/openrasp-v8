@@ -97,7 +97,7 @@ class IsolateData {
 class Snapshot : public v8::StartupData {
  public:
   uint64_t timestamp = 0;
-  static intptr_t external_references[3];
+  static intptr_t external_references[4];
   Snapshot() = delete;
   Snapshot(const char* data, size_t raw_size, uint64_t timestamp);
   Snapshot(const std::string& path, uint64_t timestamp);

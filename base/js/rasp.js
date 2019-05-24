@@ -50,6 +50,10 @@ const RASP = class {
         return tokenize(query, 'bash')
     }
 
+    static request(config) {
+        return request(config)
+    }
+
     static get_jsengine() {
         return 'v8'
     }

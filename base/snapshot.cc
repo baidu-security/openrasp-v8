@@ -47,8 +47,13 @@ static void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   free(token_result.result);
   info.GetReturnValue().Set(arr);
 }
-intptr_t Snapshot::external_references[3] = {reinterpret_cast<intptr_t>(log_callback),
-                                             reinterpret_cast<intptr_t>(flex_callback), 0};
+void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
+intptr_t Snapshot::external_references[4] = {
+    reinterpret_cast<intptr_t>(log_callback),
+    reinterpret_cast<intptr_t>(flex_callback),
+    reinterpret_cast<intptr_t>(request_callback),
+    0,
+};
 Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp) {
   this->data = data;
   this->raw_size = raw_size;
@@ -103,6 +108,7 @@ Snapshot::Snapshot(const std::string& config,
     global->Set(NewV8String(isolate, "stdout"), v8_stdout);
     global->Set(NewV8String(isolate, "stderr"), v8_stdout);
     global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
+    global->Set(NewV8String(isolate, "request"), v8::Function::New(isolate, request_callback));
     if (isolate->ExecScript({reinterpret_cast<const char*>(builtins), builtins_len}, "console.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       plugin_info(isolate, e);

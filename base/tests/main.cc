@@ -1,12 +1,21 @@
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do
-                           // this in one cpp file
+#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include "catch2/catch.hpp"
 
 #include <chrono>
 #include <iostream>
 #include <thread>
 #include "../bundle.h"
+
 using namespace openrasp;
+
+void openrasp::plugin_info(Isolate* isolate, const std::string& message) {}
+void openrasp::alarm_info(Isolate* isolate,
+                          v8::Local<v8::String> type,
+                          v8::Local<v8::Object> params,
+                          v8::Local<v8::Object> result) {}
+v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* isolate) {
+  return v8::ObjectTemplate::New(isolate);
+}
 
 TEST_CASE("Platform") {
   Platform::Initialize();
@@ -56,8 +65,8 @@ TEST_CASE("Snapshot") {
 
   SECTION("Constructor 3") {
     Snapshot snapshot1("", std::vector<PluginFile>(), 1000, nullptr);
-    snapshot1.Save("/tmp/openrasp-v8-base-tests-snapshot");
-    Snapshot snapshot2("/tmp/openrasp-v8-base-tests-snapshot", 1000);
+    snapshot1.Save("openrasp-v8-base-tests-snapshot");
+    Snapshot snapshot2("openrasp-v8-base-tests-snapshot", 1000);
     REQUIRE(snapshot1.raw_size == snapshot2.raw_size);
     REQUIRE(memcmp(snapshot1.data, snapshot2.data, snapshot1.raw_size) == 0);
   }
@@ -86,7 +95,7 @@ TEST_CASE("Snapshot") {
 
   SECTION("Save") {
     Snapshot snapshot(new char[4]{0, 1, 2, 3}, 4, 1000);
-    REQUIRE_FALSE(snapshot.Save("/not-exist/not-exist/not-exist"));
+    REQUIRE_FALSE(snapshot.Save("not-exist/not-exist/not-exist"));
   }
 }
 
@@ -247,5 +256,148 @@ TEST_CASE("Flex") {
   REQUIRE(
       std::string(*v8::String::Utf8Value(isolate, maybe_rst.ToLocalChecked())) ==
       R"([{"start":0,"stop":1,"text":"a"},{"start":2,"stop":4,"text":"bb"},{"start":11,"stop":14,"text":"ccc"},{"start":15,"stop":19,"text":"dddd"}])");
+  isolate->Dispose();
+}
+
+TEST_CASE("Request", "[!mayfail]") {
+  Platform::Initialize();
+  v8::V8::Initialize();
+  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  {
+    v8::HandleScope handle_scope(isolate);
+    auto context = isolate->GetCurrentContext();
+    SECTION("get") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+const ret = RASP.request({
+    method: 'get',
+    url: 'https://www.httpbin.org/get',
+    params: {
+        a: 2333,
+        b: '6666'
+    },
+    headers: {
+        a: 2333,
+        b: '6666'
+    },
+    data: {
+        a: 2333,
+        b: '6666'
+    }
+})
+JSON.stringify(JSON.parse(ret.data))
+          )",
+          "request");
+      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+      CAPTURE(rst);
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
+    }
+    SECTION("post") {
+      SECTION("form") {
+        auto maybe_rst = isolate->ExecScript(
+            R"(
+const ret = RASP.request({
+    method: 'post',
+    url: 'https://www.httpbin.org/post',
+    params: {
+        a: 2333,
+        b: '6666'
+    },
+    headers: {
+        a: 2333,
+        b: '6666'
+    },
+    data: 'a=2333&b=6666'
+})
+JSON.stringify(JSON.parse(ret.data))
+          )",
+            "request");
+        auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+        CAPTURE(rst);
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("form":{"a":"2333","b":"6666"})==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Content-Type":"application/x-www-form-urlencoded")==="));
+      }
+      SECTION("json") {
+        auto maybe_rst = isolate->ExecScript(
+            R"(
+const ret = RASP.request({
+    method: 'post',
+    url: 'https://www.httpbin.org/post',
+    params: {
+        a: 2333,
+        b: '6666'
+    },
+    headers: {
+        a: 2333,
+        b: '6666',
+        'content-type': 'application/json'
+    },
+    data: {
+        a: 2333,
+        b: '6666'
+    }
+})
+JSON.stringify(JSON.parse(ret.data))
+          )",
+            "request");
+        auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+        CAPTURE(rst);
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("json":{"a":2333,"b":"6666"})==="));
+        REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Content-Type":"application/json")==="));
+      }
+    }
+    SECTION("timeout") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+const ret = RASP.request({
+    url: 'https://www.httpbin.org/get',
+    timeout: 10
+})
+JSON.stringify(ret.error)
+          )",
+          "request");
+      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+      CAPTURE(rst);
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":8)==="));
+      REQUIRE_THAT(rst, Catch::Matchers::Matches(R"===(.*timed out.*)==="));
+    }
+    SECTION("error") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+const ret = RASP.request({
+    url: 'https://www.httpbin.asdasdasdasdasdas'
+})
+JSON.stringify(ret.error)
+          )",
+          "request");
+      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+      CAPTURE(rst);
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":3)==="));
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===(Could not resolve host)==="));
+    }
+    SECTION("redirect") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+const ret = RASP.request({
+    url: 'https://httpbin.org/redirect/2',
+    maxRedirects: 0
+})
+JSON.stringify(ret)
+          )",
+          "request");
+      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
+      CAPTURE(rst);
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Location":"/relative-redirect/1")==="));
+    }
+  }
   isolate->Dispose();
 }
