@@ -3,8 +3,6 @@ os: linux
 dist: xenial
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
     packages:
       - g++-multilib
 before_install:
