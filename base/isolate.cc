@@ -107,7 +107,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
 
   auto task = new TimeoutTask(isolate, timeout);
   task->GetMtx().lock();
-  Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+  Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
   auto maybe_rst = check->Call(v8_context, check, 3, argv);
   auto is_timeout = task->IsTimeout();
   task->GetMtx().unlock();
@@ -134,7 +134,7 @@ v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,
                                               std::string _source,
                                               std::string _filename,
                                               int _line_offset) {
-  v8::HandleScope handle_scope(isolate);
+  v8::EscapableHandleScope handle_scope(isolate);
   auto context = isolate->GetCurrentContext();
   v8::Local<v8::String> filename = NewV8String(isolate, _filename);
   v8::Local<v8::Integer> line_offset = v8::Integer::New(isolate, _line_offset);
@@ -142,9 +142,9 @@ v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,
   v8::ScriptOrigin origin(filename, line_offset);
   v8::Local<v8::Script> script;
   if (!v8::Script::Compile(context, source, &origin).ToLocal(&script)) {
-    return {};
+    return handle_scope.EscapeMaybe(v8::MaybeLocal<v8::Value>());
   }
-  return script->Run(context);
+  return handle_scope.EscapeMaybe(script->Run(context));
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(std::string _source, std::string _filename, int _line_offset) {

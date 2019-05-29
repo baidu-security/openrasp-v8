@@ -41,16 +41,41 @@ class Exception : public std::string {
   Exception(v8::Isolate* isolate, v8::TryCatch& try_catch);
 };
 
-class Platform {
+class Platform : public v8::Platform {
  public:
-  Platform() = delete;
-  static bool isInitialized;
-  static std::unique_ptr<v8::Platform> platform;
-  static void Initialize();
-  static void Shutdown();
+  explicit Platform(int thread_pool_size);
+  ~Platform() override;
+
+  // v8::platform::DefaultPlatform implementation.
+  bool PumpMessageLoop(v8::Isolate* isolate,
+                       v8::platform::MessageLoopBehavior behavior = v8::platform::MessageLoopBehavior::kDoNotWait);
+  void RunIdleTasks(v8::Isolate* isolate, double idle_time_in_seconds);
+
+  // v8::Platform implementation.
+  int NumberOfWorkerThreads() override;
+  std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(v8::Isolate* isolate) override;
+  void CallOnWorkerThread(std::unique_ptr<v8::Task> task) override;
+  void CallDelayedOnWorkerThread(std::unique_ptr<v8::Task> task, double delay_in_seconds) override;
+  void CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task) override;
+  void CallDelayedOnForegroundThread(v8::Isolate* isolate, v8::Task* task, double delay_in_seconds) override;
+  void CallIdleOnForegroundThread(v8::Isolate* isolate, v8::IdleTask* task) override;
+  bool IdleTasksEnabled(v8::Isolate* isolate) override;
+  double MonotonicallyIncreasingTime() override;
+  double CurrentClockTimeMillis() override;
+  v8::TracingController* GetTracingController() override;
+  v8::Platform::StackTracePrinter GetStackTracePrinter() override;
+  v8::PageAllocator* GetPageAllocator() override;
+
+  static Platform* New(int thread_pool_size);
+  static Platform* Get();
+  void Startup();
+  void Shutdown();
 
  private:
-  static std::mutex mtx;
+  static std::unique_ptr<Platform> instance;
+  int thread_pool_size;
+  std::unique_ptr<v8::Platform> default_platform;
+  std::unique_ptr<v8::platform::tracing::TracingController> tracing_controller;
 };
 
 class TimeoutTask : public v8::Task {
