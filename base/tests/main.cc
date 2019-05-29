@@ -8,21 +8,55 @@
 #include "../bundle.h"
 using namespace openrasp;
 
+void openrasp::plugin_info(Isolate* isolate, const std::string& message) {}
+void openrasp::alarm_info(Isolate* isolate,
+                          v8::Local<v8::String> type,
+                          v8::Local<v8::Object> params,
+                          v8::Local<v8::Object> result) {}
+v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* isolate) {
+  return v8::ObjectTemplate::New(isolate);
+}
+
+class IsolateDeleter {
+ public:
+  void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
+};
+typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
+
+struct Listener : Catch::TestEventListenerBase {
+  using TestEventListenerBase::TestEventListenerBase;  // inherit constructor
+  void testRunStarting(Catch::TestRunInfo const& testRunInfo) override {
+    v8::V8::InitializePlatform(Platform::New(0));
+    v8::V8::Initialize();
+  }
+  void testRunEnded(Catch::TestRunStats const& testRunStats) override {
+    v8::V8::Dispose();
+    v8::V8::ShutdownPlatform();
+  }
+};
+CATCH_REGISTER_LISTENER(Listener);
+
 TEST_CASE("Platform") {
-  Platform::Initialize();
-  Platform::Shutdown();
+  Platform::Get()->Startup();
+  Platform::Get()->Startup();
 
-  Platform::Shutdown();
-  Platform::Initialize();
+  Platform::Get()->Shutdown();
+  Platform::Get()->Shutdown();
 
-  Platform::Initialize();
-  Platform::Shutdown();
+  Platform::Get()->Startup();
+  Platform::Get()->Shutdown();
+
+  Platform::Get()->Shutdown();
+  Platform::Get()->Startup();
+
+  Platform::Get()->Startup();
+
+  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  isolate->Dispose();
 }
 
 TEST_CASE("Snapshot") {
-  Platform::Initialize();
-  v8::V8::Initialize();
-
   SECTION("Constructor 1") {
     {
       Snapshot snapshot("", std::vector<PluginFile>(), 1000, nullptr);
@@ -91,8 +125,6 @@ TEST_CASE("Snapshot") {
 }
 
 TEST_CASE("Isolate") {
-  Platform::Initialize();
-  v8::V8::Initialize();
   Snapshot snapshot("", {{"test", R"(
         const plugin = new RASP('test')
         plugin.register('request', (params) => {
@@ -104,6 +136,8 @@ TEST_CASE("Isolate") {
                     1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
 
   SECTION("GetData") { REQUIRE(isolate->GetData() != nullptr); }
 
@@ -120,7 +154,6 @@ TEST_CASE("Isolate") {
   }
 
   SECTION("Check") {
-    v8::HandleScope handle_scope(isolate);
     auto type = NewV8String(isolate, "request");
     auto params = v8::Object::New(isolate);
     auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
@@ -165,7 +198,6 @@ TEST_CASE("Isolate") {
   }
 
   SECTION("ExecScript") {
-    v8::HandleScope handle_scope(isolate);
     {
       v8::TryCatch try_catch(isolate);
       auto maybe_rst = isolate->ExecScript("wrong syntax", "wrong-syntax");
@@ -179,16 +211,14 @@ TEST_CASE("Isolate") {
       REQUIRE(maybe_rst.ToLocalChecked()->NumberValue(isolate->GetCurrentContext()).ToChecked() == 2);
     }
   }
-
-  isolate->Dispose();
 }
 
 TEST_CASE("Exception") {
-  Platform::Initialize();
-  v8::V8::Initialize();
   Snapshot snapshot("", std::vector<PluginFile>(), 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
 
   v8::TryCatch try_catch(isolate);
   isolate->ExecScript("throw new Error('2333')", "2333.js");
@@ -200,21 +230,20 @@ throw new Error('2333')
 Error: 2333
     at 2333.js:1:7
 )");
-  isolate->Dispose();
 }
 
 TEST_CASE("TimeoutTask") {
-  Platform::Initialize();
-  v8::V8::Initialize();
   Snapshot snapshot("", std::vector<PluginFile>(), 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
 
   SECTION("Not Timeout") {
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     auto task = new TimeoutTask(isolate, 1000);
     task->GetMtx().lock();
-    Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
     isolate->ExecScript("for(let i=0;i<10;i++);", "loop");
     task->GetMtx().unlock();
     auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
@@ -225,27 +254,24 @@ TEST_CASE("TimeoutTask") {
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     auto task = new TimeoutTask(isolate, 100);
     task->GetMtx().lock();
-    Platform::platform->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
     isolate->ExecScript("for(;;);", "loop");
     task->GetMtx().unlock();
     auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     REQUIRE(end - start >= 100);
   }
-
-  isolate->Dispose();
 }
 
 TEST_CASE("Flex") {
-  Platform::Initialize();
-  v8::V8::Initialize();
   Snapshot snapshot("", std::vector<PluginFile>(), 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
   auto maybe_rst = isolate->ExecScript("JSON.stringify(RASP.sql_tokenize('a bb       ccc dddd   '))", "flex");
   REQUIRE_FALSE(maybe_rst.IsEmpty());
   REQUIRE(maybe_rst.ToLocalChecked()->IsString());
   REQUIRE(
       std::string(*v8::String::Utf8Value(isolate, maybe_rst.ToLocalChecked())) ==
       R"([{"start":0,"stop":1,"text":"a"},{"start":2,"stop":4,"text":"bb"},{"start":11,"stop":14,"text":"ccc"},{"start":15,"stop":19,"text":"dddd"}])");
-  isolate->Dispose();
 }

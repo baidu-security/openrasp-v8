@@ -22,15 +22,15 @@ Snapshot* snapshot = nullptr;
 std::vector<PluginFile> plugin_list;
 
 char Initialize() {
-  Platform::Initialize();
+  v8::V8::InitializePlatform(Platform::New(0));
   v8::V8::Initialize();
   return true;
 }
 
 char Dispose() {
   delete snapshot;
-  Platform::Shutdown();
   v8::V8::Dispose();
+  v8::V8::ShutdownPlatform();
   return true;
 }
 
