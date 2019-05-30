@@ -960,14 +960,18 @@ static int32_t utf8len(const char* str, int32_t str_len) {
 
   while (pos < str_len) {
     if (0xfc == (0xfe & *(str + pos))) {
-      // 5-byte utf8 code point (began with 0b1111110x)
+      // 6-byte utf8 code point (began with 0b1111110x)
       pos += 6;
+      // if a character consists of more than 3 bytes (eg. 😄), v8 will store it as 2 utf8 rune
+      length++;
     } else if (0xf8 == (0xfc & *(str + pos))) {
       // 5-byte utf8 code point (began with 0b111110xx)
       pos += 5;
+      length++;
     } else if (0xf0 == (0xf8 & *(str + pos))) {
       // 4-byte utf8 code point (began with 0b11110xxx)
       pos += 4;
+      length++;
     } else if (0xe0 == (0xf0 & *(str + pos))) {
       // 3-byte utf8 code point (began with 0b1110xxxx)
       pos += 3;
