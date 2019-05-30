@@ -90,8 +90,8 @@ TEST_CASE("Snapshot") {
 
   SECTION("Constructor 3") {
     Snapshot snapshot1("", std::vector<PluginFile>(), 1000, nullptr);
-    snapshot1.Save("/tmp/openrasp-v8-base-tests-snapshot");
-    Snapshot snapshot2("/tmp/openrasp-v8-base-tests-snapshot", 1000);
+    snapshot1.Save(".openrasp-v8-base-tests-snapshot");
+    Snapshot snapshot2(".openrasp-v8-base-tests-snapshot", 1000);
     REQUIRE(snapshot1.raw_size == snapshot2.raw_size);
     REQUIRE(memcmp(snapshot1.data, snapshot2.data, snapshot1.raw_size) == 0);
   }
