@@ -23,6 +23,7 @@ if(APPLE)
 endif()
 
 if(WIN32)
+    target_link_libraries(prebuilts INTERFACE ${LIBS})
     target_link_libraries(prebuilts INTERFACE winmm dbghelp shlwapi)
 endif()
 
