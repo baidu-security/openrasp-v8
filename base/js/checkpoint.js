@@ -77,9 +77,7 @@ Object.defineProperty(global, 'CheckPointRequest', {
 });
 
 const CheckPointRequestEnd = class {
-    constructor(data) {
-        this.request = data.request;
-    }
+    constructor(data) {}
 
     static get name() {
         return 'requestEnd';
@@ -216,6 +214,21 @@ const CheckPointInclude = class {
 };
 Object.defineProperty(global, 'CheckPointInclude', {
     value: CheckPointInclude,
+    enumerable: true
+});
+
+const CheckPointEval = class {
+    constructor(data) {
+        this.code = data.code;
+        this.function = data.function;
+    }
+
+    static get name() {
+        return 'eval';
+    }
+};
+Object.defineProperty(global, 'CheckPointEval', {
+    value: CheckPointEval,
     enumerable: true
 });
 
