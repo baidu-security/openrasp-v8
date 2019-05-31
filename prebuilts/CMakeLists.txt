@@ -25,7 +25,7 @@ endif()
 
 if(WIN32)
     target_compile_definitions(prebuilts INTERFACE CURL_STATICLIB)
-    target_link_libraries(prebuilts INTERFACE v8_monolith.lib cpr.lib curl.lib z.lib)
+    target_link_libraries(prebuilts INTERFACE ${LIBS})
     target_link_libraries(prebuilts INTERFACE winmm dbghelp shlwapi ws2_32 crypt32)
 endif()
 
