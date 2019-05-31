@@ -3,12 +3,10 @@ os: linux
 dist: xenial
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
     packages:
       - g++-multilib
 before_install:
   - tar zxf vendors/centos6-sysroot.tar.gz -C /tmp/
 script:
   - mkdir buildx64 && pushd buildx64 && (source /tmp/centos6-sysroot/setx64.sh && cmake ../base) && make VERBOSE=1 && make test && ldd tests && popd
-  - mkdir buildx86 && pushd buildx86 && (source /tmp/centos6-sysroot/setx86.sh && cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_PREFIX_PATH="$TRAVIS_BUILD_DIR/vendors/libc++-linux-x86;$TRAVIS_BUILD_DIR/vendors/libv8-7.2-linux-x86" ../base) && make VERBOSE=1 && make test && ldd tests && popd
+  - mkdir buildx86 && pushd buildx86 && (source /tmp/centos6-sysroot/setx86.sh && cmake ../base) && make VERBOSE=1 && make test && ldd tests && popd
