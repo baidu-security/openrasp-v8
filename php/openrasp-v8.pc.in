@@ -1,0 +1,5 @@
+Name: openrasp-v8
+Description: openrasp-v8
+Version: x
+Cflags: ${CFLAGS}
+Libs: ${LDFLAGS}

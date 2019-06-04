@@ -1,13 +1,21 @@
 cmake_minimum_required(VERSION 3.0.0)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX ${CMAKE_CURRENT_SOURCE_DIR}/vendors/cmake/cxx_flag_overrides.cmake)
-
-project(openrasp-v8 LANGUAGES C CXX)
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+project(openrasp-v8 LANGUAGES CXX)
+
+enable_testing()
+
+if (ENABLE_LANGUAGES STREQUAL "all")
+  set(LANGS php java go)
+else()
+  set(LANGS ${ENABLE_LANGUAGES})
+endif()
+
+add_subdirectory(prebuilts)
 add_subdirectory(base)
-add_subdirectory(go)
-add_subdirectory(java)
-add_subdirectory(php)
+foreach(LANG IN LISTS LANGS)
+  add_subdirectory(${LANG})
+endforeach()
