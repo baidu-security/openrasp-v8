@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <codecvt>
+#include <locale>
+#include <vector>
 #include "header.h"
 
 using namespace openrasp;
@@ -31,7 +33,7 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
     return;
   }
   auto env = custom_data->env;
-  auto msg = env->NewStringUTF(message.c_str());
+  auto msg = String2Jstring(env, message);
   env->CallStaticVoidMethod(v8_class.cls, v8_class.plugin_log, msg);
 }
 void openrasp::alarm_info(Isolate* isolate,
@@ -55,4 +57,26 @@ Isolate* GetIsolate() {
     }
   }
   return isolate;
+}
+
+std::string Jstring2String(JNIEnv* env, jstring str) {
+  auto data = env->GetStringChars(str, nullptr);
+  auto size = env->GetStringLength(str);
+  // 在windows上用u16string会报错，只能这样拷贝转换
+  std::wstring u16(size, 0);
+  for (int i = 0; i < size; i++) {
+    u16[i] = data[i];
+  }
+  env->ReleaseStringChars(str, data);
+  return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(u16);
+}
+
+jstring String2Jstring(JNIEnv* env, std::string str) {
+  std::wstring u16 = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
+  auto size = u16.size();
+  std::vector<jchar> data(size, 0);
+  for (int i = 0; i < size; i++) {
+    data[i] = u16[i];
+  }
+  return env->NewString(data.data(), size);
 }
