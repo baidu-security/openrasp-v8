@@ -12,8 +12,8 @@ import com.jsoniter.any.Any;
 public class V8Test {
 
   @BeforeClass
-  public static void Initialize() {
-    assertTrue(V8.Load());
+  public static void Initialize() throws Exception {
+    V8.Load();
     assertTrue(V8.Initialize());
   }
 
