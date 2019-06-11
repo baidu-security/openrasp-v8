@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.12.0)
 
 project(base LANGUAGES CXX)
 
@@ -18,7 +18,7 @@ add_custom_target(builtinjs2cheader
     COMMAND cat ${JS_SRCS} > gen/builtins
     COMMAND ${XXD} -i gen/builtins > gen/builtins.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories(base PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(base PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(base builtinjs2cheader)
 
 # testing #

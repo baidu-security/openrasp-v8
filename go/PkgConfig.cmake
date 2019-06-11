@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.12.0)
 set(PREFIX ${CMAKE_CURRENT_LIST_DIR})
 list(JOIN INCLUDE_DIRECTORIES " -I" CFLAGS)
 set(CFLAGS "-I${CFLAGS}")
