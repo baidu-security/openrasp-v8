@@ -1,12 +1,29 @@
 language: cpp
-os: linux
-dist: xenial
-addons:
-  apt:
-    packages:
-      - g++-multilib
+matrix:
+  include:
+  - os: linux
+    dist: xenial
+    addons:
+      apt:
+        packages:
+        - g++-multilib
+  - os: osx
+    addons:
+      homebrew:
+        packages:
+        - git-lfs
+  - os: windows
 before_install:
-  - tar zxf vendors/centos6-sysroot.tar.gz -C /tmp/
+- git lfs install
+- git lfs pull
 script:
-  - mkdir buildx64 && pushd buildx64 && (source /tmp/centos6-sysroot/setx64.sh && cmake ..) && make VERBOSE=1 && make test && ldd base/tests && popd
-  - mkdir buildx86 && pushd buildx86 && (source /tmp/centos6-sysroot/setx86.sh && cmake ..) && make VERBOSE=1 && make test && ldd base/tests && popd
+- .travis/$TRAVIS_OS_NAME.sh
+deploy:
+  provider: releases
+  api_key:
+    secure: ap2nzZNnx8w/Romx+kxgIw5rTlOLiD47nmxCzlKclz62nw/hCKRBPlykET3oEA/KsndTXDb2m1Ea9yxmnjmkI7C0otTetdEJL6pZU9FO6W2VPAdOeU2/7a16TFw2HPPj1Xd9mIDIK4JC4hhYRSPEjh67fhoQFUuayAVuWbZiCqhFQ/c5E5GXYl2Ik6SyU6P7gr5V6eY3AIgTWRWu0JP1OmBtHaVV2AH7VC88NLFf1tNTQaf0Ufxb/W82rX+zPxFKtOCoBKkNaJTwxaxVtAd1MCSxuF4AQ/d7Pie00/d6naHTEHXy0XNmVPsbXqFjjnCsyF6mFQO80B/TDNJFB7ujkAAbWB3YEXicUjP8mVbesrGfOX+6U+Agmr59QctFmluarcRFhEukYnsPEcVEnYOf8ppcEUe3AI7lG+koIGD7/rT+lCpnmDjUFxKv1ugFOd39JZ/bFkroaww+yC0qYVclrgbbg+KvH5cCaW1aR0ETGtjPnBOxl50PCI9Alp/3p1GQoESMkNI3exmIinOpT9h31Lj74QvkkVccPoCFH1hom2J7sDcs4GxU1xcXIedmDdw0divNbZZXxqwHe0u5dCs6Taxwt9cSQa3rbaZUwjHGqZxe3KByz9cK9rD8ysepuTD6gyjCi6AlU25C436Jwi5m5dk78AptbeS/NbwaFmlTPjw=
+  file_glob: true
+  file: java/src/main/resources/*.tar.gz
+  skip_cleanup: true
+  on:
+    tags: true
