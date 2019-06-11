@@ -12,23 +12,17 @@ public class V8 {
 
     public synchronized static native boolean CreateSnapshot(String config, Object[] plugins);
 
-    public static native String Check(String type, byte[] params, int params_size, Context context,
-            boolean new_request);
+    public static native byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
+            int timeout);
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
 
-    public static boolean Load() {
+    public static void Load() throws Exception {
         if (System.getProperty("java.vm.name").contains("JRockit")) {
-            System.err.println("OpenRASP has temporarily removed support of Oracle JRockit JDK, please refer to the following document for details: https://rasp.baidu.com/doc/install/manual/weblogic.html#faq-jrockit");
-            return false;
+            throw new Exception(
+                    "OpenRASP has temporarily removed support of Oracle JRockit JDK, please refer to the following document for details: https://rasp.baidu.com/doc/install/manual/weblogic.html#faq-jrockit");
         }
-        try {
-            NativeLoader.loadLibrary("openrasp_v8_java");
-            return true;
-        } catch (Exception e) {
-            System.err.println(e);
-            return false;
-        }
+        NativeLoader.loadLibrary("openrasp_v8_java");
     }
 
     public static void PluginLog(String msg) {

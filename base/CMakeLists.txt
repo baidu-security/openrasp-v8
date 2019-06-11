@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(base LANGUAGES CXX)
 
-message("-- Covert js code to c header file")
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/js/js2c.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/js)
-
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} BASE_SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/flex FLEX_SRCS)
 
@@ -12,6 +9,17 @@ add_library(base OBJECT ${BASE_SRCS} ${FLEX_SRCS})
 target_include_directories(base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
 add_dependencies(base prebuilts)
 target_link_libraries(base PUBLIC prebuilts)
+
+set(JS_SRCS console.js checkpoint.js context.js flex.js rasp.js)
+list(TRANSFORM JS_SRCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/js/)
+find_program(XXD xxd ${PREBUILTS_PREFIX}/bin)
+add_custom_target(builtinjs2cheader
+    COMMAND rm -rf gen && mkdir gen
+    COMMAND cat ${JS_SRCS} > gen/builtins
+    COMMAND ${XXD} -i gen/builtins > gen/builtins.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(base PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+add_dependencies(base builtinjs2cheader)
 
 # testing #
 option(BUILD_TESTING "Build the testing tree." OFF)

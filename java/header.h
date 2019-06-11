@@ -94,3 +94,7 @@ extern openrasp::Snapshot* snapshot;
 extern std::mutex mtx;
 
 openrasp::Isolate* GetIsolate();
+std::string Jstring2String(JNIEnv* env, jstring jstr);
+jstring String2Jstring(JNIEnv* env, const std::string& str);
+v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr);
+jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val);

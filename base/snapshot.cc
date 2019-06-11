@@ -17,7 +17,7 @@
 #include <cstdio>
 #include "bundle.h"
 #include "flex/flex.h"
-#include "js/builtins.h"
+#include "gen/builtins.h"
 
 namespace openrasp {
 static void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -109,7 +109,7 @@ Snapshot::Snapshot(const std::string& config,
     global->Set(NewV8String(isolate, "stderr"), v8_stdout);
     global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
     global->Set(NewV8String(isolate, "request"), v8::Function::New(isolate, request_callback));
-    if (isolate->ExecScript({reinterpret_cast<const char*>(builtins), builtins_len}, "console.js").IsEmpty()) {
+    if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       plugin_info(isolate, e);
       // no need to continue

@@ -42,21 +42,17 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
                                                                         jclass cls,
                                                                         jstring jconfig,
                                                                         jobjectArray jplugins) {
-  const char* raw_config = env->GetStringUTFChars(jconfig, 0);
-  std::string config(raw_config);
-  env->ReleaseStringUTFChars(jconfig, raw_config);
+  auto config = Jstring2String(env, jconfig);
 
   std::vector<PluginFile> plugin_list;
   const size_t plugin_len = env->GetArrayLength(jplugins);
   for (int i = 0; i < plugin_len; i++) {
     jobjectArray plugin = (jobjectArray)env->GetObjectArrayElement(jplugins, i);
-    jstring name = (jstring)env->GetObjectArrayElement(plugin, 0);
-    jstring source = (jstring)env->GetObjectArrayElement(plugin, 1);
-    const char* raw_name = env->GetStringUTFChars(name, 0);
-    const char* raw_source = env->GetStringUTFChars(source, 0);
-    plugin_list.emplace_back(raw_name, raw_source);
-    env->ReleaseStringUTFChars(name, raw_name);
-    env->ReleaseStringUTFChars(source, raw_source);
+    jstring jname = (jstring)env->GetObjectArrayElement(plugin, 0);
+    jstring jsource = (jstring)env->GetObjectArrayElement(plugin, 1);
+    auto name = Jstring2String(env, jname);
+    auto source = Jstring2String(env, jsource);
+    plugin_list.emplace_back(name, source);
   }
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -67,7 +63,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
     return false;
     delete blob;
   }
-  std::lock_guard<std::mutex> lock(mtx);
+  std::unique_lock<std::mutex> lock(mtx);
   delete snapshot;
   snapshot = blob;
   return true;
@@ -76,15 +72,16 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Ljava/lang/String;
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)[B
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
-                                                              jclass cls,
-                                                              jstring jtype,
-                                                              jbyteArray jparams,
-                                                              jint jparams_size,
-                                                              jobject jcontext,
-                                                              jboolean jnew_request) {
+JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
+                                                                 jclass cls,
+                                                                 jstring jtype,
+                                                                 jbyteArray jparams,
+                                                                 jint jparams_size,
+                                                                 jobject jcontext,
+                                                                 jboolean jnew_request,
+                                                                 jint jtimeout) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
     return nullptr;
@@ -100,18 +97,14 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
   v8::Local<v8::Object> request_context;
 
   {
-    const jchar* raw = env->GetStringCritical(jtype, nullptr);
-    const size_t len = env->GetStringLength(jtype);
-    bool rst = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len).ToLocal(&request_type);
-    env->ReleaseStringCritical(jtype, raw);
-    if (!rst) {
+    if (!Jstring2V8string(env, jtype).ToLocal(&request_type)) {
       return nullptr;
     }
   }
 
   {
-    char* raw = static_cast<char*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
-    auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jparams_size);
+    auto raw = static_cast<uint8_t*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
+    auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jparams_size);
     env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
     if (maybe_string.IsEmpty()) {
       return nullptr;
@@ -130,7 +123,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
     request_context = data->request_context.Get(isolate);
   }
 
-  auto rst = isolate->Check(request_type, request_params, request_context);
+  auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
 
   if (rst->Length() == 0) {
     return nullptr;
@@ -141,8 +134,11 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
     return nullptr;
   }
 
-  v8::String::Value string_value(isolate, json);
-  return env->NewString(*string_value, string_value.length());
+  auto bytearray = env->NewByteArray(json->Utf8Length(isolate));
+  auto bytes = env->GetPrimitiveArrayCritical(bytearray, nullptr);
+  json->WriteUtf8(isolate, static_cast<char*>(bytes));
+  env->ReleasePrimitiveArrayCritical(bytearray, bytes, 0);
+  return bytearray;
 }
 
 /*
@@ -150,6 +146,10 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
  * Method:    ExecuteScript
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
+ *
+ * 暂时地:jstinrg->uint16_t*->std::u16string->std::string
+ * 下个版本应该在Isolate类中增加ExecScript(v8::Local<v8::String>, ...)，以便免去转换过程
+ * 不直接用env->GetStringUTFChars的原因是jni不能正确转换一些特殊字符到utf8
  */
 JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
                                                                       jclass cls,
@@ -161,21 +161,19 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* en
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
+  auto data = isolate->GetData();
+  auto custom_data = GetCustomData(isolate);
+  custom_data->env = env;
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
-  const char* source = env->GetStringUTFChars(jsource, nullptr);
-  const size_t source_len = env->GetStringLength(jsource);
-  const char* filename = env->GetStringUTFChars(jfilename, nullptr);
-  const size_t filename_len = env->GetStringLength(jfilename);
-  auto maybe_rst = isolate->ExecScript({source, source_len}, {filename, filename_len});
-  env->ReleaseStringUTFChars(jsource, source);
-  env->ReleaseStringUTFChars(jfilename, filename);
+  std::string source = Jstring2String(env, jsource);
+  std::string filename = Jstring2String(env, jfilename);
+  auto maybe_rst = isolate->ExecScript(source, filename);
   if (maybe_rst.IsEmpty()) {
     Exception e(isolate, try_catch);
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, e.c_str());
     return nullptr;
   }
-  v8::String::Value string_value(isolate, maybe_rst.ToLocalChecked());
-  return env->NewString(*string_value, string_value.length());
+  return V8value2Jstring(env, maybe_rst.ToLocalChecked());
 }
