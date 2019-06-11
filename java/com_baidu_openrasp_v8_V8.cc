@@ -72,7 +72,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/plugin/v8/Context;Z)Ljava/lang/String;
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                               jclass cls,
@@ -80,7 +80,8 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                               jbyteArray jparams,
                                                               jint jparams_size,
                                                               jobject jcontext,
-                                                              jboolean jnew_request) {
+                                                              jboolean jnew_request,
+                                                              jint jtimeout) {
   Isolate* isolate = GetIsolate();
   if (!isolate) {
     return nullptr;
@@ -126,7 +127,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
     request_context = data->request_context.Get(isolate);
   }
 
-  auto rst = isolate->Check(request_type, request_params, request_context);
+  auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
 
   if (rst->Length() == 0) {
     return nullptr;
