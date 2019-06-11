@@ -46,7 +46,8 @@ Isolate* GetIsolate() {
   Isolate* isolate = isolate_ptr.get();
   if (snapshot) {
     if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock(mtx, std::try_to_lock);
+      std::unique_lock<std::mutex> lock = isolate ? std::unique_lock<std::mutex>(mtx, std::try_to_lock)
+                                                  : std::unique_lock<std::mutex>(mtx);
       if (lock) {
         auto duration = std::chrono::system_clock::now().time_since_epoch();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -60,18 +61,18 @@ Isolate* GetIsolate() {
 }
 
 std::string Jstring2String(JNIEnv* env, jstring str) {
-  auto data = env->GetStringChars(str, nullptr);
+  auto data = env->GetStringCritical(str, nullptr);
   auto size = env->GetStringLength(str);
   // 在windows上用u16string会报错，只能这样拷贝转换
   std::wstring u16(size, 0);
   for (int i = 0; i < size; i++) {
     u16[i] = data[i];
   }
-  env->ReleaseStringChars(str, data);
+  env->ReleaseStringCritical(str, data);
   return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(u16);
 }
 
-jstring String2Jstring(JNIEnv* env, std::string str) {
+jstring String2Jstring(JNIEnv* env, const std::string& str) {
   std::wstring u16 = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
   auto size = u16.size();
   std::vector<jchar> data(size, 0);
@@ -79,4 +80,18 @@ jstring String2Jstring(JNIEnv* env, std::string str) {
     data[i] = u16[i];
   }
   return env->NewString(data.data(), size);
+}
+
+v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
+  auto data = env->GetStringCritical(jstr, nullptr);
+  auto size = env->GetStringLength(jstr);
+  auto rst =
+      v8::String::NewFromTwoByte(GetIsolate(), static_cast<const uint16_t*>(data), v8::NewStringType::kNormal, size);
+  env->ReleaseStringCritical(jstr, data);
+  return rst;
+}
+
+jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {
+  v8::String::Value str(GetIsolate(), val);
+  return env->NewString(*str, str.length());
 }

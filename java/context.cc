@@ -52,10 +52,7 @@ static void url_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -81,10 +78,7 @@ static void method_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -110,10 +104,7 @@ static void querystring_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -139,10 +130,7 @@ static void appBasePath_getter(v8::Local<v8::Name> name, const v8::PropertyCallb
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -168,10 +156,7 @@ static void protocol_getter(v8::Local<v8::Name> name, const v8::PropertyCallback
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -197,10 +182,7 @@ static void remoteAddr_getter(v8::Local<v8::Name> name, const v8::PropertyCallba
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -226,10 +208,7 @@ static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   if (!jstr) {
     return;
   }
-  const jchar* raw = custom_data->env->GetStringCritical(jstr, nullptr);
-  const size_t len = custom_data->env->GetStringLength(jstr);
-  auto maybe_string = v8::String::NewFromTwoByte(isolate, raw, v8::NewStringType::kNormal, len);
-  custom_data->env->ReleaseStringCritical(jstr, raw);
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -259,8 +238,8 @@ static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbac
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
-  auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
+  auto raw = static_cast<uint8_t*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
     return;
@@ -294,8 +273,8 @@ static void header_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
-  auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
+  auto raw = static_cast<uint8_t*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
     return;
@@ -329,7 +308,7 @@ static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  auto raw = static_cast<uint8_t*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
   auto body = v8::ArrayBuffer::New(isolate, raw, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
 
@@ -356,8 +335,8 @@ static void server_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
-  auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
+  auto raw = static_cast<uint8_t*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
     return;
@@ -392,8 +371,8 @@ static void json_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   }
   jint jbuffer_size;
   custom_data->env->GetIntArrayRegion(jsize, 0, 1, &jbuffer_size);
-  char* raw = static_cast<char*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
-  auto maybe_string = v8::String::NewFromUtf8(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
+  auto raw = static_cast<uint8_t*>(custom_data->env->GetPrimitiveArrayCritical(jbuffer, nullptr));
+  auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jbuffer_size);
   custom_data->env->ReleasePrimitiveArrayCritical(jbuffer, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
     return;

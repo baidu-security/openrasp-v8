@@ -12,7 +12,7 @@ public class V8 {
 
     public synchronized static native boolean CreateSnapshot(String config, Object[] plugins);
 
-    public static native String Check(String type, byte[] params, int params_size, Context context, boolean new_request,
+    public static native byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
             int timeout);
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
