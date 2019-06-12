@@ -40,5 +40,5 @@
 .DS_Store
 *.log
 
-base/js/builtins.h
 *.pc
+dist

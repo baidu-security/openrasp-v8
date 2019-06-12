@@ -38,8 +38,8 @@ JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test
 
 popd
 
-pushd java/src/main/resources
+rm -rf dist
 
-tar zcf java_natives_windows.tar.gz natives
+mkdir dist
 
-popd
+tar zcf dist/java_natives_windows.tar.gz java/src/main/resources/natives

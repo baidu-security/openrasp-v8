@@ -38,8 +38,8 @@ mvn test
 
 popd
 
-pushd java/src/main/resources
+rm -rf dist
 
-tar zcf java_natives_linux.tar.gz natives
+mkdir dist
 
-popd
+tar zcf dist/java_natives_linux.tar.gz java/src/main/resources/natives
