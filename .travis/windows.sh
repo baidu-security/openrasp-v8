@@ -42,4 +42,4 @@ rm -rf dist
 
 mkdir dist
 
-tar zcf dist/java_natives_windows.tar.gz java/src/main/resources/natives
+tar zcf dist/java_natives_windows.tar.gz -C java/src/main/resources ./natives

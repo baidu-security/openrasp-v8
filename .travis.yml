@@ -27,6 +27,7 @@ deploy:
   file: dist/*
   file_glob: true
   skip_cleanup: true
+  overwrite: true
   on:
     tags: true
     repo: baidu-security/openrasp-v8
