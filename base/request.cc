@@ -8,11 +8,19 @@ namespace openrasp {
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto isolate = info.GetIsolate();
   v8::HandleScope handle_scope(isolate);
+  v8::TryCatch try_catch(isolate);
   auto context = isolate->GetCurrentContext();
-  if (info.Length() < 1 || !info[0]->IsObject()) {
+  v8::Local<v8::Promise::Resolver> resolver;
+  if (!v8::Promise::Resolver::New(context).ToLocal(&resolver)) {
+    try_catch.ReThrow();
     return;
   }
-  auto config = info[0].As<v8::Object>();
+  info.GetReturnValue().Set(resolver->GetPromise());
+  v8::Local<v8::Object> config;
+  if (!info[0]->ToObject(context).ToLocal(&config)) {
+    resolver->Reject(context, try_catch.Exception()).FromJust();
+    return;
+  }
   cpr::Session session;
   cpr::Header header;
   std::string method;
@@ -112,30 +120,37 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
     r = session.Get();
   }
 
-  auto ret_val = v8::Object::New(isolate);
-  ret_val->Set(context, NewV8String(isolate, "status"), v8::Int32::New(isolate, r.status_code)).FromJust();
-  auto data = v8::String::NewFromUtf8(isolate, r.text.data(), v8::NewStringType::kNormal, r.text.size())
-                  .FromMaybe(v8::String::Empty(isolate));
-  ret_val->Set(context, NewV8String(isolate, "data"), data).FromJust();
-  auto headers = v8::Object::New(isolate);
-  for (auto& h : r.header) {
-    auto key = v8::String::NewFromUtf8(isolate, h.first.data(), v8::NewStringType::kNormal, h.first.size());
-    auto val = v8::String::NewFromUtf8(isolate, h.second.data(), v8::NewStringType::kNormal, h.second.size());
-    if (key.IsEmpty() || val.IsEmpty()) {
-      continue;
+  if (r.error.code == cpr::ErrorCode::OK) {
+    auto ret_val = v8::Object::New(isolate);
+    ret_val->Set(context, NewV8String(isolate, "status"), v8::Int32::New(isolate, r.status_code)).FromJust();
+    auto data = v8::String::NewFromUtf8(isolate, r.text.data(), v8::NewStringType::kNormal, r.text.size())
+                    .FromMaybe(v8::String::Empty(isolate));
+    ret_val->Set(context, NewV8String(isolate, "data"), data).FromJust();
+    auto headers = v8::Object::New(isolate);
+    for (auto& h : r.header) {
+      auto key = v8::String::NewFromUtf8(isolate, h.first.data(), v8::NewStringType::kNormal, h.first.size());
+      auto val = v8::String::NewFromUtf8(isolate, h.second.data(), v8::NewStringType::kNormal, h.second.size());
+      if (key.IsEmpty() || val.IsEmpty()) {
+        continue;
+      }
+      headers->Set(context, key.ToLocalChecked(), val.ToLocalChecked()).FromJust();
     }
-    headers->Set(context, key.ToLocalChecked(), val.ToLocalChecked()).FromJust();
+    ret_val->Set(context, NewV8String(isolate, "headers"), headers).FromJust();
+    ret_val->Set(context, NewV8String(isolate, "config"), config).FromJust();
+    resolver->Resolve(context, ret_val).FromJust();
+  } else {
+    auto ret_val = v8::Object::New(isolate);
+    auto error = v8::Object::New(isolate);
+    error->Set(context, NewV8String(isolate, "code"), v8::Int32::New(isolate, static_cast<int32_t>(r.error.code)))
+        .FromJust();
+    auto message =
+        v8::String::NewFromUtf8(isolate, r.error.message.data(), v8::NewStringType::kNormal, r.error.message.size())
+            .FromMaybe(v8::String::Empty(isolate));
+    error->Set(context, NewV8String(isolate, "message"), message).FromJust();
+    ret_val->Set(context, NewV8String(isolate, "error"), error).FromJust();
+    ret_val->Set(context, NewV8String(isolate, "config"), config).FromJust();
+    resolver->Reject(context, ret_val).FromJust();
   }
-  ret_val->Set(context, NewV8String(isolate, "headers"), headers).FromJust();
-  auto error = v8::Object::New(isolate);
-  error->Set(context, NewV8String(isolate, "code"), v8::Int32::New(isolate, static_cast<int32_t>(r.error.code)))
-      .FromJust();
-  auto message =
-      v8::String::NewFromUtf8(isolate, r.error.message.data(), v8::NewStringType::kNormal, r.error.message.size())
-          .FromMaybe(v8::String::Empty(isolate));
-  error->Set(context, NewV8String(isolate, "message"), message).FromJust();
-  ret_val->Set(context, NewV8String(isolate, "error"), error).FromJust();
-  info.GetReturnValue().Set(ret_val);
 }
 
 }  // namespace openrasp

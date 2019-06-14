@@ -8,7 +8,7 @@
 
 using namespace openrasp;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) {}
+void openrasp::plugin_info(Isolate* isolate, const std::string& message) { std::cout << message << std::endl; }
 void openrasp::alarm_info(Isolate* isolate,
                           v8::Local<v8::String> type,
                           v8::Local<v8::Object> params,
@@ -285,7 +285,7 @@ TEST_CASE("Request", "[!mayfail]") {
   SECTION("get") {
     auto maybe_rst = isolate->ExecScript(
         R"(
-const ret = RASP.request({
+RASP.request({
     method: 'get',
     url: 'https://www.httpbin.org/get',
     params: {
@@ -300,12 +300,15 @@ const ret = RASP.request({
         a: 2333,
         b: '6666'
     }
+}).then(ret => {
+  ret.data = JSON.parse(ret.data)
+  return JSON.stringify(ret)
 })
-JSON.stringify(JSON.parse(ret.data))
           )",
         "request");
-    auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-    CAPTURE(rst);
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
@@ -314,7 +317,7 @@ JSON.stringify(JSON.parse(ret.data))
     SECTION("form") {
       auto maybe_rst = isolate->ExecScript(
           R"(
-const ret = RASP.request({
+RASP.request({
     method: 'post',
     url: 'https://www.httpbin.org/post',
     params: {
@@ -326,12 +329,15 @@ const ret = RASP.request({
         b: '6666'
     },
     data: 'a=2333&b=6666'
+}).then(ret => {
+  ret.data = JSON.parse(ret.data)
+  return JSON.stringify(ret)
 })
-JSON.stringify(JSON.parse(ret.data))
           )",
           "request");
-      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-      CAPTURE(rst);
+      auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+      REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+      auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
@@ -341,7 +347,7 @@ JSON.stringify(JSON.parse(ret.data))
     SECTION("json") {
       auto maybe_rst = isolate->ExecScript(
           R"(
-const ret = RASP.request({
+RASP.request({
     method: 'post',
     url: 'https://www.httpbin.org/post',
     params: {
@@ -357,12 +363,15 @@ const ret = RASP.request({
         a: 2333,
         b: '6666'
     }
+}).then(ret => {
+  ret.data = JSON.parse(ret.data)
+  return JSON.stringify(ret)
 })
-JSON.stringify(JSON.parse(ret.data))
           )",
           "request");
-      auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-      CAPTURE(rst);
+      auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+      REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+      auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("args":{"a":"2333","b":"6666"})==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("A":"2333")==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("B":"6666")==="));
@@ -373,44 +382,66 @@ JSON.stringify(JSON.parse(ret.data))
   SECTION("timeout") {
     auto maybe_rst = isolate->ExecScript(
         R"(
-const ret = RASP.request({
+RASP.request({
     url: 'https://www.httpbin.org/get',
     timeout: 10
-})
-JSON.stringify(ret.error)
+}).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
-    auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-    CAPTURE(rst);
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":8)==="));
     REQUIRE_THAT(rst, Catch::Matchers::Matches(R"===(.*timed out.*)==="));
   }
   SECTION("error") {
     auto maybe_rst = isolate->ExecScript(
         R"(
-const ret = RASP.request({
+RASP.request({
     url: 'https://www.httpbin.asdasdasdasdasdas'
-})
-JSON.stringify(ret.error)
+}).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
-    auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-    CAPTURE(rst);
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":3)==="));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===(Could not resolve host)==="));
   }
   SECTION("redirect") {
     auto maybe_rst = isolate->ExecScript(
         R"(
-const ret = RASP.request({
+RASP.request({
     url: 'https://httpbin.org/redirect/2',
     maxRedirects: 0
-})
-JSON.stringify(ret)
+}).then(ret => JSON.stringify(ret))
           )",
         "request");
-    auto rst = std::string(*v8::String::Utf8Value(isolate, maybe_rst.FromMaybe(v8::Null(isolate).As<v8::Value>())));
-    CAPTURE(rst);
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Location":"/relative-redirect/1")==="));
+  }
+  SECTION("undefined config") {
+    auto maybe_rst = isolate->ExecScript(
+        R"(
+RASP.request()
+          )",
+        "request");
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
+    REQUIRE(rst == "TypeError: Cannot convert undefined or null to object");
+  }
+  SECTION("empty config") {
+    auto maybe_rst = isolate->ExecScript(
+        R"(
+RASP.request({}).catch(err => Promise.reject(JSON.stringify(err)))
+          )",
+        "request");
+    auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
+    auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
+    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":5)==="));
   }
 }
