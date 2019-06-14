@@ -103,7 +103,6 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   v8::TryCatch try_catch(isolate);
   auto check = data->check.Get(isolate);
   v8::Local<v8::Value> argv[]{type, params, context};
-  v8::Local<v8::Value> rst;
 
   auto task = new TimeoutTask(isolate, timeout);
   task->GetMtx().lock();
@@ -123,11 +122,32 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
     v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
     return v8::Array::New(isolate, argv, 1);
   }
-  rst = maybe_rst.ToLocalChecked();
+  auto rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
     return v8::Array::New(isolate, 0);
   }
-  return rst.As<v8::Array>();
+  auto arr = rst.As<v8::Array>();
+  // all results are ignore, fast track
+  if (LIKELY(arr->Length() == 0)) {
+    return arr;
+  }
+  // any result is promise or any result.action is not equal to ignore
+  // we do not care abort the performace here
+  v8::Local<v8::Array> ret_arr = v8::Array::New(isolate);
+  int idx = 0;
+  for (int i = 0; i < arr->Length(); i++) {
+    v8::Local<v8::Value> item;
+    if (arr->Get(v8_context, i).ToLocal(&item)) {
+      if (item->IsPromise()) {
+        item = item.As<v8::Promise>()->Result();
+        if (item->IsUndefined()) {
+          continue;
+        }
+      }
+      ret_arr->Set(v8_context, idx++, item).FromJust();
+    }
+  }
+  return ret_arr;
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,

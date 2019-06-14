@@ -8,7 +8,9 @@
 
 using namespace openrasp;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) { std::cout << message << std::endl; }
+void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
+  // std::cout << message << std::endl;
+}
 void openrasp::alarm_info(Isolate* isolate,
                           v8::Local<v8::String> type,
                           v8::Local<v8::Object> params,
@@ -125,15 +127,7 @@ TEST_CASE("Snapshot") {
 }
 
 TEST_CASE("Isolate") {
-  Snapshot snapshot("", {{"test", R"(
-        const plugin = new RASP('test')
-        plugin.register('request', (params) => {
-            if (params.throw) { a.a() }
-            if (params.timeout) { for(;;) {} }
-            return params
-        })
-    )"}},
-                    1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), 1000, nullptr);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -157,44 +151,8 @@ TEST_CASE("Isolate") {
     auto type = NewV8String(isolate, "request");
     auto params = v8::Object::New(isolate);
     auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
-
-    {
-      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
-      auto rst = isolate->Check(type, params, context);
-      REQUIRE(rst->Length() == 0);
-    }
-
-    {
-      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
-      auto rst = isolate->Check(type, params, context);
-      REQUIRE(std::string(*v8::String::Utf8Value(
-                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-              R"([{"action":"log","message":"","name":"test","confidence":0}])");
-    }
-
-    {
-      params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
-      auto rst = isolate->Check(type, params, context);
-      REQUIRE(std::string(*v8::String::Utf8Value(
-                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-              R"([{"action":"block","message":"","name":"test","confidence":0}])");
-    }
-
-    {
-      params->Set(NewV8String(isolate, "timeout"), v8::Boolean::New(isolate, true));
-      auto rst = isolate->Check(type, params, context);
-      REQUIRE(std::string(*v8::String::Utf8Value(
-                  isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-              R"([{"action":"exception","message":"Javascript plugin execution timeout"}])");
-    }
-
-    {
-      params->Set(NewV8String(isolate, "throw"), v8::Boolean::New(isolate, true));
-      auto rst = isolate->Check(type, params, context);
-      auto str = std::string(
-          *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
-      REQUIRE_THAT(str, Catch::Matchers::Matches(".*exception.*a is not defined.*"));
-    }
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(rst->Length() == 0);
   }
 
   SECTION("ExecScript") {
@@ -443,5 +401,129 @@ RASP.request({}).catch(err => Promise.reject(JSON.stringify(err)))
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":5)==="));
+  }
+}
+
+TEST_CASE("Check") {
+  Snapshot snapshot("", {{"test", R"(
+        const plugin = new RASP('test')
+        plugin.register('request', (params) => {
+            if (params.case === 'throw') { a.a() }
+            if (params.case === 'timeout') { for(;;) {} }
+            if (params.case === 'promise resolve') { delete params.case; return Promise.resolve(params) }
+            if (params.case === 'promise reject') { delete params.case; return Promise.reject(params) }
+            return params
+        })
+    )"}},
+                    1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
+  auto type = NewV8String(isolate, "request");
+  auto params = v8::Object::New(isolate);
+  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+
+  SECTION("ignore") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(rst->Length() == 0);
+  }
+
+  SECTION("log") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(std::string(*v8::String::Utf8Value(
+                isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
+            R"([{"action":"log","message":"","name":"test","confidence":0}])");
+  }
+
+  SECTION("block") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "block"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(std::string(*v8::String::Utf8Value(
+                isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
+            R"([{"action":"block","message":"","name":"test","confidence":0}])");
+  }
+
+  SECTION("timeout") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(NewV8String(isolate, "case"), NewV8String(isolate, "timeout"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(std::string(*v8::String::Utf8Value(
+                isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
+            R"([{"action":"exception","message":"Javascript plugin execution timeout"}])");
+  }
+
+  SECTION("throw") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(NewV8String(isolate, "case"), NewV8String(isolate, "throw"));
+    auto rst = isolate->Check(type, params, context);
+    auto str = std::string(
+        *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
+    REQUIRE_THAT(str, Catch::Matchers::Matches(".*exception.*a is not defined.*"));
+  }
+
+  SECTION("promise resolve ignore") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
+    params->Set(NewV8String(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(rst->Length() == 0);
+  }
+
+  SECTION("promise resolve log") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(NewV8String(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    auto rst = isolate->Check(type, params, context);
+    auto str = std::string(
+        *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
+    REQUIRE(str == R"([{"action":"log","message":"","name":"test","confidence":0}])");
+  }
+
+  SECTION("promise reject") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(NewV8String(isolate, "case"), NewV8String(isolate, "promise reject"));
+    auto rst = isolate->Check(type, params, context);
+    auto str = std::string(
+        *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
+    REQUIRE_THAT(str, Catch::Matchers::Matches(".*action.*exception.*"));
+    // vs error C2017: illegal escape sequence
+    // REQUIRE(str == R"([{"action":"exception","message":"{\"action\":\"log\"}","name":"test","confidence":0}])");
+  }
+}
+
+TEST_CASE("Plugins") {
+  Snapshot snapshot("",
+                    {{"test1", R"(
+        const plugin = new RASP('test1')
+        plugin.register('request', (params) => {
+            return params
+        })
+    )"},
+                     {"test2", R"(
+        const plugin = new RASP('test2')
+        plugin.register('request', (params) => {
+            return { action: 'log' }
+        })
+    )"}},
+                    1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
+  auto type = NewV8String(isolate, "request");
+  auto params = v8::Object::New(isolate);
+  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+
+  SECTION("ignore") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(rst->Length() == 1);
+  }
+
+  SECTION("log") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "log"));
+    auto rst = isolate->Check(type, params, context);
+    REQUIRE(rst->Length() == 2);
   }
 }
