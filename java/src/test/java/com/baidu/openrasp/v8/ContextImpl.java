@@ -35,6 +35,10 @@ public class ContextImpl implements Context {
     return "test 中文 & 😊";
   }
 
+  public String getRequestId() {
+    return "test 中文 & 😊";
+  }
+
   public byte[] getBody(int[] size) {
     List<String> list = new ArrayList<String>();
     list.add("test 中文 & 😊");

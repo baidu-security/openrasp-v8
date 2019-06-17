@@ -47,6 +47,7 @@ class ContextClass {
     getAppBasePath = env->GetMethodID(cls, "getAppBasePath", "()Ljava/lang/String;");
     getProtocol = env->GetMethodID(cls, "getProtocol", "()Ljava/lang/String;");
     getRemoteAddr = env->GetMethodID(cls, "getRemoteAddr", "()Ljava/lang/String;");
+    getRequestId = env->GetMethodID(cls, "getRequestId", "()Ljava/lang/String;");
     getJson = env->GetMethodID(cls, "getJson", "([I)[B");
     getBody = env->GetMethodID(cls, "getBody", "([I)[B");
     getHeader = env->GetMethodID(cls, "getHeader", "([I)[B");
@@ -61,6 +62,7 @@ class ContextClass {
   jmethodID getAppBasePath;
   jmethodID getProtocol;
   jmethodID getRemoteAddr;
+  jmethodID getRequestId;
   jmethodID getJson;
   jmethodID getBody;
   jmethodID getHeader;

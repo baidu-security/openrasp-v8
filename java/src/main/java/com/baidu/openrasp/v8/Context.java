@@ -16,6 +16,8 @@ public interface Context {
 
     public String getRemoteAddr();
 
+    public String getRequestId();
+
     public byte[] getBody(int[] size);
 
     public byte[] getJson(int[] size);

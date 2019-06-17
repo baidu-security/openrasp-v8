@@ -30,6 +30,7 @@ enum FieldIndex {
   kBody,
   kServer,
   kJson,
+  kRequestId,
   kEndForCount
 };
 inline Isolate* GetIsolate(const v8::PropertyCallbackInfo<v8::Value>& info) {
@@ -217,6 +218,32 @@ static void path_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   returnValue.Set(obj);
   self->SetInternalField(kPath, obj);
 }
+static void requestId_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
+  auto self = info.Holder();
+  auto returnValue = info.GetReturnValue();
+  auto cache = self->GetInternalField(kRequestId);
+  if (!cache->IsUndefined()) {
+    returnValue.Set(cache);
+    return;
+  }
+
+  auto isolate = GetIsolate(info);
+  returnValue.SetEmptyString();
+
+  auto custom_data = GetCustomData(isolate);
+  jstring jstr = (jstring)custom_data->env->CallObjectMethod(custom_data->context, ctx_class.getRequestId);
+  if (!jstr) {
+    return;
+  }
+  auto maybe_string = Jstring2V8string(custom_data->env, jstr);
+  if (maybe_string.IsEmpty()) {
+    return;
+  }
+
+  auto obj = maybe_string.ToLocalChecked();
+  returnValue.Set(obj);
+  self->SetInternalField(kRequestId, obj);
+}
 static void parameter_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
   auto returnValue = info.GetReturnValue();
@@ -401,6 +428,7 @@ v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* is
   obj_templ->SetAccessor(NewV8String(isolate, "body"), body_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "server"), server_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "json"), json_getter);
+  obj_templ->SetAccessor(NewV8String(isolate, "requestId"), requestId_getter);
   obj_templ->SetInternalFieldCount(kEndForCount);
   return obj_templ;
 }

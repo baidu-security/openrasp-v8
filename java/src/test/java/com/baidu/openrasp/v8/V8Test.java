@@ -85,7 +85,7 @@ public class V8Test {
       @Override
       public void log(String msg) {
         assertEquals(msg,
-            "{\"json\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"body\":{},\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\",\"parameter\":[\"test 中文 & 😊\"],\"header\":[\"test 中文 & 😊\"],\"url\":\"test 中文 & 😊\"}");
+            "{\"requestId\":\"test 中文 & 😊\",\"json\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"body\":{},\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\",\"parameter\":[\"test 中文 & 😊\"],\"header\":[\"test 中文 & 😊\"],\"url\":\"test 中文 & 😊\"}");
       }
     });
     List<String[]> scripts = new ArrayList<String[]>();
