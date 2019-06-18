@@ -54,12 +54,10 @@ intptr_t Snapshot::external_references[4] = {
     reinterpret_cast<intptr_t>(request_callback),
     0,
 };
-Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp) {
-  this->data = data;
-  this->raw_size = raw_size;
-  this->timestamp = timestamp;
-}
-Snapshot::Snapshot(const std::string& path, uint64_t timestamp) {
+Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
+    : v8::StartupData({data, static_cast<int>(raw_size)}), timestamp(timestamp) {}
+Snapshot::Snapshot(const std::string& path, uint64_t timestamp)
+    : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
   char* buffer = nullptr;
   size_t size;
   std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -77,12 +75,12 @@ Snapshot::Snapshot(const std::string& path, uint64_t timestamp) {
   }
   this->data = buffer;
   this->raw_size = size;
-  this->timestamp = timestamp;
 }
 Snapshot::Snapshot(const std::string& config,
                    const std::vector<PluginFile>& plugin_list,
                    uint64_t timestamp,
-                   void* custom_data) {
+                   void* custom_data)
+    : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
   v8::SnapshotCreator creator(external_references);
   Isolate* isolate = reinterpret_cast<Isolate*>(creator.GetIsolate());
   IsolateData* data = new IsolateData();
@@ -130,7 +128,6 @@ Snapshot::Snapshot(const std::string& config,
   v8::StartupData snapshot = creator.CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
   this->data = snapshot.data;
   this->raw_size = snapshot.raw_size;
-  this->timestamp = timestamp;
 }
 Snapshot::~Snapshot() {
   delete[] data;
