@@ -36,11 +36,6 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   v8::Local<v8::Context> context = v8::Context::New(isolate);
   context->Enter();
 
-  auto key_action = NewV8String(isolate, "action");
-  auto key_message = NewV8String(isolate, "message");
-  auto key_name = NewV8String(isolate, "name");
-  auto key_confidence = NewV8String(isolate, "confidence");
-  auto key_algorithm = NewV8String(isolate, "algorithm");
   auto RASP = context->Global()->Get(context, NewV8String(isolate, "RASP")).ToLocalChecked().As<v8::Object>();
   auto check = RASP->Get(context, NewV8String(isolate, "check")).ToLocalChecked().As<v8::Function>();
   auto console_log = context->Global()
@@ -49,17 +44,9 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
                          ->Get(NewV8String(isolate, "log"))
                          .As<v8::Function>();
 
-  data->key_action.Reset(isolate, key_action);
-  data->key_message.Reset(isolate, key_message);
-  data->key_name.Reset(isolate, key_name);
-  data->key_confidence.Reset(isolate, key_confidence);
-  data->key_algorithm.Reset(isolate, key_algorithm);
   data->RASP.Reset(isolate, RASP);
   data->check.Reset(isolate, check);
   data->console_log.Reset(isolate, console_log);
-  data->action_hash_ignore = NewV8String(isolate, "ignore")->GetIdentityHash();
-  data->action_hash_log = NewV8String(isolate, "log")->GetIdentityHash();
-  data->action_hash_block = NewV8String(isolate, "block")->GetIdentityHash();
   data->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
   data->timestamp = timestamp;
 
