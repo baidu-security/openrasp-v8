@@ -21,7 +21,3 @@ using namespace openrasp;
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   pluginLog({message.c_str(), message.length()});
 }
-void openrasp::alarm_info(Isolate* isolate,
-                          v8::Local<v8::String> type,
-                          v8::Local<v8::Object> params,
-                          v8::Local<v8::Object> result) {}

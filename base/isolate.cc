@@ -171,4 +171,12 @@ v8::MaybeLocal<v8::Value> Isolate::ExecScript(v8::Local<v8::String> source,
   return handle_scope.EscapeMaybe(script->Run(context));
 }
 
+v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
+  auto isolate = this;
+  v8::EscapableHandleScope handle_scope(isolate);
+  auto context = isolate->GetCurrentContext();
+  auto console_log = isolate->GetData()->console_log.Get(isolate);
+  return handle_scope.EscapeMaybe(console_log->Call(context, console_log, 1, &value));
+}
+
 }  // namespace openrasp

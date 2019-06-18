@@ -153,23 +153,14 @@ class Isolate : public v8::Isolate {
   v8::MaybeLocal<v8::Value> ExecScript(v8::Local<v8::String> source,
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
+  v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
 };
 
 // To be implemented Start
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate);
 void plugin_info(Isolate* isolate, const std::string& message);
-void alarm_info(Isolate* isolate,
-                v8::Local<v8::String> type,
-                v8::Local<v8::Object> params,
-                v8::Local<v8::Object> result);
 // To be implemented End
 
-inline void plugin_info(Isolate* isolate, v8::Local<v8::Value> value) {
-  v8::HandleScope handle_scope(isolate);
-  auto context = isolate->GetCurrentContext();
-  auto console_log = isolate->GetData()->console_log.Get(isolate);
-  (void)console_log->Call(context, console_log, 1, &value).IsEmpty();
-}
 }  // namespace openrasp
 
 #ifdef UNLIKELY

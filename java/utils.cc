@@ -36,10 +36,6 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   auto msg = String2Jstring(env, message);
   env->CallStaticVoidMethod(v8_class.cls, v8_class.plugin_log, msg);
 }
-void openrasp::alarm_info(Isolate* isolate,
-                          v8::Local<v8::String> type,
-                          v8::Local<v8::Object> params,
-                          v8::Local<v8::Object> result) {}
 
 Isolate* GetIsolate() {
   static thread_local IsolatePtr isolate_ptr;
