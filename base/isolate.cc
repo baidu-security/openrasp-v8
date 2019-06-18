@@ -150,15 +150,19 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   return ret_arr;
 }
 
-v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,
-                                              std::string _source,
-                                              std::string _filename,
-                                              int _line_offset) {
+v8::MaybeLocal<v8::Value> Isolate::ExecScript(const std::string& source, const std::string& filename, int line_offset) {
+  auto isolate = this;
+  v8::EscapableHandleScope handle_scope(isolate);
+  return handle_scope.EscapeMaybe(
+      ExecScript(NewV8String(isolate, source), NewV8String(isolate, filename), v8::Integer::New(isolate, line_offset)));
+}
+
+v8::MaybeLocal<v8::Value> Isolate::ExecScript(v8::Local<v8::String> source,
+                                              v8::Local<v8::String> filename,
+                                              v8::Local<v8::Integer> line_offset) {
+  auto isolate = this;
   v8::EscapableHandleScope handle_scope(isolate);
   auto context = isolate->GetCurrentContext();
-  v8::Local<v8::String> filename = NewV8String(isolate, _filename);
-  v8::Local<v8::Integer> line_offset = v8::Integer::New(isolate, _line_offset);
-  v8::Local<v8::String> source = NewV8String(isolate, _source);
   v8::ScriptOrigin origin(filename, line_offset);
   v8::Local<v8::Script> script;
   if (!v8::Script::Compile(context, source, &origin).ToLocal(&script)) {
@@ -167,7 +171,4 @@ v8::MaybeLocal<v8::Value> Isolate::ExecScript(Isolate* isolate,
   return handle_scope.EscapeMaybe(script->Run(context));
 }
 
-v8::MaybeLocal<v8::Value> Isolate::ExecScript(std::string _source, std::string _filename, int _line_offset) {
-  return ExecScript(this, _source, _filename, _line_offset);
-}
 }  // namespace openrasp

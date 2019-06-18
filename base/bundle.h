@@ -147,11 +147,10 @@ class Isolate : public v8::Isolate {
                              v8::Local<v8::Object> params,
                              v8::Local<v8::Object> context,
                              int timeout = 100);
-  static v8::MaybeLocal<v8::Value> ExecScript(Isolate* isolate,
-                                              std::string source,
-                                              std::string filename,
-                                              int line_offset = 0);
-  v8::MaybeLocal<v8::Value> ExecScript(std::string source, std::string filename, int line_offset = 0);
+  v8::MaybeLocal<v8::Value> ExecScript(const std::string& source, const std::string& filename, int line_offset = 0);
+  v8::MaybeLocal<v8::Value> ExecScript(v8::Local<v8::String> source,
+                                       v8::Local<v8::String> filename,
+                                       v8::Local<v8::Integer> line_offset);
 };
 
 // To be implemented Start
