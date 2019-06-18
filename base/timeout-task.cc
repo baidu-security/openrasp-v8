@@ -20,8 +20,8 @@
 #include "bundle.h"
 
 namespace openrasp {
-TimeoutTask::TimeoutTask(v8::Isolate* _isolate, int _milliseconds) : isolate(_isolate) {
-  time_point = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(_milliseconds);
+TimeoutTask::TimeoutTask(v8::Isolate* isolate, int milliseconds) : isolate(isolate) {
+  time_point = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(milliseconds);
 }
 
 void TimeoutTask::Run() {
@@ -40,7 +40,7 @@ void TimeoutTask::Run() {
   isolate->TerminateExecution();
   is_timeout = true;
   // wait until check process exited
-  std::lock_guard<std::timed_mutex> lock(mtx);
+  std::unique_lock<std::timed_mutex> lock(mtx);
 }
 
 std::timed_mutex& TimeoutTask::GetMtx() {

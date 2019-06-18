@@ -80,7 +80,7 @@ class Platform : public v8::Platform {
 
 class TimeoutTask : public v8::Task {
  public:
-  TimeoutTask(v8::Isolate* _isolate, int _milliseconds = 100);
+  TimeoutTask(v8::Isolate* isolate, int milliseconds = 100);
   void Run() override;
   std::timed_mutex& GetMtx();
   bool IsTimeout() { return is_timeout; }
@@ -139,6 +139,8 @@ class Snapshot : public v8::StartupData {
 class Isolate : public v8::Isolate {
  public:
   static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp);
+  Isolate() = delete;
+  ~Isolate() = delete;
   IsolateData* GetData();
   void SetData(IsolateData* data);
   void Dispose();
