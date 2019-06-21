@@ -14,6 +14,7 @@ matrix:
         packages:
         - git-lfs
         - cmake
+        update: true
   - os: windows
 before_install:
 - git lfs install
