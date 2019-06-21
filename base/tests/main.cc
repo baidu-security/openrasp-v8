@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include "catch2/catch.hpp"
 
 #include <chrono>
@@ -33,6 +34,31 @@ struct Listener : Catch::TestEventListenerBase {
   }
 };
 CATCH_REGISTER_LISTENER(Listener);
+
+TEST_CASE("Bench", "[!benchmark]") {
+  Snapshot snapshot("", {{"test", R"(
+        const plugin = new RASP('test')
+        plugin.register('request', params => params)
+    )"}},
+                    100);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
+  auto type = NewV8String(isolate, "request");
+  auto params = v8::Object::New(isolate);
+  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+
+  BENCHMARK("ignore") {
+    params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
+    int i;
+    for (i = 0; i < 2; i++) {
+      auto rst = isolate->Check(type, params, context, 100);
+      REQUIRE(rst->Length() == 0);
+    }
+    return i;
+  };
+}
 
 TEST_CASE("Platform") {
   Platform::Get()->Startup();
@@ -195,22 +221,20 @@ TEST_CASE("TimeoutTask") {
 
   SECTION("Not Timeout") {
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
-    auto task = new TimeoutTask(isolate, 1000);
-    task->GetMtx().lock();
-    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    std::promise<void> pro;
+    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), 1000)));
     isolate->ExecScript("for(let i=0;i<10;i++);", "loop");
-    task->GetMtx().unlock();
+    pro.set_value();
     auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     REQUIRE(end - start <= 1000);
   }
 
   SECTION("Timeout") {
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
-    auto task = new TimeoutTask(isolate, 100);
-    task->GetMtx().lock();
-    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+    std::promise<void> pro;
+    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), 100)));
     isolate->ExecScript("for(;;);", "loop");
-    task->GetMtx().unlock();
+    pro.set_value();
     auto end = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
     REQUIRE(end - start >= 100);
   }

@@ -20,30 +20,14 @@
 #include "bundle.h"
 
 namespace openrasp {
-TimeoutTask::TimeoutTask(v8::Isolate* isolate, int milliseconds) : isolate(isolate) {
-  time_point = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(milliseconds);
-}
+TimeoutTask::TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int milliseconds)
+    : isolate(isolate),
+      fut(std::move(fut)),
+      time_point(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(milliseconds)) {}
 
 void TimeoutTask::Run() {
-  do {
-    // try_lock_until is allowed to fail spuriously and return false
-    // even if the mutex is not currently locked by any other thread
-    // http://en.cppreference.com/w/cpp/thread/timed_mutex/try_lock_until
-    if (mtx.try_lock_until(time_point)) {
-      mtx.unlock();
-      return;
-    }
-  } while (std::chrono::high_resolution_clock::now() < time_point);
-
-  // TerminateExecution can be used by any thread
-  // even if that thread has not acquired the V8 lock with a Locker object
-  isolate->TerminateExecution();
-  is_timeout = true;
-  // wait until check process exited
-  std::unique_lock<std::timed_mutex> lock(mtx);
-}
-
-std::timed_mutex& TimeoutTask::GetMtx() {
-  return mtx;
+  if (std::future_status::timeout == fut.wait_until(time_point)) {
+    isolate->TerminateExecution();
+  }
 }
 }  // namespace openrasp

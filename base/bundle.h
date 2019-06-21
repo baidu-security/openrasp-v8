@@ -22,9 +22,11 @@
 #include <v8.h>
 #include <chrono>
 #include <functional>
+#include <future>
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace openrasp {
@@ -80,16 +82,13 @@ class Platform : public v8::Platform {
 
 class TimeoutTask : public v8::Task {
  public:
-  TimeoutTask(v8::Isolate* isolate, int milliseconds = 100);
+  TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int milliseconds = 100);
   void Run() override;
-  std::timed_mutex& GetMtx();
-  bool IsTimeout() { return is_timeout; }
 
  private:
   v8::Isolate* isolate;
+  std::future<void> fut;
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
-  std::timed_mutex mtx;
-  bool is_timeout = false;
 };
 
 class PluginFile {

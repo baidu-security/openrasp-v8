@@ -91,17 +91,15 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   auto check = data->check.Get(isolate);
   v8::Local<v8::Value> argv[]{type, params, context};
 
-  auto task = new TimeoutTask(isolate, timeout);
-  task->GetMtx().lock();
-  Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(task));
+  std::promise<void> pro;
+  Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), timeout)));
   auto maybe_rst = check->Call(v8_context, check, 3, argv);
-  auto is_timeout = task->IsTimeout();
-  task->GetMtx().unlock();
+  pro.set_value();
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
     auto msg = v8::Object::New(isolate);
     msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "exception"));
-    if (is_timeout) {
+    if (try_catch.HasTerminated()) {
       msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
     } else {
       msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
