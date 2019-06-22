@@ -12,9 +12,6 @@ using namespace openrasp;
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   // std::cout << message << std::endl;
 }
-v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* isolate) {
-  return v8::ObjectTemplate::New(isolate);
-}
 
 class IsolateDeleter {
  public:
@@ -47,7 +44,7 @@ TEST_CASE("Bench", "[!benchmark]") {
   v8::HandleScope handle_scope(isolate);
   auto type = NewV8String(isolate, "request");
   auto params = v8::Object::New(isolate);
-  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+  auto context = v8::Object::New(isolate);
 
   BENCHMARK("ignore") {
     params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
@@ -172,7 +169,7 @@ TEST_CASE("Isolate") {
   SECTION("Check") {
     auto type = NewV8String(isolate, "request");
     auto params = v8::Object::New(isolate);
-    auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+    auto context = v8::Object::New(isolate);
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
   }
@@ -442,7 +439,7 @@ TEST_CASE("Check") {
   v8::HandleScope handle_scope(isolate);
   auto type = NewV8String(isolate, "request");
   auto params = v8::Object::New(isolate);
-  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+  auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
     params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));
@@ -533,7 +530,7 @@ TEST_CASE("Plugins") {
   v8::HandleScope handle_scope(isolate);
   auto type = NewV8String(isolate, "request");
   auto params = v8::Object::New(isolate);
-  auto context = isolate->GetData()->request_context_templ.Get(isolate)->NewInstance();
+  auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
     params->Set(NewV8String(isolate, "action"), NewV8String(isolate, "ignore"));

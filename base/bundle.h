@@ -148,7 +148,6 @@ class Isolate : public v8::Isolate {
 };
 
 // To be implemented Start
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate* isolate);
 void plugin_info(Isolate* isolate, const std::string& message);
 // To be implemented End
 

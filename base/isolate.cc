@@ -47,7 +47,6 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->RASP.Reset(isolate, RASP);
   data->check.Reset(isolate, check);
   data->console_log.Reset(isolate, console_log);
-  data->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
   data->timestamp = timestamp;
 
   isolate->SetData(data);
