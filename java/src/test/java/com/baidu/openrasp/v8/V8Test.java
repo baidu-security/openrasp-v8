@@ -3,8 +3,6 @@ package com.baidu.openrasp.v8;
 import static org.junit.Assert.*;
 import org.junit.*;
 import java.util.*;
-import com.jsoniter.spi.JsoniterSpi;
-import com.jsoniter.extra.Base64Support;
 import com.jsoniter.output.JsonStream;
 import com.jsoniter.JsonIterator;
 import com.jsoniter.any.Any;
@@ -19,6 +17,10 @@ public class V8Test {
   @BeforeClass
   public static void Initialize() throws Exception {
     V8.Load();
+    Context.setStringKeys(
+        new String[] { "path", "method", "url", "querystring", "protocol", "remoteAddr", "appBasePath", "requestId" });
+    Context.setObjectKeys(new String[] { "json", "server", "parameter", "header" });
+    Context.setBufferKeys(new String[] { "body" });
     assertTrue(V8.Initialize());
   }
 
@@ -85,7 +87,7 @@ public class V8Test {
       @Override
       public void log(String msg) {
         assertEquals(msg,
-            "{\"requestId\":\"test 中文 & 😊\",\"json\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"body\":{},\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\",\"parameter\":[\"test 中文 & 😊\"],\"header\":[\"test 中文 & 😊\"],\"url\":\"test 中文 & 😊\"}");
+            "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"test 中文 & 😊\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}");
       }
     });
     List<String[]> scripts = new ArrayList<String[]>();
@@ -93,7 +95,8 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params, context) => console.log(JSON.stringify(context)))" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray()));
     String params = "{\"action\":\"ignore\"}";
-    V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+    byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+    assertNull(result);
     V8.SetPluginLogger(null);
   }
 

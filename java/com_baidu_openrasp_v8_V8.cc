@@ -1,4 +1,21 @@
+/*
+ * Copyright 2017-2019 Baidu Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "header.h"
+#include "com_baidu_openrasp_v8_V8.h"
 
 using namespace openrasp;
 
@@ -56,9 +73,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
   }
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-  CustomData custom_data;
-  custom_data.env = env;
-  Snapshot* blob = new Snapshot(config, plugin_list, millis, &custom_data);
+  Snapshot* blob = new Snapshot(config, plugin_list, millis, env);
   if (!blob->IsOk()) {
     return false;
     delete blob;
@@ -82,14 +97,11 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                                  jobject jcontext,
                                                                  jboolean jnew_request,
                                                                  jint jtimeout) {
-  Isolate* isolate = GetIsolate();
+  Isolate* isolate = GetIsolate(env);
   if (!isolate) {
     return nullptr;
   }
   auto data = isolate->GetData();
-  auto custom_data = GetCustomData(isolate);
-  custom_data->env = env;
-  custom_data->context = jcontext;
 
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::String> request_type;
@@ -118,6 +130,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
 
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
     request_context = data->request_context_templ.Get(isolate)->NewInstance();
+    request_context->SetInternalField(0, v8::External::New(isolate, env));
+    request_context->SetInternalField(1, v8::External::New(isolate, jcontext));
     data->request_context.Reset(isolate, request_context);
   } else {
     request_context = data->request_context.Get(isolate);
@@ -155,15 +169,13 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* en
                                                                       jclass cls,
                                                                       jstring jsource,
                                                                       jstring jfilename) {
-  Isolate* isolate = GetIsolate();
+  Isolate* isolate = GetIsolate(env);
   if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
   auto data = isolate->GetData();
-  auto custom_data = GetCustomData(isolate);
-  custom_data->env = env;
   v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
   std::string source = Jstring2String(env, jsource);

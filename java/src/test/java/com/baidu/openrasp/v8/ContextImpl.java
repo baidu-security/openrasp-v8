@@ -1,11 +1,53 @@
 package com.baidu.openrasp.v8;
+
 import java.util.*;
 import com.jsoniter.spi.JsoniterSpi;
 import com.jsoniter.extra.Base64Support;
 import com.jsoniter.output.JsonStream;
 import com.jsoniter.JsonIterator;
 import com.jsoniter.any.Any;
-public class ContextImpl implements Context {
+
+public class ContextImpl extends Context {
+
+  public String getString(String key) {
+    if (key.equals("path"))
+      return getPath();
+    if (key.equals("method"))
+      return getMethod();
+    if (key.equals("url"))
+      return getUrl();
+    if (key.equals("querystring"))
+      return getQuerystring();
+    if (key.equals("appBasePath"))
+      return getAppBasePath();
+    if (key.equals("protocol"))
+      return getProtocol();
+    if (key.equals("remoteAddr"))
+      return getRemoteAddr();
+    if (key.equals("requestId"))
+      return getRequestId();
+    return "";
+  }
+
+  public byte[] getObject(String key) {
+    if (key.equals("body"))
+      return getBody();
+    if (key.equals("json"))
+      return getJson();
+    if (key.equals("header"))
+      return getHeader();
+    if (key.equals("parameter"))
+      return getParameter();
+    if (key.equals("server"))
+      return getServer();
+    return "{}".getBytes();
+  }
+
+  public byte[] getBuffer(String key) {
+    if (key.equals("body"))
+      return getBody();
+    return "{}".getBytes();
+  }
 
   public String getPath() {
     return "test 中文 & 😊";
@@ -39,48 +81,48 @@ public class ContextImpl implements Context {
     return "test 中文 & 😊";
   }
 
-  public byte[] getBody(int[] size) {
+  public byte[] getBody() {
     List<String> list = new ArrayList<String>();
     list.add("test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(list, data);
-    size[0] = data.size();
+    return data.toByteArray();
+  }
+
+  public byte[] getJson() {
+    List<String> list = new ArrayList<String>();
+    list.add("test 中文 & 😊");
+    ByteArrayOutputStream data = new ByteArrayOutputStream();
+    JsonStream.serialize(list, data);
+    data.write(0);
     return data.getByteArray();
   }
 
-  public byte[] getJson(int[] size) {
+  public byte[] getHeader() {
     List<String> list = new ArrayList<String>();
     list.add("test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(list, data);
-    size[0] = data.size();
+    data.write(0);
     return data.getByteArray();
   }
 
-  public byte[] getHeader(int[] size) {
+  public byte[] getParameter() {
     List<String> list = new ArrayList<String>();
     list.add("test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(list, data);
-    size[0] = data.size();
+    data.write(0);
     return data.getByteArray();
   }
 
-  public byte[] getParameter(int[] size) {
+  public byte[] getServer() {
     List<String> list = new ArrayList<String>();
     list.add("test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(list, data);
-    size[0] = data.size();
+    data.write(0);
     return data.getByteArray();
   }
 
-  public byte[] getServer(int[] size) {
-    List<String> list = new ArrayList<String>();
-    list.add("test 中文 & 😊");
-    ByteArrayOutputStream data = new ByteArrayOutputStream();
-    JsonStream.serialize(list, data);
-    size[0] = data.size();
-    return data.getByteArray();
-  }
 }

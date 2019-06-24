@@ -1,31 +1,17 @@
 package com.baidu.openrasp.v8;
 
-public interface Context {
+public abstract class Context {
 
-    public String getPath();
+    public synchronized static native void setStringKeys(String[] keys);
 
-    public String getMethod();
+    public synchronized static native void setObjectKeys(String[] keys);
 
-    public String getUrl();
+    public synchronized static native void setBufferKeys(String[] keys);
 
-    public String getQuerystring();
+    public abstract String getString(String key);
 
-    public String getAppBasePath();
+    public abstract byte[] getObject(String key);
 
-    public String getProtocol();
-
-    public String getRemoteAddr();
-
-    public String getRequestId();
-
-    public byte[] getBody(int[] size);
-
-    public byte[] getJson(int[] size);
-
-    public byte[] getHeader(int[] size);
-
-    public byte[] getParameter(int[] size);
-
-    public byte[] getServer(int[] size);
+    public abstract byte[] getBuffer(String key);
 
 }
