@@ -60,80 +60,68 @@ JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBufferKeys(JNIEnv* 
 
 static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
-  auto isolate = info.GetIsolate();
-  auto returnValue = info.GetReturnValue();
-  auto jenv = reinterpret_cast<JNIEnv*>(self->GetInternalField(0).As<v8::External>()->Value());
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(1).As<v8::External>()->Value());
+  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  auto jenv = GetJNIEnv(isolate);
+  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jstring jstr = (jstring)jenv->CallObjectMethod(jctx, ctx_class.getString, jname);
   if (jstr == nullptr) {
-    returnValue.SetEmptyString();
     return;
   }
   auto maybe_string = Jstring2V8string(jenv, jstr);
   if (maybe_string.IsEmpty()) {
-    returnValue.SetEmptyString();
     return;
   }
 
-  returnValue.Set(maybe_string.ToLocalChecked());
+  info.GetReturnValue().Set(maybe_string.ToLocalChecked());
 }
 
 static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
-  auto isolate = info.GetIsolate();
-  auto returnValue = info.GetReturnValue();
-  auto jenv = reinterpret_cast<JNIEnv*>(self->GetInternalField(0).As<v8::External>()->Value());
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(1).As<v8::External>()->Value());
+  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  auto jenv = GetJNIEnv(isolate);
+  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getObject, jname));
   if (jbuf == nullptr) {
-    returnValue.Set(v8::Object::New(isolate));
     return;
   }
   auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
   auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
   jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
-    returnValue.Set(v8::Object::New(isolate));
     return;
   }
   auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
   if (maybe_obj.IsEmpty()) {
-    returnValue.Set(v8::Object::New(isolate));
     return;
   }
 
-  returnValue.Set(maybe_obj.ToLocalChecked());
+  info.GetReturnValue().Set(maybe_obj.ToLocalChecked());
 }
 
 static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto self = info.Holder();
-  auto isolate = info.GetIsolate();
-  auto returnValue = info.GetReturnValue();
-  auto jenv = reinterpret_cast<JNIEnv*>(self->GetInternalField(0).As<v8::External>()->Value());
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(1).As<v8::External>()->Value());
-
-  returnValue.Set(v8::ArrayBuffer::New(isolate, 0));
+  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  auto jenv = GetJNIEnv(isolate);
+  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getBuffer, jname));
   if (jbuf == nullptr) {
-    returnValue.Set(v8::ArrayBuffer::New(isolate, 0));
     return;
   }
   jsize jbuf_size = jenv->GetArrayLength(jbuf);
   if (jbuf_size <= 0) {
-    returnValue.Set(v8::ArrayBuffer::New(isolate, 0));
     return;
   }
   auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
   auto buffer = v8::ArrayBuffer::New(isolate, raw, jbuf_size);
   jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
 
-  returnValue.Set(buffer);
+  info.GetReturnValue().Set(buffer);
 }
 
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(JNIEnv* env) {
@@ -149,6 +137,6 @@ v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(JNIEnv* env) {
   for (auto& key : bufferKeys) {
     obj_templ->SetLazyDataProperty(NewV8String(isolate, key), buffer_getter);
   }
-  obj_templ->SetInternalFieldCount(2);
+  obj_templ->SetInternalFieldCount(1);
   return obj_templ;
 }

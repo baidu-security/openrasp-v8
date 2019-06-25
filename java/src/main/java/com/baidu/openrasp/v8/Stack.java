@@ -9,7 +9,7 @@ public abstract class Stack {
   }
 
   public static byte[] getStack() {
-    return Stack.instance.get();
+    return Stack.instance != null ? Stack.instance.get() : null;
   }
 
   public abstract byte[] get();

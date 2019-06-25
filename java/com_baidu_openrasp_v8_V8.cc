@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "header.h"
 #include "com_baidu_openrasp_v8_V8.h"
+#include "header.h"
 
 using namespace openrasp;
 
@@ -132,12 +132,11 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
 
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
     request_context = data->request_context_templ.Get(isolate)->NewInstance();
-    request_context->SetInternalField(0, v8::External::New(isolate, env));
-    request_context->SetInternalField(1, v8::External::New(isolate, jcontext));
     data->request_context.Reset(isolate, request_context);
   } else {
     request_context = data->request_context.Get(isolate);
   }
+  request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
   auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
 
