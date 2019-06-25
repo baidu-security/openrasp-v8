@@ -35,7 +35,9 @@ class V8Class {
  public:
   V8Class() = default;
   V8Class(JNIEnv* env) {
-    cls = env->FindClass("com/baidu/openrasp/v8/V8");
+    auto ref = env->FindClass("com/baidu/openrasp/v8/V8");
+    cls = (jclass)env->NewGlobalRef(ref);
+    env->DeleteLocalRef(ref);
     plugin_log = env->GetStaticMethodID(cls, "PluginLog", "(Ljava/lang/String;)V");
   }
   jclass cls;
@@ -46,7 +48,9 @@ class ContextClass {
  public:
   ContextClass() = default;
   ContextClass(JNIEnv* env) {
-    cls = env->FindClass("com/baidu/openrasp/v8/ContextImpl");
+    auto ref = env->FindClass("com/baidu/openrasp/v8/Context");
+    cls = (jclass)env->NewGlobalRef(ref);
+    env->DeleteLocalRef(ref);
     getString = env->GetMethodID(cls, "getString", "(Ljava/lang/String;)Ljava/lang/String;");
     getObject = env->GetMethodID(cls, "getObject", "(Ljava/lang/String;)[B");
     getBuffer = env->GetMethodID(cls, "getBuffer", "(Ljava/lang/String;)[B");
@@ -55,6 +59,19 @@ class ContextClass {
   jmethodID getString;
   jmethodID getObject;
   jmethodID getBuffer;
+};
+
+class StackClass {
+ public:
+  StackClass() = default;
+  StackClass(JNIEnv* env) {
+    auto ref = env->FindClass("com/baidu/openrasp/v8/Stack");
+    cls = (jclass)env->NewGlobalRef(ref);
+    env->DeleteLocalRef(ref);
+    getStack = env->GetStaticMethodID(cls, "getStack", "()[B");
+  }
+  jclass cls;
+  jmethodID getStack;
 };
 
 inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
@@ -69,6 +86,7 @@ typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
 extern V8Class v8_class;
 extern ContextClass ctx_class;
+extern StackClass stack_class;
 extern bool isInitialized;
 extern openrasp::Snapshot* snapshot;
 extern std::mutex mtx;

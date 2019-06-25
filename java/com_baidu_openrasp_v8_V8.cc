@@ -30,6 +30,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
     v8::V8::Initialize();
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
+    stack_class = StackClass(env);
     isInitialized = true;
   }
   return isInitialized;
@@ -104,6 +105,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
   auto data = isolate->GetData();
 
   v8::HandleScope handle_scope(isolate);
+  auto context = isolate->GetCurrentContext();
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
@@ -121,7 +123,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
     if (maybe_string.IsEmpty()) {
       return nullptr;
     }
-    auto maybe_obj = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
+    auto maybe_obj = v8::JSON::Parse(context, maybe_string.ToLocalChecked());
     if (maybe_obj.IsEmpty()) {
       return nullptr;
     }
@@ -144,7 +146,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
   }
 
   v8::Local<v8::String> json;
-  if (!v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocal(&json)) {
+  if (!v8::JSON::Stringify(context, rst).ToLocal(&json)) {
     return nullptr;
   }
 

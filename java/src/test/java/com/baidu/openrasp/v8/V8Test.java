@@ -21,6 +21,12 @@ public class V8Test {
         new String[] { "path", "method", "url", "querystring", "protocol", "remoteAddr", "appBasePath", "requestId" });
     Context.setObjectKeys(new String[] { "json", "server", "parameter", "header" });
     Context.setBufferKeys(new String[] { "body" });
+    Stack.setInstance(new Stack() {
+      @Override
+      public byte[] get() {
+        return "[1,2,3,4]".getBytes();
+      }
+    });
     assertTrue(V8.Initialize());
   }
 
@@ -38,6 +44,12 @@ public class V8Test {
   public void ExecuteScript() throws Exception {
     assertTrue(V8.CreateSnapshot("{}", new Object[0]));
     assertEquals(V8.ExecuteScript("23333", "6666"), "23333");
+  }
+
+  @Test
+  public void GetStack() throws Exception {
+    assertTrue(V8.CreateSnapshot("{}", new Object[0]));
+    assertEquals(V8.ExecuteScript("JSON.stringify(RASP.get_stack())", "stack"), "[1,2,3,4]");
   }
 
   @Test
