@@ -113,7 +113,7 @@ class IsolateData {
 class Snapshot : public v8::StartupData {
  public:
   uint64_t timestamp = 0;
-  static intptr_t external_references[4];
+  static intptr_t external_references[5];
   Snapshot() = delete;
   Snapshot(const char* data, size_t raw_size, uint64_t timestamp);
   Snapshot(const std::string& path, uint64_t timestamp);
@@ -149,6 +149,7 @@ class Isolate : public v8::Isolate {
 
 // To be implemented Start
 void plugin_info(Isolate* isolate, const std::string& message);
+v8::Local<v8::Array> get_stack(Isolate* isolate);
 // To be implemented End
 
 }  // namespace openrasp

@@ -28,7 +28,7 @@ static void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 static void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Isolate* isolate = info.GetIsolate();
+  Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   if (info.Length() < 2 || !info[0]->IsString() || !info[1]->IsString()) {
     return;
   }
@@ -47,11 +47,15 @@ static void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   free(token_result.result);
   info.GetReturnValue().Set(arr);
 }
+static void stack_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  info.GetReturnValue().Set(get_stack(reinterpret_cast<Isolate*>(info.GetIsolate())));
+}
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
-intptr_t Snapshot::external_references[4] = {
+intptr_t Snapshot::external_references[5] = {
     reinterpret_cast<intptr_t>(log_callback),
     reinterpret_cast<intptr_t>(flex_callback),
     reinterpret_cast<intptr_t>(request_callback),
+    reinterpret_cast<intptr_t>(stack_callback),
     0,
 };
 Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
@@ -107,6 +111,7 @@ Snapshot::Snapshot(const std::string& config,
     global->Set(NewV8String(isolate, "stderr"), v8_stdout);
     global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
     global->Set(NewV8String(isolate, "request"), v8::Function::New(isolate, request_callback));
+    global->Set(NewV8String(isolate, "get_stack"), v8::Function::New(isolate, stack_callback));
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       plugin_info(isolate, e);
