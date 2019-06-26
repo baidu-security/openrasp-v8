@@ -31,7 +31,7 @@
 
 namespace openrasp {
 inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, size_t len = -1) {
-  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, len).ToLocalChecked();
+  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, len).FromMaybe(v8::Local<v8::String>());
 }
 
 inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const std::string& str) {
