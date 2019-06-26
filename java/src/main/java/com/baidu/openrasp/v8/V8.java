@@ -6,6 +6,8 @@ public class V8 {
 
     public static Logger logger = null;
 
+    public static StackGetter stackGetter = null;
+
     public synchronized static native boolean Initialize();
 
     public synchronized static native boolean Dispose();
@@ -25,13 +27,22 @@ public class V8 {
         NativeLoader.loadLibrary("openrasp_v8_java");
     }
 
-    public static void PluginLog(String msg) {
+    public static void Log(String msg) {
         if (logger != null) {
             logger.log(msg.replaceAll("\n$", ""));
         }
     }
 
-    public static void SetPluginLogger(Logger logger) {
+    public static void SetLogger(Logger logger) {
         V8.logger = logger;
     }
+
+    public static byte[] GetStack() {
+        return stackGetter != null ? stackGetter.get() : null;
+    }
+
+    public static void SetStackGetter(StackGetter stackGetter) {
+        V8.stackGetter = stackGetter;
+    }
+
 }

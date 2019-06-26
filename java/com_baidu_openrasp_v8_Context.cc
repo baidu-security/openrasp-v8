@@ -126,7 +126,6 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(JNIEnv* env) {
   auto isolate = GetIsolate(env);
-  v8::HandleScope handle_scope(isolate);
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   for (auto& key : stringKeys) {
     obj_templ->SetLazyDataProperty(NewV8String(isolate, key), string_getter);

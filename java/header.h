@@ -38,10 +38,12 @@ class V8Class {
     auto ref = env->FindClass("com/baidu/openrasp/v8/V8");
     cls = (jclass)env->NewGlobalRef(ref);
     env->DeleteLocalRef(ref);
-    plugin_log = env->GetStaticMethodID(cls, "PluginLog", "(Ljava/lang/String;)V");
+    Log = env->GetStaticMethodID(cls, "Log", "(Ljava/lang/String;)V");
+    GetStack = env->GetStaticMethodID(cls, "GetStack", "()[B");
   }
   jclass cls;
-  jmethodID plugin_log;
+  jmethodID Log;
+  jmethodID GetStack;
 };
 
 class ContextClass {
@@ -61,19 +63,6 @@ class ContextClass {
   jmethodID getBuffer;
 };
 
-class StackClass {
- public:
-  StackClass() = default;
-  StackClass(JNIEnv* env) {
-    auto ref = env->FindClass("com/baidu/openrasp/v8/Stack");
-    cls = (jclass)env->NewGlobalRef(ref);
-    env->DeleteLocalRef(ref);
-    getStack = env->GetStaticMethodID(cls, "getStack", "()[B");
-  }
-  jclass cls;
-  jmethodID getStack;
-};
-
 inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
   return reinterpret_cast<JNIEnv*>(isolate->GetData()->custom_data);
 }
@@ -86,7 +75,6 @@ typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
 extern V8Class v8_class;
 extern ContextClass ctx_class;
-extern StackClass stack_class;
 extern bool isInitialized;
 extern openrasp::Snapshot* snapshot;
 extern std::mutex mtx;

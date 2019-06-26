@@ -22,7 +22,6 @@ using namespace openrasp;
 
 V8Class v8_class;
 ContextClass ctx_class;
-StackClass stack_class;
 bool isInitialized = false;
 Snapshot* snapshot = nullptr;
 std::mutex mtx;
@@ -30,12 +29,12 @@ std::mutex mtx;
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   auto env = GetJNIEnv(isolate);
   auto msg = String2Jstring(env, message);
-  env->CallStaticVoidMethod(v8_class.cls, v8_class.plugin_log, msg);
+  env->CallStaticVoidMethod(v8_class.cls, v8_class.Log, msg);
 }
 
 v8::Local<v8::Array> openrasp::get_stack(Isolate* isolate) {
   auto env = GetJNIEnv(isolate);
-  jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(stack_class.cls, stack_class.getStack));
+  jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(v8_class.cls, v8_class.GetStack));
   if (jbuf == nullptr) {
     return v8::Array::New(isolate, 0);
   }
@@ -68,6 +67,7 @@ Isolate* GetIsolate(JNIEnv* env) {
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
         isolate = Isolate::New(snapshot, millis);
         isolate_ptr.reset(isolate);
+        v8::HandleScope handle_scope(isolate);
         isolate->GetData()->request_context_templ.Reset(isolate, CreateRequestContextTemplate(env));
       }
     }

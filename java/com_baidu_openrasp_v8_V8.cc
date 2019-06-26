@@ -30,7 +30,6 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
     v8::V8::Initialize();
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    stack_class = StackClass(env);
     isInitialized = true;
   }
   return isInitialized;

@@ -21,7 +21,13 @@ public class V8Test {
         new String[] { "path", "method", "url", "querystring", "protocol", "remoteAddr", "appBasePath", "requestId" });
     Context.setObjectKeys(new String[] { "json", "server", "parameter", "header" });
     Context.setBufferKeys(new String[] { "body" });
-    Stack.setInstance(new Stack() {
+    V8.SetLogger(new Logger() {
+      @Override
+      public void log(String msg) {
+        System.out.println(msg);
+      }
+    });
+    V8.SetStackGetter(new StackGetter() {
       @Override
       public byte[] get() {
         return "[1,2,3,4]".getBytes();
@@ -81,7 +87,7 @@ public class V8Test {
 
   @Test
   public void PluginLog() {
-    V8.SetPluginLogger(new Logger() {
+    V8.SetLogger(new Logger() {
       @Override
       public void log(String msg) {
         assertEquals(msg, "23333");
@@ -90,12 +96,12 @@ public class V8Test {
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js", "console.log(23333)" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray()));
-    V8.SetPluginLogger(null);
+    V8.SetLogger(null);
   }
 
   @Test
   public void Context() {
-    V8.SetPluginLogger(new Logger() {
+    V8.SetLogger(new Logger() {
       @Override
       public void log(String msg) {
         assertEquals(msg,
@@ -109,12 +115,12 @@ public class V8Test {
     String params = "{\"action\":\"ignore\"}";
     byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
     assertNull(result);
-    V8.SetPluginLogger(null);
+    V8.SetLogger(null);
   }
 
   @Test
   public void Unicode() throws Exception {
-    V8.SetPluginLogger(new Logger() {
+    V8.SetLogger(new Logger() {
       @Override
       public void log(String msg) {
         assertEquals(msg, "test 中文 & 😊");
