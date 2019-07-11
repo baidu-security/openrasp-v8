@@ -7,7 +7,7 @@ using namespace openrasp;
  * Method:    Initialize
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
+ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
   if (!isInitialized) {
     v8::V8::InitializePlatform(Platform::New(0));
     v8::V8::Initialize();
@@ -23,7 +23,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
  * Method:    Dispose
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jclass cls) {
+ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jclass cls) {
   if (isInitialized) {
     delete snapshot;
     v8::V8::Dispose();
@@ -38,7 +38,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jc
  * Method:    CreateSnapshot
  * Signature: (Ljava/lang/String;[Ljava/lang/Object;)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* env,
+ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* env,
                                                                         jclass cls,
                                                                         jstring jconfig,
                                                                         jobjectArray jplugins) {
@@ -74,7 +74,7 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* 
  * Method:    Check
  * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
+ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                               jclass cls,
                                                               jstring jtype,
                                                               jbyteArray jparams,
@@ -152,7 +152,7 @@ JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
  * 下个版本应该在Isolate类中增加ExecScript(v8::Local<v8::String>, ...)，以便免去转换过程
  * 不直接用env->GetStringUTFChars的原因是jni不能正确转换一些特殊字符到utf8
  */
-JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
+ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
                                                                       jclass cls,
                                                                       jstring jsource,
                                                                       jstring jfilename) {

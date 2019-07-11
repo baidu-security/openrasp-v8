@@ -24,6 +24,12 @@
 #include "base/bundle.h"
 #include "com_baidu_openrasp_v8_V8.h"
 
+#if defined(__linux__) && defined(__i386__)
+#define ALIGN_FUNCTION __attribute__((force_align_arg_pointer))
+#else
+#define ALIGN_FUNCTION
+#endif
+
 class V8Class {
  public:
   V8Class() = default;
@@ -80,7 +86,7 @@ inline CustomData* GetCustomData(openrasp::Isolate* isolate) {
 
 class IsolateDeleter {
  public:
-  void operator()(openrasp::Isolate* isolate) {
+  ALIGN_FUNCTION void operator()(openrasp::Isolate* isolate) {
     delete GetCustomData(isolate);
     isolate->Dispose();
   }

@@ -52,7 +52,9 @@ Isolate* GetIsolate() {
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
         isolate = Isolate::New(snapshot, millis);
         isolate->GetData()->custom_data = new CustomData();
+        isolate->Exit();
         isolate_ptr.reset(isolate);
+        isolate->Enter();
       }
     }
   }
