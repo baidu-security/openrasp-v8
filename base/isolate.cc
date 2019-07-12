@@ -17,9 +17,11 @@
 #include "bundle.h"
 
 namespace openrasp {
+
 Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
+  static v8::ArrayBuffer::Allocator* array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
   IsolateData* data = new IsolateData();
-  data->create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+  data->create_params.array_buffer_allocator = array_buffer_allocator;
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
   data->create_params.constraints.ConfigureDefaults(0, 0);
@@ -63,7 +65,7 @@ void Isolate::SetData(IsolateData* data) {
 }
 
 void Isolate::Dispose() {
-  IsolateData* data = GetData();
+  delete GetData();
   {
     v8::HandleScope handle_scope(this);
     v8::Local<v8::Context> context = GetCurrentContext();
@@ -71,8 +73,6 @@ void Isolate::Dispose() {
   }
   Exit();
   v8::Isolate::Dispose();
-  delete data->create_params.array_buffer_allocator;
-  delete data;
 }
 
 bool Isolate::IsExpired(uint64_t timestamp) {

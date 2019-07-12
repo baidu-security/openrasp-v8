@@ -20,48 +20,10 @@
 #include "gen/builtins.h"
 
 namespace openrasp {
-static void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
-  for (int i = 0; i < info.Length(); i++) {
-    v8::String::Utf8Value message(isolate, info[i]);
-    plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
-  }
-}
-static void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
-  if (info.Length() < 2 || !info[0]->IsString() || !info[1]->IsString()) {
-    return;
-  }
-  v8::String::Utf8Value str(isolate, info[0]);
-  v8::String::Utf8Value lexer_mode(isolate, info[1]);
 
-  char* input = *str;
-  int input_len = str.length();
-
-  flex_token_result token_result = flex_lexing(input, input_len, *lexer_mode);
-
-  auto arr = v8::Array::New(isolate, token_result.result_len);
-  for (int i = 0; i < token_result.result_len; i++) {
-    arr->Set(i, v8::Integer::New(isolate, token_result.result[i]));
-  }
-  free(token_result.result);
-  info.GetReturnValue().Set(arr);
-}
-static void stack_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  info.GetReturnValue().Set(get_stack(reinterpret_cast<Isolate*>(info.GetIsolate())));
-}
-void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
-intptr_t Snapshot::external_references[5] = {
-    reinterpret_cast<intptr_t>(log_callback),
-    reinterpret_cast<intptr_t>(flex_callback),
-    reinterpret_cast<intptr_t>(request_callback),
-    reinterpret_cast<intptr_t>(stack_callback),
-    0,
-};
 Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
     : v8::StartupData({data, static_cast<int>(raw_size)}), timestamp(timestamp) {}
-Snapshot::Snapshot(const std::string& path, uint64_t timestamp)
-    : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
+Snapshot::Snapshot(const std::string& path, uint64_t timestamp) : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
   char* buffer = nullptr;
   size_t size;
   std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -85,11 +47,11 @@ Snapshot::Snapshot(const std::string& config,
                    uint64_t timestamp,
                    void* custom_data)
     : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
+  IsolateData data;
+  data.custom_data = custom_data;
   v8::SnapshotCreator creator(external_references);
   Isolate* isolate = reinterpret_cast<Isolate*>(creator.GetIsolate());
-  IsolateData* data = new IsolateData();
-  data->custom_data = custom_data;
-  isolate->SetData(data);
+  isolate->SetData(&data);
 #define DEFAULT_STACK_SIZE_IN_KB 1024
   uintptr_t current_stack = reinterpret_cast<uintptr_t>(&current_stack);
   uintptr_t stack_limit = current_stack - (DEFAULT_STACK_SIZE_IN_KB * 1024 / sizeof(uintptr_t));
@@ -104,14 +66,21 @@ Snapshot::Snapshot(const std::string& config,
     v8::Local<v8::Object> global = context->Global();
     global->Set(NewV8String(isolate, "global"), global);
     global->Set(NewV8String(isolate, "window"), global);
-    v8::Local<v8::Function> log = v8::Function::New(isolate, log_callback);
     v8::Local<v8::Object> v8_stdout = v8::Object::New(isolate);
-    v8_stdout->Set(NewV8String(isolate, "write"), log);
+    v8_stdout->Set(
+        NewV8String(isolate, "write"),
+        v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[0])).ToLocalChecked());
     global->Set(NewV8String(isolate, "stdout"), v8_stdout);
     global->Set(NewV8String(isolate, "stderr"), v8_stdout);
-    global->Set(NewV8String(isolate, "flex_tokenize"), v8::Function::New(isolate, flex_callback));
-    global->Set(NewV8String(isolate, "request"), v8::Function::New(isolate, request_callback));
-    global->Set(NewV8String(isolate, "get_stack"), v8::Function::New(isolate, stack_callback));
+    global->Set(
+        NewV8String(isolate, "flex_tokenize"),
+        v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[1])).ToLocalChecked());
+    global->Set(
+        NewV8String(isolate, "request"),
+        v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked());
+    global->Set(
+        NewV8String(isolate, "get_stack"),
+        v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[3])).ToLocalChecked());
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       plugin_info(isolate, e);
