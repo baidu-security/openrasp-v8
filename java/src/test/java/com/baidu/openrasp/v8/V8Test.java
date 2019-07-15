@@ -141,7 +141,7 @@ public class V8Test {
     assertEquals(V8.ExecuteScript("console.log('test 中文 & 😊'); 'test 中文 & 😊';", "test"), "test 中文 & 😊");
   }
 
-  @Test(timeout = 500)
+  @Test(timeout = 800)
   public void Timeout() throws Exception {
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",

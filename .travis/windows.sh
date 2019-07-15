@@ -2,9 +2,9 @@
 
 set -ev
 
-choco install -y jdk8 -params "both=true"
+choco install -y jdk8 -params "both=true" --version 8.0.211
 
-choco install -y maven
+choco install -y maven --version 3.6.1
 
 mkdir -p build64 && pushd $_
 
