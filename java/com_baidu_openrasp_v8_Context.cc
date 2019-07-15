@@ -36,7 +36,7 @@ static inline void fill_keys(JNIEnv* env, jobjectArray jarr, std::vector<std::st
  * Method:    setStringKeys
  * Signature: ([Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStringKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStringKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
   fill_keys(env, jarr, stringKeys);
 }
 
@@ -45,7 +45,7 @@ JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStringKeys(JNIEnv* 
  * Method:    setObjectKeys
  * Signature: ([Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObjectKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObjectKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
   fill_keys(env, jarr, objectKeys);
 }
 
@@ -54,7 +54,7 @@ JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObjectKeys(JNIEnv* 
  * Method:    setBufferKeys
  * Signature: ([Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBufferKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBufferKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
   fill_keys(env, jarr, bufferKeys);
 }
 

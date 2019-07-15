@@ -24,6 +24,13 @@
 #include <thread>
 #include "base/bundle.h"
 
+// fix 32 bit jdk's runtime stack
+#if defined(__linux__) && defined(__i386__)
+#define ALIGN_FUNCTION __attribute__((force_align_arg_pointer))
+#else
+#define ALIGN_FUNCTION
+#endif
+
 openrasp::Isolate* GetIsolate(JNIEnv* env);
 std::string Jstring2String(JNIEnv* env, jstring jstr);
 jstring String2Jstring(JNIEnv* env, const std::string& str);
@@ -69,7 +76,7 @@ inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
 
 class IsolateDeleter {
  public:
-  void operator()(openrasp::Isolate* isolate) {
+  ALIGN_FUNCTION void operator()(openrasp::Isolate* isolate) {
     if (isolate) {
       isolate->Dispose();
     }
