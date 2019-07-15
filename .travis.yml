@@ -8,7 +8,6 @@ matrix:
         packages:
         - g++-multilib
   - os: osx
-    osx_image: xcode10
     addons:
       homebrew:
         packages:
