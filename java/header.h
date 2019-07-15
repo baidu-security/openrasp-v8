@@ -29,7 +29,7 @@ std::string Jstring2String(JNIEnv* env, jstring jstr);
 jstring String2Jstring(JNIEnv* env, const std::string& str);
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr);
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val);
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(JNIEnv* env);
+v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(openrasp::Isolate* isolate);
 
 class V8Class {
  public:
@@ -69,7 +69,11 @@ inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
 
 class IsolateDeleter {
  public:
-  void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
+  void operator()(openrasp::Isolate* isolate) {
+    if (isolate) {
+      isolate->Dispose();
+    }
+  }
 };
 typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
