@@ -8,6 +8,8 @@ public class V8 {
 
     public static StackGetter stackGetter = null;
 
+    private static boolean isLoad = false;
+
     public synchronized static native boolean Initialize();
 
     public synchronized static native boolean Dispose();
@@ -19,12 +21,12 @@ public class V8 {
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
 
-    public static void Load() throws Exception {
-        if (System.getProperty("java.vm.name").contains("JRockit")) {
-            throw new Exception(
-                    "OpenRASP has temporarily removed support of Oracle JRockit JDK, please refer to the following document for details: https://rasp.baidu.com/doc/install/manual/weblogic.html#faq-jrockit");
+    public synchronized static void Load() throws Exception {
+        if (isLoad) {
+            return;
         }
         NativeLoader.loadLibrary("openrasp_v8_java");
+        isLoad = true;
     }
 
     public static void Log(String msg) {
