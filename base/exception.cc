@@ -37,7 +37,9 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
     ref.append(*sourceline).append("\n");
     int start = message->GetStartColumn(context).FromJust();
     int end = message->GetEndColumn(context).FromJust();
-    ref.append(start, ' ').append(end - start, '^').append("\n");
+    if (start >= 0 && end >= 0) {
+      ref.append(start, ' ').append(end - start, '^').append("\n");
+    }
     v8::Local<v8::Value> stack_trace_string;
     if (try_catch.StackTrace(context).ToLocal(&stack_trace_string) && stack_trace_string->IsString() &&
         v8::Local<v8::String>::Cast(stack_trace_string)->Length() > 0) {
