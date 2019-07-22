@@ -76,13 +76,17 @@ JNIEXPORT jobjectArray JNICALL Java_com_baidu_openrasp_NativePatches_GetNetworkI
     if (ifreqP->ifr_addr.sa_family != AF_INET) {
       continue;
     }
-    list.emplace_back(ifreqP->ifr_name);
     ioctl(sock, SIOCGIFADDR, ifreqP);
-    list.emplace_back(inet_ntoa(((struct sockaddr_in*)&(ifreqP->ifr_addr))->sin_addr));
+    char* ip = inet_ntoa(((struct sockaddr_in*)&(ifreqP->ifr_addr))->sin_addr);
+    if (strncmp(ip, "127.0.0.1", sizeof("127.0.0.1") - 1) == 0) {
+      continue;
+    }
+    list.emplace_back(ifreqP->ifr_name);
+    list.emplace_back(ip);
     ioctl(sock, SIOCGIFHWADDR, ifreqP);
     char tmp[30] = {0};
     unsigned char* ptr = (unsigned char*)ifreqP->ifr_addr.sa_data;
-    sprintf(tmp, "%02x:%02x:%02x:%02x:%02x:%02x", *ptr, *(ptr + 1), *(ptr + 2), *(ptr + 3), *(ptr + 4), *(ptr + 5));
+    sprintf(tmp, "%02x-%02x-%02x-%02x-%02x-%02x", *ptr, *(ptr + 1), *(ptr + 2), *(ptr + 3), *(ptr + 4), *(ptr + 5));
     list.emplace_back(tmp);
   }
 
