@@ -49,10 +49,6 @@ const RASP = class {
         return request(config)
     }
 
-    static get_stack() {
-        return get_stack()
-    }
-
     static get_jsengine() {
         return 'v8'
     }

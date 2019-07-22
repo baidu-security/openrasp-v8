@@ -32,17 +32,12 @@ void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(arr);
 }
 
-void stack_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  info.GetReturnValue().Set(get_stack(reinterpret_cast<Isolate*>(info.GetIsolate())));
-}
-
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
 
-intptr_t* Snapshot::external_references = new intptr_t[5]{
+intptr_t* Snapshot::external_references = new intptr_t[4]{
     reinterpret_cast<intptr_t>(log_callback),
     reinterpret_cast<intptr_t>(flex_callback),
     reinterpret_cast<intptr_t>(request_callback),
-    reinterpret_cast<intptr_t>(stack_callback),
     0,
 };
 }  // namespace openrasp

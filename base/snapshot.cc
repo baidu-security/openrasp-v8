@@ -78,9 +78,6 @@ Snapshot::Snapshot(const std::string& config,
     global->Set(
         NewV8String(isolate, "request"),
         v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked());
-    global->Set(
-        NewV8String(isolate, "get_stack"),
-        v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[3])).ToLocalChecked());
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       plugin_info(isolate, e);

@@ -13,11 +13,6 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   // std::cout << message << std::endl;
 }
 
-v8::Local<v8::Array> openrasp::get_stack(Isolate* isolate) {
-  v8::Local<v8::Value> arr[] = {NewV8String(isolate, "A"), NewV8String(isolate, "B")};
-  return v8::Array::New(isolate, arr, 2);
-}
-
 class IsolateDeleter {
  public:
   void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
@@ -254,20 +249,6 @@ TEST_CASE("Flex") {
   REQUIRE(
       std::string(*v8::String::Utf8Value(isolate, maybe_rst.ToLocalChecked())) ==
       R"([{"start":0,"stop":1,"text":"a"},{"start":2,"stop":4,"text":"bb"},{"start":11,"stop":14,"text":"ccc"},{"start":15,"stop":19,"text":"dddd"}])");
-}
-
-TEST_CASE("Stack") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
-  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
-  REQUIRE(isolate != nullptr);
-  IsolatePtr ptr(isolate);
-  v8::HandleScope handle_scope(isolate);
-  auto maybe_rst = isolate->ExecScript("JSON.stringify(RASP.get_stack())", "stack");
-  REQUIRE_FALSE(maybe_rst.IsEmpty());
-  REQUIRE(maybe_rst.ToLocalChecked()->IsString());
-  REQUIRE(
-      std::string(*v8::String::Utf8Value(isolate, maybe_rst.ToLocalChecked())) ==
-      R"(["A","B"])");
 }
 
 TEST_CASE("Request", "[!mayfail]") {
