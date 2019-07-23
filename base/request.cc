@@ -27,7 +27,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   std::string method;
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "method")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "method")).FromMaybe(undefined);
     if (tmp->IsString()) {
       method = *v8::String::Utf8Value(isolate, tmp);
       std::transform(method.begin(), method.end(), method.begin(), ::tolower);
@@ -35,14 +35,14 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "url")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "url")).FromMaybe(undefined);
     if (tmp->IsString()) {
       session.SetUrl(*v8::String::Utf8Value(isolate, tmp));
     }
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "params")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "params")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       auto object = tmp.As<v8::Object>();
       v8::Local<v8::Array> props;
@@ -60,7 +60,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "data")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "data")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       v8::Local<v8::Value> json;
       if (!v8::JSON::Stringify(context, tmp).ToLocal(&json)) {
@@ -80,7 +80,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "maxRedirects")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "maxRedirects")).FromMaybe(undefined);
     if (tmp->IsInt32()) {
       session.SetMaxRedirects(cpr::MaxRedirects(tmp->Int32Value(context).FromJust()));
     } else {
@@ -89,7 +89,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "timeout")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "timeout")).FromMaybe(undefined);
     if (tmp->IsInt32()) {
       session.SetTimeout(tmp->Int32Value(context).FromJust());
     } else {
@@ -98,7 +98,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    auto tmp = config->Get(context, NewV8String(isolate, "headers")).FromMaybe(undefined);
+    auto tmp = config->Get(context, NewV8Key(isolate, "headers")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       auto object = tmp.As<v8::Object>();
       v8::Local<v8::Array> props;
@@ -134,7 +134,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   auto ret_val = v8::Object::New(isolate);
-  ret_val->Set(context, NewV8String(isolate, "config"), config).FromJust();
+  ret_val->Set(context, NewV8Key(isolate, "config"), config).FromJust();
   if (r.error.code == cpr::ErrorCode::OK) {
     auto headers = v8::Object::New(isolate);
     for (auto& h : r.header) {
@@ -142,17 +142,17 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
       auto val = NewV8String(isolate, h.second.data(), h.second.size());
       headers->Set(context, key, val).FromJust();
     }
-    ret_val->Set(context, NewV8String(isolate, "status"), v8::Int32::New(isolate, r.status_code)).FromJust();
-    ret_val->Set(context, NewV8String(isolate, "data"), NewV8String(isolate, r.text.data(), r.text.size())).FromJust();
-    ret_val->Set(context, NewV8String(isolate, "headers"), headers).FromJust();
+    ret_val->Set(context, NewV8Key(isolate, "status"), v8::Int32::New(isolate, r.status_code)).FromJust();
+    ret_val->Set(context, NewV8Key(isolate, "data"), NewV8String(isolate, r.text.data(), r.text.size())).FromJust();
+    ret_val->Set(context, NewV8Key(isolate, "headers"), headers).FromJust();
     resolver->Resolve(context, ret_val).FromJust();
   } else {
     auto error = v8::Object::New(isolate);
     auto code = v8::Int32::New(isolate, static_cast<int32_t>(r.error.code));
     auto message = NewV8String(isolate, r.error.message.data(), r.error.message.size());
-    error->Set(context, NewV8String(isolate, "code"), code).FromJust();
-    error->Set(context, NewV8String(isolate, "message"), message).FromJust();
-    ret_val->Set(context, NewV8String(isolate, "error"), error).FromJust();
+    error->Set(context, NewV8Key(isolate, "code"), code).FromJust();
+    error->Set(context, NewV8Key(isolate, "message"), message).FromJust();
+    ret_val->Set(context, NewV8Key(isolate, "error"), error).FromJust();
     resolver->Reject(context, ret_val).FromJust();
   }
 }

@@ -38,12 +38,12 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   v8::Local<v8::Context> context = v8::Context::New(isolate);
   context->Enter();
 
-  auto RASP = context->Global()->Get(context, NewV8String(isolate, "RASP")).ToLocalChecked().As<v8::Object>();
-  auto check = RASP->Get(context, NewV8String(isolate, "check")).ToLocalChecked().As<v8::Function>();
+  auto RASP = context->Global()->Get(context, NewV8Key(isolate, "RASP")).ToLocalChecked().As<v8::Object>();
+  auto check = RASP->Get(context, NewV8Key(isolate, "check")).ToLocalChecked().As<v8::Function>();
   auto console_log = context->Global()
-                         ->Get(NewV8String(isolate, "console"))
+                         ->Get(NewV8Key(isolate, "console"))
                          .As<v8::Object>()
-                         ->Get(NewV8String(isolate, "log"))
+                         ->Get(NewV8Key(isolate, "log"))
                          .As<v8::Function>();
 
   data->RASP.Reset(isolate, RASP);
@@ -97,11 +97,11 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
     auto msg = v8::Object::New(isolate);
-    msg->Set(NewV8String(isolate, "action"), NewV8String(isolate, "exception"));
+    msg->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "exception"));
     if (try_catch.HasTerminated()) {
-      msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
+      msg->Set(NewV8Key(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
     } else {
-      msg->Set(NewV8String(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
+      msg->Set(NewV8Key(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
     }
     v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
     return v8::Array::New(isolate, argv, 1);

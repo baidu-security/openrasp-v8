@@ -30,6 +30,19 @@
 #include <vector>
 
 namespace openrasp {
+
+// Only accept Latin-1
+inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, size_t len = -1) {
+  auto data = reinterpret_cast<const uint8_t*>(str);
+  return v8::String::NewFromOneByte(isolate, data, v8::NewStringType::kInternalized, len)
+      .FromMaybe(v8::String::Empty(isolate));
+}
+
+// Only accept Latin-1
+inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const std::string& str) {
+  return NewV8Key(isolate, str.c_str(), str.length());
+}
+
 inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, size_t len = -1) {
   return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, len).FromMaybe(v8::String::Empty(isolate));
 }
@@ -113,7 +126,7 @@ class IsolateData {
 class Snapshot : public v8::StartupData {
  public:
   uint64_t timestamp = 0;
-  static intptr_t *external_references;
+  static intptr_t* external_references;
   Snapshot() = delete;
   Snapshot(const char* data, size_t raw_size, uint64_t timestamp);
   Snapshot(const std::string& path, uint64_t timestamp);
