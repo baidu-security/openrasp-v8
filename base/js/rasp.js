@@ -53,6 +53,10 @@ const RASP = class {
         return 'v8'
     }
 
+    static get_version() {
+        return version
+    }
+
     register(checkPoint, checkProcess) {
         if (typeof (checkPoint) !== 'string' || checkPoint.length == 0) {
             throw new TypeError('Check point name must be a string');

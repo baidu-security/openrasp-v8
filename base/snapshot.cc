@@ -44,6 +44,7 @@ Snapshot::Snapshot(const std::string& path, uint64_t timestamp) : v8::StartupDat
 }
 Snapshot::Snapshot(const std::string& config,
                    const std::vector<PluginFile>& plugin_list,
+                   const std::string& version,
                    uint64_t timestamp,
                    void* custom_data)
     : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
@@ -64,6 +65,7 @@ Snapshot::Snapshot(const std::string& config,
     v8::Context::Scope context_scope(context);
     v8::TryCatch try_catch(isolate);
     v8::Local<v8::Object> global = context->Global();
+    global->Set(NewV8String(isolate, "version"), NewV8String(isolate, version));
     global->Set(NewV8String(isolate, "global"), global);
     global->Set(NewV8String(isolate, "window"), global);
     v8::Local<v8::Object> v8_stdout = v8::Object::New(isolate);

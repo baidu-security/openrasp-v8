@@ -119,6 +119,7 @@ class Snapshot : public v8::StartupData {
   Snapshot(const std::string& path, uint64_t timestamp);
   Snapshot(const std::string& config,
            const std::vector<PluginFile>& plugin_list,
+           const std::string& version,
            uint64_t timestamp,
            void* custom_data = nullptr);
   ~Snapshot();

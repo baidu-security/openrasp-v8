@@ -37,7 +37,7 @@ TEST_CASE("Bench", "[!benchmark]") {
         const plugin = new RASP('test')
         plugin.register('request', params => params)
     )"}},
-                    100);
+                    "1.2.3", 100);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -72,7 +72,7 @@ TEST_CASE("Platform") {
 
   Platform::Get()->Startup();
 
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   isolate->Dispose();
 }
@@ -80,22 +80,30 @@ TEST_CASE("Platform") {
 TEST_CASE("Snapshot") {
   SECTION("Constructor 1") {
     {
-      Snapshot snapshot("", std::vector<PluginFile>(), 1000, nullptr);
+      Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
       REQUIRE(snapshot.data != nullptr);
       REQUIRE(snapshot.raw_size > 0);
       REQUIRE(snapshot.timestamp == 1000);
     }
     {
-      Snapshot snapshot("wrong syntax", std::vector<PluginFile>(), 1000, nullptr);
+      Snapshot snapshot("wrong syntax", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
       REQUIRE(snapshot.data != nullptr);
       REQUIRE(snapshot.raw_size > 0);
       REQUIRE(snapshot.timestamp == 1000);
     }
     {
-      Snapshot snapshot("", {{"wrong-syntax", "wrong syntax"}}, 1000, nullptr);
+      Snapshot snapshot("", {{"wrong-syntax", "wrong syntax"}}, "1.2.3", 1000, nullptr);
       REQUIRE(snapshot.data != nullptr);
       REQUIRE(snapshot.raw_size > 0);
       REQUIRE(snapshot.timestamp == 1000);
+    }
+    {
+      Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
+      auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+      v8::HandleScope handle_scope(isolate);
+      auto maybe_rst = isolate->ExecScript("RASP.get_version()", "version");
+      v8::String::Utf8Value rst(isolate, maybe_rst.ToLocalChecked());
+      REQUIRE(std::string(*rst) == "1.2.3");
     }
   }
 
@@ -110,7 +118,7 @@ TEST_CASE("Snapshot") {
   }
 
   SECTION("Constructor 3") {
-    Snapshot snapshot1("", std::vector<PluginFile>(), 1000, nullptr);
+    Snapshot snapshot1("", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
     snapshot1.Save("openrasp-v8-base-tests-snapshot");
     Snapshot snapshot2("openrasp-v8-base-tests-snapshot", 1000);
     REQUIRE(snapshot1.raw_size == snapshot2.raw_size);
@@ -146,7 +154,7 @@ TEST_CASE("Snapshot") {
 }
 
 TEST_CASE("Isolate") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000, nullptr);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -191,7 +199,7 @@ TEST_CASE("Isolate") {
 }
 
 TEST_CASE("Exception") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -210,7 +218,7 @@ Error: 2333
 }
 
 TEST_CASE("TimeoutTask") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -238,7 +246,7 @@ TEST_CASE("TimeoutTask") {
 }
 
 TEST_CASE("Flex") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -252,7 +260,7 @@ TEST_CASE("Flex") {
 }
 
 TEST_CASE("Request", "[!mayfail]") {
-  Snapshot snapshot("", std::vector<PluginFile>(), 1000);
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   IsolatePtr ptr(isolate);
   v8::HandleScope handle_scope(isolate);
@@ -432,7 +440,7 @@ TEST_CASE("Check") {
             return params
         })
     )"}},
-                    1000);
+                    "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
@@ -523,7 +531,7 @@ TEST_CASE("Plugins") {
             return { action: 'log' }
         })
     )"}},
-                    1000);
+                    "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
