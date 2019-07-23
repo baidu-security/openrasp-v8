@@ -32,6 +32,30 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   env->CallStaticVoidMethod(v8_class.cls, v8_class.Log, msg);
 }
 
+void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
+  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  auto env = GetJNIEnv(isolate);
+  jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(v8_class.cls, v8_class.GetStack));
+  if (jbuf == nullptr) {
+    return info.GetReturnValue().Set(v8::Array::New(isolate));
+  }
+  auto raw = env->GetPrimitiveArrayCritical(jbuf, nullptr);
+  auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
+  env->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
+  if (maybe_string.IsEmpty()) {
+    return info.GetReturnValue().Set(v8::Array::New(isolate));
+  }
+  auto maybe_value = v8::JSON::Parse(isolate->GetCurrentContext(), maybe_string.ToLocalChecked());
+  if (maybe_value.IsEmpty()) {
+    return info.GetReturnValue().Set(v8::Array::New(isolate));
+  }
+  auto value = maybe_value.ToLocalChecked();
+  if (!value->IsArray()) {
+    return info.GetReturnValue().Set(v8::Array::New(isolate));
+  }
+  info.GetReturnValue().Set(value);
+}
+
 Isolate* GetIsolate(JNIEnv* env) {
   static thread_local IsolatePtr isolate_ptr;
   Isolate* isolate = isolate_ptr.get();

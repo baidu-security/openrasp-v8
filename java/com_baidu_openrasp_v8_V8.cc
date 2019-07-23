@@ -90,13 +90,13 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
  * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)[B
  */
 ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
-                                                                 jclass cls,
-                                                                 jstring jtype,
-                                                                 jbyteArray jparams,
-                                                                 jint jparams_size,
-                                                                 jobject jcontext,
-                                                                 jboolean jnew_request,
-                                                                 jint jtimeout) {
+                                                                                jclass cls,
+                                                                                jstring jtype,
+                                                                                jbyteArray jparams,
+                                                                                jint jparams_size,
+                                                                                jobject jcontext,
+                                                                                jboolean jnew_request,
+                                                                                jint jtimeout) {
   Isolate* isolate = GetIsolate(env);
   if (!isolate) {
     return nullptr;
@@ -127,6 +127,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
       return nullptr;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
+    request_params->SetLazyDataProperty(context, NewV8String(isolate, "stack", 5), GetStack).FromJust();
   }
 
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
@@ -166,9 +167,9 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
  * 不直接用env->GetStringUTFChars的原因是jni不能正确转换一些特殊字符到utf8
  */
 ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
-                                                                      jclass cls,
-                                                                      jstring jsource,
-                                                                      jstring jfilename) {
+                                                                                     jclass cls,
+                                                                                     jstring jsource,
+                                                                                     jstring jfilename) {
   Isolate* isolate = GetIsolate(env);
   if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");

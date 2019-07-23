@@ -37,6 +37,7 @@ jstring String2Jstring(JNIEnv* env, const std::string& str);
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr);
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val);
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(openrasp::Isolate* isolate);
+void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info);
 
 class V8Class {
  public:
