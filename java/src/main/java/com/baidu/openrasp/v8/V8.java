@@ -14,7 +14,7 @@ public class V8 {
 
     public synchronized static native boolean Dispose();
 
-    public synchronized static native boolean CreateSnapshot(String config, Object[] plugins);
+    public synchronized static native boolean CreateSnapshot(String config, Object[] plugins, String version);
 
     public static native byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
             int timeout);

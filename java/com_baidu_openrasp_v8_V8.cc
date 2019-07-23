@@ -53,14 +53,15 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    CreateSnapshot
- * Signature: (Ljava/lang/String;[Ljava/lang/Object;)Z
+ * Signature: (Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)Z
  */
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot(JNIEnv* env,
-                                                                        jclass cls,
-                                                                        jstring jconfig,
-                                                                        jobjectArray jplugins) {
+                                                                                       jclass cls,
+                                                                                       jstring jconfig,
+                                                                                       jobjectArray jplugins,
+                                                                                       jstring jversion) {
   auto config = Jstring2String(env, jconfig);
-
+  auto version = Jstring2String(env, jversion);
   std::vector<PluginFile> plugin_list;
   const size_t plugin_len = env->GetArrayLength(jplugins);
   for (int i = 0; i < plugin_len; i++) {
@@ -73,7 +74,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
   }
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-  Snapshot* blob = new Snapshot(config, plugin_list, millis, env);
+  Snapshot* blob = new Snapshot(config, plugin_list, version, millis, env);
   if (!blob->IsOk()) {
     return false;
     delete blob;

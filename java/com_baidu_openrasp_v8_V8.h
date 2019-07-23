@@ -26,10 +26,10 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    CreateSnapshot
- * Signature: (Ljava/lang/String;[Ljava/lang/Object;)Z
+ * Signature: (Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot
-  (JNIEnv *, jclass, jstring, jobjectArray);
+  (JNIEnv *, jclass, jstring, jobjectArray, jstring);
 
 /*
  * Class:     com_baidu_openrasp_v8_V8
