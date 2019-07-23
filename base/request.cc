@@ -83,6 +83,8 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
     auto tmp = config->Get(context, NewV8String(isolate, "maxRedirects")).FromMaybe(undefined);
     if (tmp->IsInt32()) {
       session.SetMaxRedirects(cpr::MaxRedirects(tmp->Int32Value(context).FromJust()));
+    } else {
+      session.SetMaxRedirects(cpr::MaxRedirects(3));
     }
   }
   {
@@ -90,6 +92,8 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
     auto tmp = config->Get(context, NewV8String(isolate, "timeout")).FromMaybe(undefined);
     if (tmp->IsInt32()) {
       session.SetTimeout(tmp->Int32Value(context).FromJust());
+    } else {
+      session.SetTimeout(5000);
     }
   }
   {
