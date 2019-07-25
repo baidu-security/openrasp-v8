@@ -259,3 +259,17 @@ Object.defineProperty(global, 'CheckPointRename', {
     value: CheckPointRename,
     enumerable: true
 });
+
+const CheckPointLoadLibrary = class {
+    constructor(data) {
+        this.clazz = data.clazz;
+    }
+
+    static get name() {
+        return 'loadLibrary';
+    }
+};
+Object.defineProperty(global, 'CheckPointLoadLibrary', {
+    value: CheckPointLoadLibrary,
+    enumerable: true
+});
