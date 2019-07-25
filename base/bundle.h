@@ -161,6 +161,21 @@ class Isolate : public v8::Isolate {
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
 };
 
+inline bool Initialize(size_t pool_size) {
+  const char* flags = std::getenv("OPENRASP_V8_OPTIONS");
+  if (flags) {
+    v8::V8::SetFlagsFromString(flags, strlen(flags));
+  }
+  v8::V8::InitializePlatform(Platform::New(pool_size));
+  return v8::V8::Initialize();
+}
+
+inline bool Dispose() {
+  bool rst = v8::V8::Dispose();
+  v8::V8::ShutdownPlatform();
+  return rst;
+}
+
 // To be implemented Start
 void plugin_info(Isolate* isolate, const std::string& message);
 // To be implemented End

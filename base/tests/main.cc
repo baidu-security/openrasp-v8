@@ -21,14 +21,8 @@ typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
 struct Listener : Catch::TestEventListenerBase {
   using TestEventListenerBase::TestEventListenerBase;  // inherit constructor
-  void testRunStarting(Catch::TestRunInfo const& testRunInfo) override {
-    v8::V8::InitializePlatform(Platform::New(0));
-    v8::V8::Initialize();
-  }
-  void testRunEnded(Catch::TestRunStats const& testRunStats) override {
-    v8::V8::Dispose();
-    v8::V8::ShutdownPlatform();
-  }
+  void testRunStarting(Catch::TestRunInfo const& testRunInfo) override { Initialize(0); }
+  void testRunEnded(Catch::TestRunStats const& testRunStats) override { Dispose(); }
 };
 CATCH_REGISTER_LISTENER(Listener);
 
