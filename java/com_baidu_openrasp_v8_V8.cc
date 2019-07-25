@@ -128,7 +128,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
       return nullptr;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
-    request_params->SetLazyDataProperty(context, NewV8String(isolate, "stack", 5), GetStack).FromJust();
+    request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).FromJust();
   }
 
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {

@@ -127,13 +127,13 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate) {
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   for (auto& key : stringKeys) {
-    obj_templ->SetLazyDataProperty(NewV8String(isolate, key), string_getter);
+    obj_templ->SetLazyDataProperty(NewV8Key(isolate, key), string_getter);
   }
   for (auto& key : objectKeys) {
-    obj_templ->SetLazyDataProperty(NewV8String(isolate, key), object_getter);
+    obj_templ->SetLazyDataProperty(NewV8Key(isolate, key), object_getter);
   }
   for (auto& key : bufferKeys) {
-    obj_templ->SetLazyDataProperty(NewV8String(isolate, key), buffer_getter);
+    obj_templ->SetLazyDataProperty(NewV8Key(isolate, key), buffer_getter);
   }
   obj_templ->SetInternalFieldCount(1);
   return obj_templ;
