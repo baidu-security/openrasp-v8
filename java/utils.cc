@@ -34,6 +34,7 @@ void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
 
 void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  v8::HandleScope handle_scope(isolate);
   auto env = GetJNIEnv(isolate);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(v8_class.cls, v8_class.GetStack));
   if (jbuf == nullptr) {

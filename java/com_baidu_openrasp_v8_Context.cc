@@ -59,10 +59,10 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBuff
 }
 
 static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto self = info.Holder();
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
+  auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jstring jstr = (jstring)jenv->CallObjectMethod(jctx, ctx_class.getString, jname);
@@ -78,10 +78,10 @@ static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 }
 
 static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto self = info.Holder();
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
+  auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getObject, jname));
@@ -103,10 +103,10 @@ static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 }
 
 static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto self = info.Holder();
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
-  auto jctx = reinterpret_cast<jobject>(self->GetInternalField(0).As<v8::External>()->Value());
+  auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getBuffer, jname));
@@ -125,6 +125,7 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 }
 
 v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate) {
+  v8::EscapableHandleScope handle_scope(isolate);
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   for (auto& key : stringKeys) {
     obj_templ->SetLazyDataProperty(NewV8Key(isolate, key), string_getter);
@@ -136,5 +137,5 @@ v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate) {
     obj_templ->SetLazyDataProperty(NewV8Key(isolate, key), buffer_getter);
   }
   obj_templ->SetInternalFieldCount(1);
-  return obj_templ;
+  return handle_scope.Escape(obj_templ);
 }
