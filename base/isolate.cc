@@ -25,7 +25,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
   data->create_params.constraints.ConfigureDefaults(0, 0);
-  // data->create_params.constraints.set_max_old_space_size(4);
+  data->create_params.constraints.set_max_old_space_size(5);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
 #define DEFAULT_STACK_SIZE_IN_KB 1024
