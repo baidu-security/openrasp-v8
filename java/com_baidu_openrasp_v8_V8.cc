@@ -26,11 +26,9 @@ using namespace openrasp;
  */
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
   if (!isInitialized) {
-    v8::V8::InitializePlatform(Platform::New(0));
-    v8::V8::Initialize();
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    isInitialized = true;
+    isInitialized = Initialize(0);
   }
   return isInitialized;
 }
@@ -43,9 +41,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initiali
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jclass cls) {
   if (isInitialized) {
     delete snapshot;
-    v8::V8::Dispose();
-    v8::V8::ShutdownPlatform();
-    isInitialized = false;
+    isInitialized = !Dispose();
   }
   return !isInitialized;
 }
