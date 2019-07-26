@@ -25,6 +25,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
   data->create_params.constraints.ConfigureDefaults(0, 0);
+  // data->create_params.constraints.set_max_old_space_size(4);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
 #define DEFAULT_STACK_SIZE_IN_KB 1024
@@ -84,6 +85,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
                                     v8::Local<v8::Object> context,
                                     int timeout) {
   auto isolate = this;
+  v8::EscapableHandleScope handle_scope(isolate);
   auto data = isolate->GetData();
   auto v8_context = isolate->GetCurrentContext();
   v8::TryCatch try_catch(isolate);
@@ -104,16 +106,16 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
       msg->Set(NewV8Key(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
     }
     v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
-    return v8::Array::New(isolate, argv, 1);
+    return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
   }
   auto rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
-    return v8::Array::New(isolate, 0);
+    return handle_scope.Escape(v8::Array::New(isolate, 0));
   }
   auto arr = rst.As<v8::Array>();
   // all results are ignore, fast track
   if (LIKELY(arr->Length() == 0)) {
-    return arr;
+    return handle_scope.Escape(arr);
   }
   // any result is promise or any result.action is not equal to ignore
   // we do not care abort the performace here
@@ -131,7 +133,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
       ret_arr->Set(v8_context, idx++, item).FromJust();
     }
   }
-  return ret_arr;
+  return handle_scope.Escape(ret_arr);
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(const std::string& source, const std::string& filename, int line_offset) {
