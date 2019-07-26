@@ -35,20 +35,52 @@ TEST_CASE("Bench", "[!benchmark]") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
-  v8::HandleScope handle_scope(isolate);
-  auto type = NewV8String(isolate, "request");
-  auto params = v8::Object::New(isolate);
-  auto context = v8::Object::New(isolate);
 
-  BENCHMARK("ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
-    int i;
-    for (i = 0; i < 2; i++) {
-      auto rst = isolate->Check(type, params, context, 100);
-      REQUIRE(rst->Length() == 0);
-    }
-    return i;
+  BENCHMARK("ignore", i) {
+    v8::HandleScope handle_scope(isolate);
+    auto type = NewV8String(isolate, "request");
+    auto json = NewV8String(isolate,
+                            R"({"action":"ignore","message":"1234567890","name":"test","confidence":0})");
+    auto params = v8::JSON::Parse(isolate->GetCurrentContext(), json).ToLocalChecked().As<v8::Object>();
+    auto context = v8::Object::New(isolate);
+    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    auto rst = isolate->Check(type, params, context, 100);
+    auto n = rst->Length();
+    REQUIRE(n == 0);
+    return n;
   };
+
+  {
+    v8::HeapStatistics stat;
+    isolate->GetHeapStatistics(&stat);
+    printf("\nv8 heap statistics\n");
+    printf("total_physical_size: %zu (KB)\n", stat.total_physical_size() / 1024);
+    printf("total_heap_size:     %zu (KB)\n", stat.total_heap_size() / 1024);
+    printf("used_heap_size:      %zu (KB)\n", stat.used_heap_size() / 1024);
+  }
+
+  BENCHMARK("log", i) {
+    v8::HandleScope handle_scope(isolate);
+    auto type = NewV8String(isolate, "request");
+    auto json = NewV8String(isolate,
+                            R"({"action":"log","message":"1234567890","name":"test","confidence":0})");
+    auto params = v8::JSON::Parse(isolate->GetCurrentContext(), json).ToLocalChecked().As<v8::Object>();
+    auto context = v8::Object::New(isolate);
+    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    auto rst = isolate->Check(type, params, context, 100);
+    auto n = rst->Length();
+    REQUIRE(n == 1);
+    return n;
+  };
+
+  {
+    v8::HeapStatistics stat;
+    isolate->GetHeapStatistics(&stat);
+    printf("\nv8 heap statistics\n");
+    printf("total_physical_size: %zu (KB)\n", stat.total_physical_size() / 1024);
+    printf("total_heap_size:     %zu (KB)\n", stat.total_heap_size() / 1024);
+    printf("used_heap_size:      %zu (KB)\n", stat.used_heap_size() / 1024);
+  }
 }
 
 TEST_CASE("Platform") {
