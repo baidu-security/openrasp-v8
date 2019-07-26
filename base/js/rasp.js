@@ -2,8 +2,8 @@
  * @file
  */
 'use strict';
-/* globals Attack */
-const RASP = class {
+
+global.RASP = class {
     constructor(name) {
         if (typeof (name) !== 'string' || name.length == 0) {
             throw new TypeError('Plugin name must be a string');
@@ -24,17 +24,6 @@ const RASP = class {
             }
         }
         return results;
-    }
-
-    static clean() {
-        Object.keys(RASP.plugins).forEach(key => {
-            delete RASP.plugins[key];
-        })
-        Object.keys(global)
-            .filter(key => key.startsWith('CheckPoint'))
-            .forEach(key => {
-                RASP.checkPoints[global[key].name] = [];
-            });
     }
 
     static sql_tokenize(query) {
@@ -104,18 +93,7 @@ const RASP = class {
             })
         }
     }
-
-    request() {}
-
-    getCache() {}
-
-    setCache() {}
 };
 RASP.plugins = {};
 RASP.checkPoints = {};
-RASP.clean();
-
-Object.defineProperty(global, 'RASP', {
-    value: RASP,
-    enumerable: true
-});
+checkPoints.forEach(checkPoint => RASP.checkPoints[checkPoint] = [])
