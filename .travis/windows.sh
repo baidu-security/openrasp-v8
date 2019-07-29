@@ -32,9 +32,9 @@ mkdir -p java/src/main/resources/natives/windows_64 && cp build64/java/RelWithDe
 
 pushd java
 
-JAVA_HOME="/c/Program Files (x86)/Java/jdk1.8.0_211" mvn test
+JAVA_HOME="/c/Program Files (x86)/Java/jdk1.8.0_211" mvn test install
 
-JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test
+JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test install
 
 popd
 

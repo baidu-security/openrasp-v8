@@ -16,7 +16,7 @@ mkdir -p java/src/main/resources/natives/osx_64 && cp build64/java/libopenrasp_v
 
 pushd java
 
-mvn test
+mvn test install
 
 popd
 

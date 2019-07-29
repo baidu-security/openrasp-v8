@@ -34,7 +34,7 @@ mkdir -p java/src/main/resources/natives/linux_64 && cp build64/java/libopenrasp
 
 pushd java
 
-mvn test
+mvn test install
 
 popd
 
