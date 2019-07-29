@@ -67,7 +67,7 @@ Isolate* GetIsolate(JNIEnv* env) {
       if (lock) {
         auto duration = std::chrono::system_clock::now().time_since_epoch();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate_ptr.release();
+        isolate_ptr.reset();
         isolate = Isolate::New(snapshot, millis);
         isolate_ptr.reset(isolate);
         v8::HandleScope handle_scope(isolate);
