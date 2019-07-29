@@ -72,8 +72,13 @@ Isolate* GetIsolate(JNIEnv* env) {
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
         isolate_ptr.reset();
         isolate = Isolate::New(snapshot, millis);
+        if (!isolate) {
+          return nullptr;
+        }
         isolate_ptr.reset(isolate);
+        v8::Isolate::Scope isolate_scope(isolate);
         v8::HandleScope handle_scope(isolate);
+        isolate->Initialize();
         isolate->GetData()->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
       }
     }
@@ -115,13 +120,13 @@ v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   if (data == nullptr) {
     return {};
   }
-  auto rst =
-      v8::String::NewFromTwoByte(GetIsolate(env), static_cast<const uint16_t*>(data), v8::NewStringType::kNormal, size);
+  auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
+                                        v8::NewStringType::kNormal, size);
   env->ReleaseStringCritical(jstr, data);
   return rst;
 }
 
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {
-  v8::String::Value str(GetIsolate(env), val);
+  v8::String::Value str(v8::Isolate::GetCurrent(), val);
   return env->NewString(*str, str.length());
 }

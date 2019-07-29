@@ -28,28 +28,30 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.constraints.set_max_semi_space_size_in_kb(512);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
+  if (!isolate) {
+    return nullptr;
+  }
   isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
-  isolate->Enter();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = v8::Context::New(isolate);
-  context->Enter();
-
-  auto RASP = context->Global()->Get(context, NewV8Key(isolate, "RASP")).ToLocalChecked().As<v8::Object>();
-  auto check = RASP->Get(context, NewV8Key(isolate, "check")).ToLocalChecked().As<v8::Function>();
-  auto console_log = context->Global()
-                         ->Get(NewV8Key(isolate, "console"))
-                         .As<v8::Object>()
-                         ->Get(NewV8Key(isolate, "log"))
-                         .As<v8::Function>();
-
-  data->RASP.Reset(isolate, RASP);
-  data->check.Reset(isolate, check);
-  data->console_log.Reset(isolate, console_log);
+  isolate->SetData(data);
   data->timestamp = timestamp;
 
-  isolate->SetData(data);
-
   return isolate;
+}
+
+void Isolate::Initialize() {
+  v8::HandleScope handle_scope(this);
+  v8::Local<v8::Context> context = v8::Context::New(this);
+  v8::Context::Scope context_scope(context);
+
+  auto RASP = context->Global()->Get(context, NewV8Key(this, "RASP")).ToLocalChecked().As<v8::Object>();
+  auto check = RASP->Get(context, NewV8Key(this, "check")).ToLocalChecked().As<v8::Function>();
+  auto console_log =
+      context->Global()->Get(NewV8Key(this, "console")).As<v8::Object>()->Get(NewV8Key(this, "log")).As<v8::Function>();
+  auto data = GetData();
+  data->context.Reset(this, context);
+  data->RASP.Reset(this, RASP);
+  data->check.Reset(this, check);
+  data->console_log.Reset(this, console_log);
 }
 
 IsolateData* Isolate::GetData() {
@@ -62,12 +64,6 @@ void Isolate::SetData(IsolateData* data) {
 
 void Isolate::Dispose() {
   delete GetData();
-  {
-    v8::HandleScope handle_scope(this);
-    v8::Local<v8::Context> context = GetCurrentContext();
-    context->Exit();
-  }
-  Exit();
   v8::Isolate::Dispose();
 }
 

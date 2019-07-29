@@ -114,6 +114,7 @@ class PluginFile {
 class IsolateData {
  public:
   v8::Isolate::CreateParams create_params;
+  v8::Persistent<v8::Context> context;
   v8::Persistent<v8::Object> RASP;
   v8::Persistent<v8::Function> check;
   v8::Persistent<v8::Function> console_log;
@@ -146,6 +147,7 @@ class Isolate : public v8::Isolate {
   static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp);
   Isolate() = delete;
   ~Isolate() = delete;
+  void Initialize();
   IsolateData* GetData();
   void SetData(IsolateData* data);
   void Dispose();
