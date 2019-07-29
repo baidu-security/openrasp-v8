@@ -37,6 +37,10 @@ TEST_CASE("Bench", "[!benchmark]") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
 
   BENCHMARK("ignore", i) {
     v8::HandleScope handle_scope(isolate);
@@ -137,7 +141,12 @@ TEST_CASE("Snapshot") {
     {
       Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000, nullptr);
       auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+      REQUIRE(isolate != nullptr);
+      IsolatePtr ptr(isolate);
+      v8::Locker lock(isolate);
+      v8::Isolate::Scope isolate_scope(isolate);
       v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
       auto maybe_rst = isolate->ExecScript("RASP.get_version()", "version");
       v8::String::Utf8Value rst(isolate, maybe_rst.ToLocalChecked());
       REQUIRE(std::string(*rst) == "1.2.3");
@@ -195,7 +204,10 @@ TEST_CASE("Isolate") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
 
   SECTION("GetData") { REQUIRE(isolate->GetData() != nullptr); }
 
@@ -240,7 +252,10 @@ TEST_CASE("Exception") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
 
   v8::TryCatch try_catch(isolate);
   isolate->ExecScript("throw new Error('2333')", "2333.js");
@@ -259,7 +274,10 @@ TEST_CASE("TimeoutTask") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
 
   SECTION("Not Timeout") {
     auto start = std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000;
@@ -287,7 +305,10 @@ TEST_CASE("Flex") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
   auto maybe_rst = isolate->ExecScript("JSON.stringify(RASP.sql_tokenize('a bb       ccc dddd   '))", "flex");
   REQUIRE_FALSE(maybe_rst.IsEmpty());
   REQUIRE(maybe_rst.ToLocalChecked()->IsString());
@@ -301,7 +322,10 @@ TEST_CASE("Log") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
   isolate->ExecScript("console.log(2333)", "log");
   REQUIRE(message == "2333\n");
   isolate->Log(v8::Object::New(isolate));
@@ -312,7 +336,10 @@ TEST_CASE("Request", "[!mayfail]") {
   Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
   auto context = isolate->GetCurrentContext();
   SECTION("get") {
     auto maybe_rst = isolate->ExecScript(
@@ -504,7 +531,10 @@ TEST_CASE("Check") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
   auto type = NewV8String(isolate, "request");
   auto params = v8::Object::New(isolate);
   auto context = v8::Object::New(isolate);
@@ -595,7 +625,10 @@ TEST_CASE("Plugins") {
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetCurrentContext();
   auto type = NewV8String(isolate, "request");
   auto params = v8::Object::New(isolate);
   auto context = v8::Object::New(isolate);

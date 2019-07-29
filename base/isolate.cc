@@ -28,7 +28,8 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.constraints.set_max_semi_space_size_in_kb(512);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
-  isolate->Enter();
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = v8::Context::New(isolate);
   context->Enter();
@@ -61,12 +62,6 @@ void Isolate::SetData(IsolateData* data) {
 
 void Isolate::Dispose() {
   delete GetData();
-  {
-    v8::HandleScope handle_scope(this);
-    v8::Local<v8::Context> context = GetCurrentContext();
-    context->Exit();
-  }
-  Exit();
   v8::Isolate::Dispose();
 }
 
