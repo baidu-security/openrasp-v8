@@ -9,8 +9,10 @@
 
 using namespace openrasp;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
-  // std::cout << message << std::endl;
+std::string message;
+void openrasp::plugin_info(Isolate* isolate, const std::string& msg) {
+  message = msg;
+  // std::cout << msg << std::endl;
 }
 
 class IsolateDeleter {
@@ -82,7 +84,10 @@ TEST_CASE("Bench", "[!benchmark]") {
     printf("used_heap_size:      %zu (KB)\n", stat.used_heap_size() / 1024);
   }
 }
-
+class DummyTask : public v8::Task {
+ public:
+  void Run() override {}
+};
 TEST_CASE("Platform") {
   Platform::Get()->Startup();
   Platform::Get()->Startup();
@@ -100,6 +105,12 @@ TEST_CASE("Platform") {
 
   Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  Platform::Get()->PumpMessageLoop(isolate);
+  Platform::Get()->CallOnForegroundThread(isolate, new DummyTask());
+  Platform::Get()->CallDelayedOnForegroundThread(isolate, new DummyTask(), 0);
+  Platform::Get()->CallOnWorkerThread(std::unique_ptr<DummyTask>(new DummyTask()));
+  Platform::Get()->CallDelayedOnWorkerThread(std::unique_ptr<DummyTask>(new DummyTask()), 0);
+  Platform::Get()->CurrentClockTimeMillis();
   isolate->Dispose();
 }
 
@@ -285,6 +296,18 @@ TEST_CASE("Flex") {
       R"([{"start":0,"stop":1,"text":"a"},{"start":2,"stop":4,"text":"bb"},{"start":11,"stop":14,"text":"ccc"},{"start":15,"stop":19,"text":"dddd"}])");
 }
 
+TEST_CASE("Log") {
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  v8::HandleScope handle_scope(isolate);
+  isolate->ExecScript("console.log(2333)", "log");
+  REQUIRE(message == "2333\n");
+  isolate->Log(v8::Object::New(isolate));
+  REQUIRE(message == "{}\n");
+}
+
 TEST_CASE("Request", "[!mayfail]") {
   Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
@@ -452,6 +475,17 @@ RASP.request({}).catch(err => Promise.reject(JSON.stringify(err)))
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
     REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":5)==="));
+  }
+  SECTION("other method") {
+    isolate->ExecScript(
+        R"(
+RASP.request({method: 'put', url: 'https://www.httpbin.org/put', timeout: 10})
+RASP.request({method: 'head', url: 'https://www.httpbin.org/head', timeout: 10})
+RASP.request({method: 'patch', url: 'https://www.httpbin.org/patch', timeout: 10})
+RASP.request({method: 'delete', url: 'https://www.httpbin.org/delete', timeout: 10})
+RASP.request({method: 'options', url: 'https://www.httpbin.org/options', timeout: 10})
+          )",
+        "request");
   }
 }
 
