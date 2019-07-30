@@ -54,9 +54,9 @@ Platform::~Platform() {
 bool Platform::PumpMessageLoop(v8::Isolate* isolate, v8::platform::MessageLoopBehavior behavior) {
   return v8::platform::PumpMessageLoop(default_platform.get(), isolate, behavior);
 }
-void Platform::RunIdleTasks(v8::Isolate* isolate, double idle_time_in_seconds) {
-  return v8::platform::RunIdleTasks(default_platform.get(), isolate, idle_time_in_seconds);
-}
+// void Platform::RunIdleTasks(v8::Isolate* isolate, double idle_time_in_seconds) {
+//   return v8::platform::RunIdleTasks(default_platform.get(), isolate, idle_time_in_seconds);
+// }
 int Platform::NumberOfWorkerThreads() {
   return default_platform->NumberOfWorkerThreads();
 }
@@ -75,12 +75,12 @@ void Platform::CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task) {
 void Platform::CallDelayedOnForegroundThread(v8::Isolate* isolate, v8::Task* task, double delay_in_seconds) {
   return default_platform->CallDelayedOnForegroundThread(isolate, task, delay_in_seconds);
 }
-void Platform::CallIdleOnForegroundThread(v8::Isolate* isolate, v8::IdleTask* task) {
-  return default_platform->CallIdleOnForegroundThread(isolate, task);
-}
-bool Platform::IdleTasksEnabled(v8::Isolate* isolate) {
-  return default_platform->IdleTasksEnabled(isolate);
-}
+// void Platform::CallIdleOnForegroundThread(v8::Isolate* isolate, v8::IdleTask* task) {
+//   return default_platform->CallIdleOnForegroundThread(isolate, task);
+// }
+// bool Platform::IdleTasksEnabled(v8::Isolate* isolate) {
+//   return default_platform->IdleTasksEnabled(isolate);
+// }
 double Platform::MonotonicallyIncreasingTime() {
   return default_platform->MonotonicallyIncreasingTime();
 }
@@ -95,10 +95,10 @@ v8::TracingController* Platform::GetTracingController() {
 v8::Platform::StackTracePrinter Platform::GetStackTracePrinter() {
   return default_platform->GetStackTracePrinter();
 }
-v8::PageAllocator* Platform::GetPageAllocator() {
-  // return default_platform->GetPageAllocator();
-  // if returned nullptr, v8 will create a default PageAllocator as same as the one of default platform
-  return nullptr;
-}
+// v8::PageAllocator* Platform::GetPageAllocator() {
+//   // return default_platform->GetPageAllocator();
+//   // if returned nullptr, v8 will create a default PageAllocator as same as the one of default platform
+//   return nullptr;
+// }
 
 }  // namespace openrasp
