@@ -24,16 +24,10 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.array_buffer_allocator = array_buffer_allocator;
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
-  data->create_params.constraints.ConfigureDefaults(0, 0);
-  data->create_params.constraints.set_max_old_space_size(5);
+  data->create_params.constraints.set_max_old_space_size(3);
+  data->create_params.constraints.set_max_semi_space_size_in_kb(512);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
-#define DEFAULT_STACK_SIZE_IN_KB 1024
-  uintptr_t current_stack = reinterpret_cast<uintptr_t>(&current_stack);
-  uintptr_t stack_limit = current_stack - (DEFAULT_STACK_SIZE_IN_KB * 1024 / sizeof(uintptr_t));
-  stack_limit = stack_limit < current_stack ? stack_limit : sizeof(stack_limit);
-  isolate->SetStackLimit(stack_limit);
-#undef DEFAULT_STACK_SIZE_IN_KB
   isolate->Enter();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = v8::Context::New(isolate);
