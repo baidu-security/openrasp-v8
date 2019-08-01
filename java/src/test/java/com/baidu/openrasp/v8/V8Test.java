@@ -34,6 +34,13 @@ public class V8Test {
       }
     });
     assertTrue(V8.Initialize());
+    try {
+      V8.ExecuteScript("2333", "6666");
+      fail();
+    } catch (Exception e) {
+      assertNotNull(e);
+    }
+    assertNull(V8.Check(null, null, 0, null, true, 100));
   }
 
   @AfterClass
@@ -50,6 +57,11 @@ public class V8Test {
   public void ExecuteScript() throws Exception {
     assertTrue(V8.CreateSnapshot("{}", new Object[0], "1.2.3"));
     assertEquals(V8.ExecuteScript("23333", "6666"), "23333");
+    try {
+      V8.ExecuteScript("aaaa.a()", "exception");
+    } catch (Exception e) {
+      assertNotNull(e);
+    }
   }
 
   @Test
@@ -105,7 +117,7 @@ public class V8Test {
     }
     {
       String params = "{\"timeout\":true}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 100);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("exception", any.toString("action"));
       assertEquals("Javascript plugin execution timeout", any.toString("message"));
