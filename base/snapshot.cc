@@ -25,7 +25,7 @@ Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
     : v8::StartupData({data, static_cast<int>(raw_size)}), timestamp(timestamp) {}
 Snapshot::Snapshot(const std::string& path, uint64_t timestamp) : v8::StartupData({nullptr, 0}), timestamp(timestamp) {
   char* buffer = nullptr;
-  size_t size;
+  size_t size = 0;
   std::ifstream file(path, std::ios::in | std::ios::binary);
   if (file) {
     file.seekg(0, std::ios::end);
