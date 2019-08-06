@@ -99,7 +99,7 @@ public class V8Test {
     }
     {
       String params = "{\"action\":\"log\"}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("log", any.toString("action"));
       assertEquals("", any.toString("message"));
@@ -108,7 +108,7 @@ public class V8Test {
     }
     {
       String params = "{\"action\":\"block\"}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("block", any.toString("action"));
       assertEquals("", any.toString("message"));
@@ -117,7 +117,7 @@ public class V8Test {
     }
     {
       String params = "{\"timeout\":true}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 100);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("exception", any.toString("action"));
       assertEquals("Javascript plugin execution timeout", any.toString("message"));
@@ -152,7 +152,7 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params, context) => console.log(JSON.stringify(context)))" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+    byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
     assertNull(result);
     V8.SetLogger(null);
   }
@@ -174,7 +174,7 @@ public class V8Test {
     params.put("message", "test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(params, data);
-    byte[] result = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 100);
+    byte[] result = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
     Any any = JsonIterator.deserialize(result);
     assertEquals(any.asList().get(0).toString("message"), "test 中文 & 😊");
     assertEquals(V8.ExecuteScript("console.log('test 中文 & 😊'); 'test 中文 & 😊';", "test"), "test 中文 & 😊");
@@ -201,7 +201,7 @@ public class V8Test {
       @Override
       public byte[] call() {
         String params = "{\"action\":\"ignore\",\"timeout\":true}";
-        return V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100);
+        return V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
       }
     };
     ExecutorService service = Executors.newCachedThreadPool();
