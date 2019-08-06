@@ -31,7 +31,10 @@
 #define ALIGN_FUNCTION
 #endif
 
-openrasp::Isolate* GetIsolate(JNIEnv* env);
+extern bool isInitialized;
+extern openrasp::Snapshot* snapshot;
+extern std::mutex mtx;
+
 std::string Jstring2String(JNIEnv* env, jstring jstr);
 jstring String2Jstring(JNIEnv* env, const std::string& str);
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr);
@@ -77,16 +80,61 @@ inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
 
 class IsolateDeleter {
  public:
-  ALIGN_FUNCTION void operator()(openrasp::Isolate* isolate) {
-    if (isolate) {
-      isolate->Dispose();
-    }
-  }
+  ALIGN_FUNCTION void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
 };
-typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
+
+class PerThreadRuntime {
+ public:
+  ~PerThreadRuntime() {
+    std::lock_guard<std::mutex> lock(last_isolate_mtx);
+    Dispose();
+  }
+  openrasp::Isolate* GetIsolate(JNIEnv* env) {
+    if (!snapshot) {
+      return nullptr;
+    }
+    if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
+      std::unique_lock<std::mutex> lock_isolate = isolate ? std::unique_lock<std::mutex>(last_isolate_mtx, std::try_to_lock)
+                                                  : std::unique_lock<std::mutex>(last_isolate_mtx);
+      if (lock_isolate) {
+        Dispose();
+        if (!last_isolate.expired()) {
+          isolate = last_isolate.lock();
+          last_isolate.reset();
+          if (isolate->IsExpired(snapshot->timestamp)) {
+            isolate.reset();
+          }
+        }
+        if (!isolate) {
+          std::lock_guard<std::mutex> lock_snapshot(mtx);
+          auto duration = std::chrono::system_clock::now().time_since_epoch();
+          auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+          isolate.reset(openrasp::Isolate::New(snapshot, millis), IsolateDeleter());
+          last_isolate = isolate;
+          v8::Locker lock(isolate.get());
+          v8::Isolate::Scope isolate_scope(isolate.get());
+          v8::HandleScope handle_scope(isolate.get());
+          isolate->GetData()->request_context_templ.Reset(isolate.get(), CreateRequestContextTemplate(isolate.get()));
+        }
+      }
+    }
+    if (isolate) {
+      auto data = isolate->GetData();
+      data->custom_data = env;
+      data->request_context.Reset(isolate.get(), request_context);
+    }
+    return isolate.get();
+  }
+  void Dispose() {
+    request_context.Reset();
+    isolate.reset();
+  }
+  static std::weak_ptr<openrasp::Isolate> last_isolate;
+  static std::mutex last_isolate_mtx;
+  std::shared_ptr<openrasp::Isolate> isolate;
+  v8::Persistent<v8::Object> request_context;
+};
 
 extern V8Class v8_class;
 extern ContextClass ctx_class;
-extern bool isInitialized;
-extern openrasp::Snapshot* snapshot;
-extern std::mutex mtx;
+extern thread_local PerThreadRuntime per_thread_runtime;

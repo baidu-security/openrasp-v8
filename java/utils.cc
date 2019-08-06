@@ -25,6 +25,9 @@ ContextClass ctx_class;
 bool isInitialized = false;
 Snapshot* snapshot = nullptr;
 std::mutex mtx;
+std::weak_ptr<openrasp::Isolate> PerThreadRuntime::last_isolate;
+std::mutex PerThreadRuntime::last_isolate_mtx;
+thread_local PerThreadRuntime per_thread_runtime;
 
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   auto env = GetJNIEnv(isolate);
@@ -57,30 +60,6 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
   info.GetReturnValue().Set(value);
 }
 
-Isolate* GetIsolate(JNIEnv* env) {
-  static thread_local IsolatePtr isolate_ptr;
-  Isolate* isolate = isolate_ptr.get();
-  if (snapshot) {
-    if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock =
-          isolate ? std::unique_lock<std::mutex>(mtx, std::try_to_lock) : std::unique_lock<std::mutex>(mtx);
-      if (lock) {
-        auto duration = std::chrono::system_clock::now().time_since_epoch();
-        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate_ptr.reset();
-        isolate = Isolate::New(snapshot, millis);
-        isolate_ptr.reset(isolate);
-        v8::HandleScope handle_scope(isolate);
-        isolate->GetData()->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
-      }
-    }
-  }
-  if (isolate) {
-    isolate->GetData()->custom_data = env;
-  }
-  return isolate;
-}
-
 std::string Jstring2String(JNIEnv* env, jstring str) {
   auto data = env->GetStringCritical(str, nullptr);
   auto size = env->GetStringLength(str);
@@ -106,13 +85,13 @@ jstring String2Jstring(JNIEnv* env, const std::string& str) {
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   auto data = env->GetStringCritical(jstr, nullptr);
   auto size = env->GetStringLength(jstr);
-  auto rst =
-      v8::String::NewFromTwoByte(GetIsolate(env), static_cast<const uint16_t*>(data), v8::NewStringType::kNormal, size);
+  auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
+                                        v8::NewStringType::kNormal, size);
   env->ReleaseStringCritical(jstr, data);
   return rst;
 }
 
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {
-  v8::String::Value str(GetIsolate(env), val);
+  v8::String::Value str(v8::Isolate::GetCurrent(), val);
   return env->NewString(*str, str.length());
 }

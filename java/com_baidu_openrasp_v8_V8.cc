@@ -94,14 +94,15 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
                                                                                 jobject jcontext,
                                                                                 jboolean jnew_request,
                                                                                 jint jtimeout) {
-  Isolate* isolate = GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate(env);
   if (!isolate) {
     return nullptr;
   }
   auto data = isolate->GetData();
-
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  auto context = isolate->GetCurrentContext();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
@@ -167,14 +168,17 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
                                                                                      jclass cls,
                                                                                      jstring jsource,
                                                                                      jstring jfilename) {
-  Isolate* isolate = GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate(env);
   if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
   auto data = isolate->GetData();
+  v8::Locker lock(isolate);
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::TryCatch try_catch(isolate);
   std::string source = Jstring2String(env, jsource);
   std::string filename = Jstring2String(env, jfilename);
