@@ -159,6 +159,7 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
+  static size_t NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit);
 };
 
 inline bool Initialize(size_t pool_size) {

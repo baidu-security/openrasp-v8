@@ -28,6 +28,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.constraints.set_max_semi_space_size_in_kb(512);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
+  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
   isolate->Enter();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = v8::Context::New(isolate);
@@ -157,6 +158,10 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   auto console_log = isolate->GetData()->console_log.Get(isolate);
   return handle_scope.EscapeMaybe(console_log->Call(context, console_log, 1, &value));
+}
+
+size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
+  return current_heap_limit + 128 * 1024;
 }
 
 }  // namespace openrasp
