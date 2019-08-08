@@ -25,8 +25,8 @@ ContextClass ctx_class;
 bool isInitialized = false;
 Snapshot* snapshot = nullptr;
 std::mutex mtx;
-std::weak_ptr<openrasp::Isolate> PerThreadRuntime::last_isolate;
-std::mutex PerThreadRuntime::last_isolate_mtx;
+std::queue<std::weak_ptr<openrasp::Isolate>> PerThreadRuntime::shared_isolate;
+std::mutex PerThreadRuntime::shared_isolate_mtx;
 thread_local PerThreadRuntime per_thread_runtime;
 
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {

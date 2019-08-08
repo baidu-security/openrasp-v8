@@ -18,9 +18,9 @@
 
 #include <jni.h>
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include "base/bundle.h"
 
@@ -86,42 +86,36 @@ class IsolateDeleter {
 class PerThreadRuntime {
  public:
   ~PerThreadRuntime() {
-    std::lock_guard<std::mutex> lock(last_isolate_mtx);
+    std::lock_guard<std::mutex> lock(shared_isolate_mtx);
+    if (isolate) {
+      shared_isolate.emplace(isolate);
+    }
     Dispose();
   }
-  openrasp::Isolate* GetIsolate(JNIEnv* env) {
-    if (!snapshot) {
-      return nullptr;
-    }
-    if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock_isolate = isolate ? std::unique_lock<std::mutex>(last_isolate_mtx, std::try_to_lock)
-                                                  : std::unique_lock<std::mutex>(last_isolate_mtx);
-      if (lock_isolate) {
-        Dispose();
-        if (!last_isolate.expired()) {
-          isolate = last_isolate.lock();
-          last_isolate.reset();
-          if (isolate->IsExpired(snapshot->timestamp)) {
-            isolate.reset();
-          }
-        }
-        if (!isolate) {
-          std::lock_guard<std::mutex> lock_snapshot(mtx);
-          auto duration = std::chrono::system_clock::now().time_since_epoch();
-          auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-          isolate.reset(openrasp::Isolate::New(snapshot, millis), IsolateDeleter());
-          last_isolate = isolate;
-          v8::Locker lock(isolate.get());
-          v8::Isolate::Scope isolate_scope(isolate.get());
-          v8::HandleScope handle_scope(isolate.get());
-          isolate->GetData()->request_context_templ.Reset(isolate.get(), CreateRequestContextTemplate(isolate.get()));
+  openrasp::Isolate* GetIsolate() {
+    if (!isolate || (snapshot && isolate->IsExpired(snapshot->timestamp))) {
+      std::lock_guard<std::mutex> lock_shared_isolate(shared_isolate_mtx);
+      Dispose();
+      while (!shared_isolate.empty()) {
+        isolate = shared_isolate.front().lock();
+        shared_isolate.pop();
+        if (!isolate || (snapshot && isolate->IsExpired(snapshot->timestamp))) {
+          isolate.reset();
+        } else {
+          break;
         }
       }
-    }
-    if (isolate) {
-      auto data = isolate->GetData();
-      data->custom_data = env;
-      data->request_context.Reset(isolate.get(), request_context);
+      std::lock_guard<std::mutex> lock_snapshot(mtx);
+      if (!isolate && snapshot) {
+        auto duration = std::chrono::system_clock::now().time_since_epoch();
+        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+        isolate.reset(openrasp::Isolate::New(snapshot, millis), IsolateDeleter());
+        shared_isolate.emplace(isolate);
+        v8::Locker lock(isolate.get());
+        v8::Isolate::Scope isolate_scope(isolate.get());
+        v8::HandleScope handle_scope(isolate.get());
+        isolate->GetData()->request_context_templ.Reset(isolate.get(), CreateRequestContextTemplate(isolate.get()));
+      }
     }
     return isolate.get();
   }
@@ -129,8 +123,8 @@ class PerThreadRuntime {
     request_context.Reset();
     isolate.reset();
   }
-  static std::weak_ptr<openrasp::Isolate> last_isolate;
-  static std::mutex last_isolate_mtx;
+  static std::queue<std::weak_ptr<openrasp::Isolate>> shared_isolate;
+  static std::mutex shared_isolate_mtx;
   std::shared_ptr<openrasp::Isolate> isolate;
   v8::Persistent<v8::Object> request_context;
 };

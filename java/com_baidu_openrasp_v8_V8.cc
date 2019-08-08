@@ -75,7 +75,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
     return false;
     delete blob;
   }
-  std::unique_lock<std::mutex> lock(mtx);
+  std::lock_guard<std::mutex> lock(mtx);
   delete snapshot;
   snapshot = blob;
   return true;
@@ -94,12 +94,13 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
                                                                                 jobject jcontext,
                                                                                 jboolean jnew_request,
                                                                                 jint jtimeout) {
-  Isolate* isolate = per_thread_runtime.GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {
     return nullptr;
   }
-  auto data = isolate->GetData();
   v8::Locker lock(isolate);
+  auto data = isolate->GetData();
+  data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
@@ -128,11 +129,10 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).FromJust();
   }
 
-  if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
+  request_context = per_thread_runtime.request_context.Get(isolate);
+  if (jnew_request || request_context.IsEmpty()) {
     request_context = data->request_context_templ.Get(isolate)->NewInstance();
-    data->request_context.Reset(isolate, request_context);
-  } else {
-    request_context = data->request_context.Get(isolate);
+    per_thread_runtime.request_context.Reset(isolate, request_context);
   }
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
@@ -168,14 +168,15 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
                                                                                      jclass cls,
                                                                                      jstring jsource,
                                                                                      jstring jfilename) {
-  Isolate* isolate = per_thread_runtime.GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
-  auto data = isolate->GetData();
   v8::Locker lock(isolate);
+  auto data = isolate->GetData();
+  data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
