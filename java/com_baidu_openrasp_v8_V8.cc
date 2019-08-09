@@ -25,12 +25,12 @@ using namespace openrasp;
  * Signature: ()Z
  */
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
-  if (!isInitialized) {
+  if (!is_initialized) {
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    isInitialized = Initialize(0);
+    is_initialized = Initialize(0);
   }
-  return isInitialized;
+  return is_initialized;
 }
 
 /*
@@ -39,11 +39,11 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initiali
  * Signature: ()Z
  */
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Dispose(JNIEnv* env, jclass cls) {
-  if (isInitialized) {
+  if (is_initialized) {
     delete snapshot;
-    isInitialized = !Dispose();
+    is_initialized = !Dispose();
   }
-  return !isInitialized;
+  return !is_initialized;
 }
 
 /*
@@ -62,8 +62,14 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
   const size_t plugin_len = env->GetArrayLength(jplugins);
   for (int i = 0; i < plugin_len; i++) {
     jobjectArray plugin = (jobjectArray)env->GetObjectArrayElement(jplugins, i);
+    if (plugin == nullptr) {
+      continue;
+    }
     jstring jname = (jstring)env->GetObjectArrayElement(plugin, 0);
     jstring jsource = (jstring)env->GetObjectArrayElement(plugin, 1);
+    if (jname == nullptr || jsource == nullptr) {
+      continue;
+    }
     auto name = Jstring2String(env, jname);
     auto source = Jstring2String(env, jsource);
     plugin_list.emplace_back(name, source);
@@ -72,10 +78,10 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   Snapshot* blob = new Snapshot(config, plugin_list, version, millis, env);
   if (!blob->IsOk()) {
-    return false;
     delete blob;
+    return false;
   }
-  std::unique_lock<std::mutex> lock(mtx);
+  std::unique_lock<std::mutex> lock(snapshot_mtx);
   delete snapshot;
   snapshot = blob;
   return true;
@@ -114,6 +120,10 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
 
   {
     auto raw = static_cast<uint8_t*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
+    // https://stackoverflow.com/questions/36101913/should-i-always-call-releaseprimitivearraycritical-even-if-getprimitivearraycrit
+    if (raw == nullptr) {
+      return nullptr;
+    }
     auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jparams_size);
     env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
     if (maybe_string.IsEmpty()) {
@@ -147,7 +157,13 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   auto bytearray = env->NewByteArray(json->Utf8Length(isolate));
+  if (bytearray == nullptr) {
+    return nullptr;
+  }
   auto bytes = env->GetPrimitiveArrayCritical(bytearray, nullptr);
+  if (bytes == nullptr) {
+    return nullptr;
+  }
   json->WriteUtf8(isolate, static_cast<char*>(bytes));
   env->ReleasePrimitiveArrayCritical(bytearray, bytes, 0);
   return bytearray;

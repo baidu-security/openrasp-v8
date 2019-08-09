@@ -65,6 +65,9 @@ static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
+  if (jname == nullptr) {
+    return;
+  }
   jstring jstr = (jstring)jenv->CallObjectMethod(jctx, ctx_class.getString, jname);
   if (jstr == nullptr) {
     return;
@@ -84,11 +87,17 @@ static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
+  if (jname == nullptr) {
+    return;
+  }
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getObject, jname));
   if (jbuf == nullptr) {
     return;
   }
   auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
+  if (raw == nullptr) {
+    return;
+  }
   auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
   jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
@@ -109,6 +118,9 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
   jstring jname = V8value2Jstring(jenv, name);
+  if (jname == nullptr) {
+    return;
+  }
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(jenv->CallObjectMethod(jctx, ctx_class.getBuffer, jname));
   if (jbuf == nullptr) {
     return;
@@ -118,6 +130,9 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
     return;
   }
   auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
+  if (raw == nullptr) {
+    return;
+  }
   auto buffer = v8::ArrayBuffer::New(isolate, raw, jbuf_size);
   jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
 

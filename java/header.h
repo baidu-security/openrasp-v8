@@ -87,6 +87,6 @@ typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
 extern V8Class v8_class;
 extern ContextClass ctx_class;
-extern bool isInitialized;
+extern bool is_initialized;
 extern openrasp::Snapshot* snapshot;
-extern std::mutex mtx;
+extern std::mutex snapshot_mtx;

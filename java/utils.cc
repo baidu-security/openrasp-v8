@@ -22,9 +22,9 @@ using namespace openrasp;
 
 V8Class v8_class;
 ContextClass ctx_class;
-bool isInitialized = false;
+bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex mtx;
+std::mutex snapshot_mtx;
 
 void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
   auto env = GetJNIEnv(isolate);
@@ -41,6 +41,9 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
   auto raw = env->GetPrimitiveArrayCritical(jbuf, nullptr);
+  if (raw == nullptr) {
+    return info.GetReturnValue().Set(v8::Array::New(isolate));
+  }
   auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
   env->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
@@ -62,8 +65,8 @@ Isolate* GetIsolate(JNIEnv* env) {
   Isolate* isolate = isolate_ptr.get();
   if (snapshot) {
     if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock =
-          isolate ? std::unique_lock<std::mutex>(mtx, std::try_to_lock) : std::unique_lock<std::mutex>(mtx);
+      std::unique_lock<std::mutex> lock = isolate ? std::unique_lock<std::mutex>(snapshot_mtx, std::try_to_lock)
+                                                  : std::unique_lock<std::mutex>(snapshot_mtx);
       if (lock) {
         auto duration = std::chrono::system_clock::now().time_since_epoch();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
@@ -84,6 +87,9 @@ Isolate* GetIsolate(JNIEnv* env) {
 std::string Jstring2String(JNIEnv* env, jstring str) {
   auto data = env->GetStringCritical(str, nullptr);
   auto size = env->GetStringLength(str);
+  if (data == nullptr) {
+    return {};
+  }
   // 在windows上用u16string会报错，只能这样拷贝转换
   std::wstring u16(size, 0);
   for (int i = 0; i < size; i++) {
@@ -106,6 +112,9 @@ jstring String2Jstring(JNIEnv* env, const std::string& str) {
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   auto data = env->GetStringCritical(jstr, nullptr);
   auto size = env->GetStringLength(jstr);
+  if (data == nullptr) {
+    return {};
+  }
   auto rst =
       v8::String::NewFromTwoByte(GetIsolate(env), static_cast<const uint16_t*>(data), v8::NewStringType::kNormal, size);
   env->ReleaseStringCritical(jstr, data);
