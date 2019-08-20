@@ -31,12 +31,12 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
   } else {
     v8::String::Utf8Value filename(isolate, message->GetScriptOrigin().ResourceName());
     v8::Local<v8::Context> context(isolate->GetCurrentContext());
-    int linenum = message->GetLineNumber(context).FromJust();
+    int linenum = message->GetLineNumber(context).FromMaybe(0);
     ref.append(*filename).append(":").append(to_string(linenum)).append("\n");
     v8::String::Utf8Value sourceline(isolate, message->GetSourceLine(context).ToLocalChecked());
     ref.append(*sourceline).append("\n");
-    int start = message->GetStartColumn(context).FromJust();
-    int end = message->GetEndColumn(context).FromJust();
+    int start = message->GetStartColumn(context).FromMaybe(-1);
+    int end = message->GetEndColumn(context).FromMaybe(-1);
     if (start >= 0 && end >= 0) {
       ref.append(start, ' ').append(end - start, '^').append("\n");
     }

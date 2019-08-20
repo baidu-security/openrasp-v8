@@ -125,7 +125,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
           continue;
         }
       }
-      ret_arr->Set(v8_context, idx++, item).FromJust();
+      ret_arr->Set(v8_context, idx++, item).IsJust();
     }
   }
   return handle_scope.Escape(ret_arr);
