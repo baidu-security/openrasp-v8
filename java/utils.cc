@@ -20,16 +20,32 @@
 
 using namespace openrasp;
 
+JavaVM* jvm = nullptr;
 V8Class v8_class;
 ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
 std::mutex snapshot_mtx;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
-  auto env = GetJNIEnv(isolate);
+void plugin_log(JNIEnv* env, const std::string& message) {
   auto msg = String2Jstring(env, message);
   env->CallStaticVoidMethod(v8_class.cls, v8_class.Log, msg);
+}
+
+void plugin_log(const std::string& message) {
+  JNIEnv* env;
+  auto rst = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+  if (rst == JNI_ERR) {
+    printf("%s", message.c_str());
+    return;
+  }
+  if (rst == JNI_EDETACHED) {
+    jvm->AttachCurrentThread((void**)&env, nullptr);
+  }
+  plugin_log(env, message);
+  if (rst == JNI_EDETACHED) {
+    jvm->DetachCurrentThread();
+  }
 }
 
 void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {

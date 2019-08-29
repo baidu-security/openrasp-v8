@@ -19,6 +19,11 @@
 
 using namespace openrasp;
 
+ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+  jvm = vm;
+  return JNI_VERSION_1_6;
+}
+
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
@@ -28,7 +33,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initiali
   if (!is_initialized) {
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    is_initialized = Initialize(0);
+    is_initialized = Initialize(0, plugin_log);
   }
   return is_initialized;
 }
@@ -139,7 +144,8 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
 
   auto data = isolate->GetData();
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
-    request_context = data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
+    request_context =
+        data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
     data->request_context.Reset(isolate, request_context);
   } else {
     request_context = data->request_context.Get(isolate);

@@ -31,6 +31,8 @@
 #define ALIGN_FUNCTION
 #endif
 
+void plugin_log(JNIEnv* env, const std::string& message);
+void plugin_log(const std::string& message);
 openrasp::Isolate* GetIsolate(JNIEnv* env);
 std::string Jstring2String(JNIEnv* env, jstring jstr);
 jstring String2Jstring(JNIEnv* env, const std::string& str);
@@ -85,6 +87,7 @@ class IsolateDeleter {
 };
 typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
+extern JavaVM* jvm;
 extern V8Class v8_class;
 extern ContextClass ctx_class;
 extern bool is_initialized;
