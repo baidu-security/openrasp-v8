@@ -93,14 +93,17 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   pro.set_value();
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    auto msg = v8::Object::New(isolate);
-    msg->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "exception"));
+    v8::Local<v8::String> msg;
     if (try_catch.HasTerminated()) {
-      msg->Set(NewV8Key(isolate, "message"), NewV8String(isolate, "Javascript plugin execution timeout"));
+      isolate->CancelTerminateExecution();
+      msg = NewV8String(isolate, "Javascript plugin execution timeout");
     } else {
-      msg->Set(NewV8Key(isolate, "message"), NewV8String(isolate, Exception(isolate, try_catch)));
+      msg = NewV8String(isolate, Exception(isolate, try_catch));
     }
-    v8::Local<v8::Value> argv[]{msg.As<v8::Value>()};
+    auto rst = v8::Object::New(isolate);
+    rst->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "exception"));
+    rst->Set(NewV8Key(isolate, "message"), msg);
+    v8::Local<v8::Value> argv[]{rst.As<v8::Value>()};
     return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
   }
   auto rst = maybe_rst.ToLocalChecked();

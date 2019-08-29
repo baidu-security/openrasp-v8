@@ -138,7 +138,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
-    request_context = data->request_context_templ.Get(isolate)->NewInstance();
+    request_context = data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
     data->request_context.Reset(isolate, request_context);
   } else {
     request_context = data->request_context.Get(isolate);
