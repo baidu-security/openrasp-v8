@@ -7,7 +7,7 @@ void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   for (int i = 0; i < info.Length(); i++) {
     v8::String::Utf8Value message(isolate, info[i]);
-    plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
+    Platform::logger({*message, static_cast<size_t>(message.length())});
   }
 }
 

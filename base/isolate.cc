@@ -166,12 +166,12 @@ size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, siz
 
 void Isolate::FatalErrorCallback(const char* location, const char* message) {
   std::string msg;
-  msg += "\n#\n# Fatal error in ";
+  msg += "\n#\n# Native error in ";
   msg += location;
   msg += "\n# ";
   msg += message;
   msg += "\n#\n\n";
-  printf("%s", msg.c_str());
+  Platform::logger(msg);
 }
 
 }  // namespace openrasp

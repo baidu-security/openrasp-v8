@@ -82,18 +82,18 @@ Snapshot::Snapshot(const std::string& config,
         v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked());
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
-      plugin_info(isolate, e);
+      Platform::logger(e);
       // no need to continue
       return;
     }
     if (isolate->ExecScript(config, "config.js").IsEmpty()) {
       Exception e(isolate, try_catch);
-      plugin_info(isolate, e);
+      Platform::logger(e);
     }
     for (auto& plugin_src : plugin_list) {
       if (isolate->ExecScript("(function(){\n" + plugin_src.source + "\n})()", plugin_src.filename, -1).IsEmpty()) {
         Exception e(isolate, try_catch);
-        plugin_info(isolate, e);
+        Platform::logger(e);
       }
     }
     creator.SetDefaultContext(context);

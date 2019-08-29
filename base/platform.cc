@@ -19,6 +19,7 @@
 namespace openrasp {
 
 std::unique_ptr<Platform> Platform::instance;
+Logger Platform::logger = [](const std::string& message) { printf("%s", message.c_str()); };
 
 Platform* Platform::New(int thread_pool_size) {
   instance.reset(new Platform(thread_pool_size));

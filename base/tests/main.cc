@@ -10,7 +10,7 @@
 using namespace openrasp;
 
 std::string message;
-void openrasp::plugin_info(Isolate* isolate, const std::string& msg) {
+void plugin_log(const std::string& msg) {
   message = msg;
   // std::cout << msg << std::endl;
 }
@@ -23,7 +23,7 @@ typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
 
 struct Listener : Catch::TestEventListenerBase {
   using TestEventListenerBase::TestEventListenerBase;  // inherit constructor
-  void testRunStarting(Catch::TestRunInfo const& testRunInfo) override { Initialize(0); }
+  void testRunStarting(Catch::TestRunInfo const& testRunInfo) override { Initialize(0, plugin_log); }
   void testRunEnded(Catch::TestRunStats const& testRunStats) override { Dispose(); }
 };
 CATCH_REGISTER_LISTENER(Listener);

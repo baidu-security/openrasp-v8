@@ -56,6 +56,8 @@ class Exception : public std::string {
   Exception(v8::Isolate* isolate, v8::TryCatch& try_catch);
 };
 
+typedef void (*Logger)(const std::string& message);
+
 class Platform : public v8::Platform {
  public:
   explicit Platform(int thread_pool_size);
@@ -85,6 +87,8 @@ class Platform : public v8::Platform {
   static Platform* Get();
   void Startup();
   void Shutdown();
+
+  static Logger logger;
 
  private:
   static std::unique_ptr<Platform> instance;
@@ -165,11 +169,12 @@ class Isolate : public v8::Isolate {
   static void FatalErrorCallback(const char* location, const char* message);
 };
 
-inline bool Initialize(size_t pool_size) {
+inline bool Initialize(size_t pool_size, Logger logger) {
   const char* flags = std::getenv("OPENRASP_V8_OPTIONS");
   if (flags) {
     v8::V8::SetFlagsFromString(flags, strlen(flags));
   }
+  Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
   return v8::V8::Initialize();
 }
@@ -179,10 +184,6 @@ inline bool Dispose() {
   v8::V8::ShutdownPlatform();
   return rst;
 }
-
-// To be implemented Start
-void plugin_info(Isolate* isolate, const std::string& message);
-// To be implemented End
 
 }  // namespace openrasp
 
