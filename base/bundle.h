@@ -176,6 +176,15 @@ inline bool Initialize(size_t pool_size, Logger logger) {
   }
   Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
+  v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message){
+    std::string msg = "Debug check failed: ";
+    msg += message;
+    msg += ", in ";
+    msg += file;
+    msg += ", line ";
+    msg += std::to_string(line);
+    Platform::logger(msg);
+  });
   return v8::V8::Initialize();
 }
 
