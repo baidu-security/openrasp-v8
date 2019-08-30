@@ -109,9 +109,10 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   if (!isolate) {
     return nullptr;
   }
+  auto data = isolate->GetData();
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context = isolate->GetData()->context.Get(isolate);
+  v8::Local<v8::Context> context = data->context.Get(isolate);
   v8::Context::Scope context_scope(context);
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
@@ -142,7 +143,6 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).IsJust();
   }
 
-  auto data = isolate->GetData();
   if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
     request_context =
         data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
@@ -196,9 +196,10 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
+  auto data = isolate->GetData();
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
+  v8::Local<v8::Context> v8_context = data->context.Get(isolate);
   v8::Context::Scope context_scope(v8_context);
   v8::TryCatch try_catch(isolate);
   std::string source = Jstring2String(env, jsource);
