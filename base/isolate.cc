@@ -88,6 +88,9 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), timeout)));
   auto maybe_rst = check->Call(v8_context, check, 3, argv);
   pro.set_value();
+  while (Platform::Get()->PumpMessageLoop(isolate)) {
+    continue;
+  }
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
     v8::Local<v8::String> msg;
@@ -149,7 +152,11 @@ v8::MaybeLocal<v8::Value> Isolate::ExecScript(v8::Local<v8::String> source,
   if (!v8::Script::Compile(context, source, &origin).ToLocal(&script)) {
     return handle_scope.EscapeMaybe(v8::MaybeLocal<v8::Value>());
   }
-  return handle_scope.EscapeMaybe(script->Run(context));
+  auto rst = script->Run(context);
+  while (Platform::Get()->PumpMessageLoop(isolate)) {
+    continue;
+  }
+  return handle_scope.EscapeMaybe(rst);
 }
 
 v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
@@ -157,7 +164,11 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
   v8::EscapableHandleScope handle_scope(isolate);
   auto context = isolate->GetCurrentContext();
   auto console_log = isolate->GetData()->console_log.Get(isolate);
-  return handle_scope.EscapeMaybe(console_log->Call(context, console_log, 1, &value));
+  auto rst = console_log->Call(context, console_log, 1, &value);
+  while (Platform::Get()->PumpMessageLoop(isolate)) {
+    continue;
+  }
+  return handle_scope.EscapeMaybe(rst);
 }
 
 size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
