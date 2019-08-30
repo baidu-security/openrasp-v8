@@ -183,6 +183,7 @@ void Isolate::FatalErrorCallback(const char* location, const char* message) {
   msg += message;
   msg += "\n#\n\n";
   Platform::logger(msg);
+  printf("%s", msg.c_str());
 }
 
 }  // namespace openrasp
