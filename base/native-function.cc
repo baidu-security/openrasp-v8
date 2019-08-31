@@ -13,7 +13,6 @@ void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
   if (info.Length() < 2 || !info[0]->IsString() || !info[1]->IsString()) {
     return;
   }

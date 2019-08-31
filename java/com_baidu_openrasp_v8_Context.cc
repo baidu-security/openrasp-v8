@@ -60,7 +60,6 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBuff
 
 static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
@@ -82,7 +81,6 @@ static void string_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
@@ -113,7 +111,6 @@ static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
 
 static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
   auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
   auto jenv = GetJNIEnv(isolate);
   auto jctx = reinterpret_cast<jobject>(info.Holder()->GetInternalField(0).As<v8::External>()->Value());
 
