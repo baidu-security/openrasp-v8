@@ -31,14 +31,11 @@
 
 namespace openrasp {
 
-// Only accept Latin-1
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, size_t len = -1) {
-  auto data = reinterpret_cast<const uint8_t*>(str);
-  return v8::String::NewFromOneByte(isolate, data, v8::NewStringType::kInternalized, len)
+  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, len)
       .FromMaybe(v8::String::Empty(isolate));
 }
 
-// Only accept Latin-1
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const std::string& str) {
   return NewV8Key(isolate, str.c_str(), str.length());
 }
@@ -176,7 +173,7 @@ inline bool Initialize(size_t pool_size, Logger logger) {
   }
   Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
-  v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message){
+  v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
     std::string msg = "\nDebug check failed: ";
     msg += message;
     msg += ", in ";
