@@ -25,7 +25,10 @@ V8Class v8_class;
 ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex snapshot_mtx;
+std::mutex mtx;
+std::queue<std::weak_ptr<openrasp::Isolate>> PerThreadRuntime::shared_isolate;
+std::mutex PerThreadRuntime::shared_isolate_mtx;
+thread_local PerThreadRuntime per_thread_runtime;
 
 void plugin_log(JNIEnv* env, const std::string& message) {
   auto msg = String2Jstring(env, message);
@@ -73,35 +76,6 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
   info.GetReturnValue().Set(value);
-}
-
-Isolate* GetIsolate(JNIEnv* env) {
-  static thread_local IsolatePtr isolate_ptr;
-  Isolate* isolate = isolate_ptr.get();
-  if (snapshot) {
-    if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock = isolate ? std::unique_lock<std::mutex>(snapshot_mtx, std::try_to_lock)
-                                                  : std::unique_lock<std::mutex>(snapshot_mtx);
-      if (lock) {
-        auto duration = std::chrono::system_clock::now().time_since_epoch();
-        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate_ptr.reset();
-        isolate = Isolate::New(snapshot, millis);
-        if (!isolate) {
-          return nullptr;
-        }
-        isolate_ptr.reset(isolate);
-        v8::Isolate::Scope isolate_scope(isolate);
-        v8::HandleScope handle_scope(isolate);
-        isolate->Initialize();
-        isolate->GetData()->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
-      }
-    }
-  }
-  if (isolate) {
-    isolate->GetData()->custom_data = env;
-  }
-  return isolate;
 }
 
 std::string Jstring2String(JNIEnv* env, jstring str) {
