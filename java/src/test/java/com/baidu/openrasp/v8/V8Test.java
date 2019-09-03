@@ -175,30 +175,49 @@ public class V8Test {
         "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
   }
 
+  public class Task implements Callable<String> {
+    public int id;
+
+    public Task(int id) {
+      this.id = id;
+    }
+
+    @Override
+    public String call() throws Exception {
+      Map<String, Object> params = new HashMap<String, Object>();
+      ByteArrayOutputStream data = new ByteArrayOutputStream();
+      params.put("flag", id);
+      JsonStream.serialize(params, data);
+      String msg = new String(V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200));
+      if (!msg.contains("timeout")) {
+        return msg;
+      }
+      Thread.sleep(id / 20);
+      return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), false, 200));
+    }
+  }
+
+  /**
+   * 测试在多线程并发请求下 每个isolate是否能够正常工作 timeout是否正常工作 被缓存的context是否正确
+   * 
+   * @throws Exception
+   */
   @Test
   public void ParallelCheck() throws Exception {
     List<String[]> scripts = new ArrayList<String[]>();
-    scripts.add(new String[] { "test.js",
-        "const plugin = new RASP('test')\nplugin.register('request', (params) => {\nif (params.timeout) { for(;;) {} }\nreturn params\n})" });
+    scripts.add(new String[] { "test.js", "const plugin = new RASP('test');\n"
+        + "plugin.register('request', (params, context) => { context.flag = params.flag; while(true); })\n"
+        + "plugin.register('requestEnd', (params, context) => { return {action: 'log', message: context.flag == params.flag ? 'ok' : `${context.flag} ${params.flag}`}; })\n" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
-    Callable<byte[]> task = new Callable<byte[]>() {
-      @Override
-      public byte[] call() {
-        String params = "{\"action\":\"ignore\",\"timeout\":true}";
-        return V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
-      }
-    };
-    ExecutorService service = Executors.newCachedThreadPool();
-    List<Future<byte[]>> futs = new ArrayList<Future<byte[]>>();
-    for (int i = 0; i < 100; i++) {
-      Future<byte[]> fut = service.submit(task);
+    ExecutorService service = Executors.newFixedThreadPool(5);
+    List<Future<String>> futs = new ArrayList<Future<String>>();
+    for (int i = 0; i < 50; i++) {
+      Future<String> fut = service.submit(new Task(i));
       futs.add(fut);
     }
     service.shutdown();
-    for (Future<byte[]> fut : futs) {
-      byte[] rst = fut.get();
-      assertArrayEquals(rst,
-          "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
+    for (Future<String> fut : futs) {
+      assertEquals("[{\"action\":\"log\",\"message\":\"ok\",\"name\":\"test\",\"confidence\":0}]", fut.get());
     }
     assertTrue(service.awaitTermination(10, TimeUnit.SECONDS));
   }
