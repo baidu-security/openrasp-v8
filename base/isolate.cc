@@ -16,7 +16,7 @@
 
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   static v8::ArrayBuffer::Allocator* array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -186,4 +186,4 @@ void Isolate::FatalErrorCallback(const char* location, const char* message) {
   printf("%s", msg.c_str());
 }
 
-}  // namespace openrasp
+}  // namespace openrasp_v8

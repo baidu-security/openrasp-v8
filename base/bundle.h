@@ -29,7 +29,7 @@
 #include <thread>
 #include <vector>
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, size_t len = -1) {
   return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, len)
@@ -193,7 +193,7 @@ inline bool Dispose() {
   return rst;
 }
 
-}  // namespace openrasp
+}  // namespace openrasp_v8
 
 #ifdef UNLIKELY
 #undef UNLIKELY

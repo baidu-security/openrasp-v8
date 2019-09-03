@@ -1,7 +1,7 @@
 #include "bundle.h"
 #include "flex/flex.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
@@ -40,4 +40,4 @@ intptr_t* Snapshot::external_references = new intptr_t[4]{
     reinterpret_cast<intptr_t>(request_callback),
     0,
 };
-}  // namespace openrasp
+}  // namespace openrasp_v8

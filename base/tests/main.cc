@@ -7,7 +7,7 @@
 #include <thread>
 #include "../bundle.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 std::string message;
 void plugin_log(const std::string& msg) {
@@ -17,9 +17,9 @@ void plugin_log(const std::string& msg) {
 
 class IsolateDeleter {
  public:
-  void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
+  void operator()(openrasp_v8::Isolate* isolate) { isolate->Dispose(); }
 };
-typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
+typedef std::unique_ptr<openrasp_v8::Isolate, IsolateDeleter> IsolatePtr;
 
 struct Listener : Catch::TestEventListenerBase {
   using TestEventListenerBase::TestEventListenerBase;  // inherit constructor

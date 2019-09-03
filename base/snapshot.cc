@@ -19,7 +19,7 @@
 #include "flex/flex.h"
 #include "gen/builtins.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
     : v8::StartupData({data, static_cast<int>(raw_size)}), timestamp(timestamp) {}
@@ -122,4 +122,4 @@ bool Snapshot::Save(const std::string& path) const {
   // check errno when return value is false
   return false;
 }
-}  // namespace openrasp
+}  // namespace openrasp_v8

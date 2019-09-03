@@ -16,7 +16,7 @@
 
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 using namespace std;
 Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
   if (!try_catch.HasCaught()) {
@@ -50,4 +50,4 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
     }
   }
 }
-}  // namespace openrasp
+}  // namespace openrasp_v8

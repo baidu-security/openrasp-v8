@@ -1,6 +1,6 @@
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 bool ExtractBuildinAction(Isolate* isolate, std::map<std::string, std::string>& buildin_action_map) {
   v8::HandleScope handle_scope(isolate);

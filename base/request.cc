@@ -3,7 +3,7 @@
 #include <string>
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto isolate = info.GetIsolate();
@@ -156,4 +156,4 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
-}  // namespace openrasp
+}  // namespace openrasp_v8
