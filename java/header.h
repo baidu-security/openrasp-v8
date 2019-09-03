@@ -31,7 +31,7 @@
 #define ALIGN_FUNCTION
 #endif
 
-extern openrasp::Snapshot* snapshot;
+extern openrasp_v8::Snapshot* snapshot;
 extern std::mutex mtx;
 
 void plugin_log(JNIEnv* env, const std::string& message);
@@ -40,7 +40,7 @@ std::string Jstring2String(JNIEnv* env, jstring jstr);
 jstring String2Jstring(JNIEnv* env, const std::string& str);
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr);
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val);
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(openrasp::Isolate* isolate);
+v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(openrasp_v8::Isolate* isolate);
 void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info);
 
 class V8Class {
@@ -75,13 +75,13 @@ class ContextClass {
   jmethodID getBuffer;
 };
 
-inline JNIEnv* GetJNIEnv(openrasp::Isolate* isolate) {
+inline JNIEnv* GetJNIEnv(openrasp_v8::Isolate* isolate) {
   return reinterpret_cast<JNIEnv*>(isolate->GetData()->custom_data);
 }
 
 class IsolateDeleter {
  public:
-  ALIGN_FUNCTION void operator()(openrasp::Isolate* isolate) { isolate->Dispose(); }
+  ALIGN_FUNCTION void operator()(openrasp_v8::Isolate* isolate) { isolate->Dispose(); }
 };
 
 class PerThreadRuntime {
@@ -93,7 +93,7 @@ class PerThreadRuntime {
     }
     Dispose();
   }
-  openrasp::Isolate* GetIsolate() {
+  openrasp_v8::Isolate* GetIsolate() {
     if (!isolate || (snapshot && isolate->IsExpired(snapshot->timestamp))) {
       std::lock_guard<std::mutex> lock_shared_isolate(shared_isolate_mtx);
       Dispose();
@@ -110,7 +110,7 @@ class PerThreadRuntime {
       if (!isolate && snapshot) {
         auto duration = std::chrono::system_clock::now().time_since_epoch();
         auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate.reset(openrasp::Isolate::New(snapshot, millis), IsolateDeleter());
+        isolate.reset(openrasp_v8::Isolate::New(snapshot, millis), IsolateDeleter());
         shared_isolate.emplace(isolate);
         v8::Locker lock(isolate.get());
         v8::Isolate::Scope isolate_scope(isolate.get());
@@ -125,9 +125,9 @@ class PerThreadRuntime {
     request_context.Reset();
     isolate.reset();
   }
-  static std::queue<std::weak_ptr<openrasp::Isolate>> shared_isolate;
+  static std::queue<std::weak_ptr<openrasp_v8::Isolate>> shared_isolate;
   static std::mutex shared_isolate_mtx;
-  std::shared_ptr<openrasp::Isolate> isolate;
+  std::shared_ptr<openrasp_v8::Isolate> isolate;
   v8::Persistent<v8::Object> request_context;
 };
 

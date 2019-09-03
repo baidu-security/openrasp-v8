@@ -16,7 +16,7 @@
 
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 Snapshot* snapshot = nullptr;
 std::vector<PluginFile> plugin_list;

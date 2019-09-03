@@ -17,7 +17,7 @@
 #include "com_baidu_openrasp_v8_V8.h"
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
   jvm = vm;

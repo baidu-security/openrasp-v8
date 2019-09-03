@@ -18,7 +18,7 @@
 #include <vector>
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 JavaVM* jvm = nullptr;
 V8Class v8_class;
@@ -26,7 +26,7 @@ ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
 std::mutex mtx;
-std::queue<std::weak_ptr<openrasp::Isolate>> PerThreadRuntime::shared_isolate;
+std::queue<std::weak_ptr<openrasp_v8::Isolate>> PerThreadRuntime::shared_isolate;
 std::mutex PerThreadRuntime::shared_isolate_mtx;
 thread_local PerThreadRuntime per_thread_runtime;
 
@@ -52,7 +52,7 @@ void plugin_log(const std::string& message) {
 }
 
 void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
+  auto isolate = reinterpret_cast<openrasp_v8::Isolate*>(info.GetIsolate());
   auto env = GetJNIEnv(isolate);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(v8_class.cls, v8_class.GetStack));
   if (jbuf == nullptr) {
