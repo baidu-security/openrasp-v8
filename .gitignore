@@ -42,3 +42,7 @@
 
 *.pc
 dist
+
+prebuilts/*
+!prebuilts/CMakeLists.txt
+!prebuilts/fetch_prebuilts.sh

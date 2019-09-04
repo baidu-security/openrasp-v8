@@ -7,19 +7,28 @@ matrix:
       apt:
         packages:
         - g++-multilib
+    before_install:
+    - vendors/fetch_centos6_sysroot.sh
+    - prebuilts/fetch_prebuilts.sh
   - os: osx
     addons:
       homebrew:
         packages:
-        - git-lfs
         - cmake
         update: true
+    before_install:
+    - prebuilts/fetch_prebuilts.sh
   - os: windows
-before_install:
-- git lfs install
-- git lfs pull
+    before_install:
+    - choco config set cacheLocation $HOME/cache/
+    - choco install -y jdk8 -params "both=true" --version 8.0.211
+    - choco install -y maven --version 3.6.1
+    - prebuilts/fetch_prebuilts.sh
+cache:
+  directories:
+  - $HOME/cache/
 script:
-- ".travis/$TRAVIS_OS_NAME.sh"
+- travis_retry .travis/$TRAVIS_OS_NAME.sh
 deploy:
   provider: releases
   api_key:

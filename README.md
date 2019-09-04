@@ -44,12 +44,6 @@ We will continuely add more languages to our support list.
 
 The language support briges are not just some C++ ports, but also the language specified native interfaces. Such as jni fo Java and cgo for Go.
 
-## Clone
-
-The pre-built static libraries are tracked by git-lfs in this repository, you should make sure the git and git-lfs have been installed before you clone.
-
-If the libraries are not pulled correctly, errors will be occured in link stage. Please check the git lfs installation and the network, and then execute `git lfs pull` to pull libraries again.
-
 ## Build
 
 We use CMake to generate the files needed by your build tool (GNU make, Visual Studio, Ninja, etc.) for building openrasp-v8 and its language ports.

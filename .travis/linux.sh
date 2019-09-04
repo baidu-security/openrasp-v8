@@ -2,11 +2,11 @@
 
 set -ev
 
-tar zxf vendors/centos6-sysroot.tar.gz -C /tmp/
+pushd `git rev-parse --show-toplevel`
 
 mkdir -p build64 && pushd $_
 
-(source /tmp/centos6-sysroot/setx64.sh && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..)
+(if [[ -d /tmp/centos6-sysroot ]]; then source /tmp/centos6-sysroot/setx64.sh; fi; cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..)
 
 make VERBOSE=1 -j
 
@@ -18,7 +18,7 @@ popd
 
 mkdir -p build32 && pushd $_
 
-(source /tmp/centos6-sysroot/setx86.sh && cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..)
+(if [[ -d /tmp/centos6-sysroot ]]; then source /tmp/centos6-sysroot/setx86.sh; fi; cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..)
 
 make VERBOSE=1 -j
 
