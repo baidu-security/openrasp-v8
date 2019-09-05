@@ -11,11 +11,7 @@ matrix:
     - vendors/fetch_centos6_sysroot.sh
     - prebuilts/fetch_prebuilts.sh
   - os: osx
-    addons:
-      homebrew:
-        packages:
-        - cmake
-        update: true
+    osx_image: xcode10
     before_install:
     - prebuilts/fetch_prebuilts.sh
   - os: windows
