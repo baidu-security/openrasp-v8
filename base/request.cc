@@ -3,11 +3,10 @@
 #include <string>
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto isolate = info.GetIsolate();
-  v8::HandleScope handle_scope(isolate);
   v8::TryCatch try_catch(isolate);
   auto context = isolate->GetCurrentContext();
   v8::Local<v8::Promise::Resolver> resolver;
@@ -157,4 +156,4 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
-}  // namespace openrasp
+}  // namespace openrasp_v8

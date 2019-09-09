@@ -17,7 +17,12 @@
 #include "com_baidu_openrasp_v8_V8.h"
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
+
+ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+  jvm = vm;
+  return JNI_VERSION_1_6;
+}
 
 /*
  * Class:     com_baidu_openrasp_v8_V8
@@ -28,7 +33,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initiali
   if (!is_initialized) {
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    is_initialized = Initialize(0);
+    is_initialized = Initialize(0, plugin_log);
   }
   return is_initialized;
 }
@@ -81,7 +86,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
     delete blob;
     return false;
   }
-  std::unique_lock<std::mutex> lock(snapshot_mtx);
+  std::lock_guard<std::mutex> lock(mtx);
   delete snapshot;
   snapshot = blob;
   return true;
@@ -100,14 +105,17 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
                                                                                 jobject jcontext,
                                                                                 jboolean jnew_request,
                                                                                 jint jtimeout) {
-  Isolate* isolate = GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {
     return nullptr;
   }
+  v8::Locker lock(isolate);
   auto data = isolate->GetData();
-
+  data->custom_data = env;
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  auto context = isolate->GetCurrentContext();
+  v8::Local<v8::Context> context = data->context.Get(isolate);
+  v8::Context::Scope context_scope(context);
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
@@ -137,11 +145,11 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).IsJust();
   }
 
-  if (jnew_request || data->request_context.Get(isolate).IsEmpty()) {
-    request_context = data->request_context_templ.Get(isolate)->NewInstance();
-    data->request_context.Reset(isolate, request_context);
-  } else {
-    request_context = data->request_context.Get(isolate);
+  request_context = per_thread_runtime.request_context.Get(isolate);
+  if (jnew_request || request_context.IsEmpty()) {
+    request_context =
+        data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
+    per_thread_runtime.request_context.Reset(isolate, request_context);
   }
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
@@ -183,14 +191,19 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
                                                                                      jclass cls,
                                                                                      jstring jsource,
                                                                                      jstring jfilename) {
-  Isolate* isolate = GetIsolate(env);
+  Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
     env->ThrowNew(ExceptionClass, "Get v8 isolate failed");
     return nullptr;
   }
+  v8::Locker lock(isolate);
   auto data = isolate->GetData();
+  data->custom_data = env;
+  v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = data->context.Get(isolate);
+  v8::Context::Scope context_scope(v8_context);
   v8::TryCatch try_catch(isolate);
   std::string source = Jstring2String(env, jsource);
   std::string filename = Jstring2String(env, jfilename);

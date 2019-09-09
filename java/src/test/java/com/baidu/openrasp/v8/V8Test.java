@@ -14,6 +14,8 @@ import java.util.concurrent.Callable;
 
 public class V8Test {
 
+  static String log = null;
+
   @BeforeClass
   public static void Initialize() throws Exception {
     V8.Load();
@@ -25,6 +27,7 @@ public class V8Test {
       @Override
       public void log(String msg) {
         System.out.println(msg);
+        log = msg;
       }
     });
     V8.SetStackGetter(new StackGetter() {
@@ -66,18 +69,13 @@ public class V8Test {
 
   @Test
   public void GetStack() throws Exception {
-    V8.SetLogger(new Logger() {
-      @Override
-      public void log(String msg) {
-        assertEquals("{ action: 'ignore', stack: [ 1, 2, 3, 4 ] }", msg);
-      }
-    });
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",
         "const plugin = new RASP('test')\nplugin.register('request', params => console.log(params))" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
     assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100));
+    assertEquals("{ action: 'ignore', stack: [ 1, 2, 3, 4 ] }", log);
   }
 
   @Test
@@ -126,27 +124,14 @@ public class V8Test {
 
   @Test
   public void PluginLog() {
-    V8.SetLogger(new Logger() {
-      @Override
-      public void log(String msg) {
-        assertEquals(msg, "23333");
-      }
-    });
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js", "console.log(23333)" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
-    V8.SetLogger(null);
+    assertEquals("23333", log);
   }
 
   @Test
   public void Context() {
-    V8.SetLogger(new Logger() {
-      @Override
-      public void log(String msg) {
-        assertEquals(msg,
-            "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"test 中文 & 😊\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}");
-      }
-    });
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",
         "const plugin = new RASP('test')\nplugin.register('request', (params, context) => console.log(JSON.stringify(context)))" });
@@ -154,30 +139,29 @@ public class V8Test {
     String params = "{\"action\":\"ignore\"}";
     byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
     assertNull(result);
-    V8.SetLogger(null);
+    assertEquals(
+        "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"test 中文 & 😊\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}",
+        log);
   }
 
   @Test
   public void Unicode() throws Exception {
-    V8.SetLogger(new Logger() {
-      @Override
-      public void log(String msg) {
-        assertEquals(msg, "test 中文 & 😊");
-      }
-    });
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",
         "console.log('test 中文 & 😊'); const plugin = new RASP('test'); plugin.register('request', params => { console.log(params.message); return params; })" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
+    assertEquals("test 中文 & 😊", log);
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("action", "log");
     params.put("message", "test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(params, data);
     byte[] result = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
+    assertEquals("test 中文 & 😊", log);
     Any any = JsonIterator.deserialize(result);
     assertEquals(any.asList().get(0).toString("message"), "test 中文 & 😊");
     assertEquals(V8.ExecuteScript("console.log('test 中文 & 😊'); 'test 中文 & 😊';", "test"), "test 中文 & 😊");
+    assertEquals("test 中文 & 😊", log);
   }
 
   @Test(timeout = 800)
@@ -191,30 +175,49 @@ public class V8Test {
         "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
   }
 
+  public class Task implements Callable<String> {
+    public int id;
+
+    public Task(int id) {
+      this.id = id;
+    }
+
+    @Override
+    public String call() throws Exception {
+      Map<String, Object> params = new HashMap<String, Object>();
+      ByteArrayOutputStream data = new ByteArrayOutputStream();
+      params.put("flag", id);
+      JsonStream.serialize(params, data);
+      String msg = new String(V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200));
+      if (!msg.contains("timeout")) {
+        return msg;
+      }
+      Thread.sleep(id / 20);
+      return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), false, 200));
+    }
+  }
+
+  /**
+   * 测试在多线程并发请求下 每个isolate是否能够正常工作 timeout是否正常工作 被缓存的context是否正确
+   * 
+   * @throws Exception
+   */
   @Test
   public void ParallelCheck() throws Exception {
     List<String[]> scripts = new ArrayList<String[]>();
-    scripts.add(new String[] { "test.js",
-        "const plugin = new RASP('test')\nplugin.register('request', (params) => {\nif (params.timeout) { for(;;) {} }\nreturn params\n})" });
+    scripts.add(new String[] { "test.js", "const plugin = new RASP('test');\n"
+        + "plugin.register('request', (params, context) => { context.flag = params.flag; while(true); })\n"
+        + "plugin.register('requestEnd', (params, context) => { return {action: 'log', message: context.flag == params.flag ? 'ok' : `${context.flag} ${params.flag}`}; })\n" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
-    Callable<byte[]> task = new Callable<byte[]>() {
-      @Override
-      public byte[] call() {
-        String params = "{\"action\":\"ignore\",\"timeout\":true}";
-        return V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
-      }
-    };
-    ExecutorService service = Executors.newCachedThreadPool();
-    List<Future<byte[]>> futs = new ArrayList<Future<byte[]>>();
-    for (int i = 0; i < 100; i++) {
-      Future<byte[]> fut = service.submit(task);
+    ExecutorService service = Executors.newFixedThreadPool(5);
+    List<Future<String>> futs = new ArrayList<Future<String>>();
+    for (int i = 0; i < 50; i++) {
+      Future<String> fut = service.submit(new Task(i));
       futs.add(fut);
     }
     service.shutdown();
-    for (Future<byte[]> fut : futs) {
-      byte[] rst = fut.get();
-      assertArrayEquals(rst,
-          "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
+    for (Future<String> fut : futs) {
+      assertEquals("[{\"action\":\"log\",\"message\":\"ok\",\"name\":\"test\",\"confidence\":0}]", fut.get());
     }
     assertTrue(service.awaitTermination(10, TimeUnit.SECONDS));
   }

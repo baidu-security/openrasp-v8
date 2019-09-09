@@ -7,6 +7,10 @@ string(TOLOWER ${CMAKE_SYSTEM_NAME} SYSTEM_NAME)
 set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME})
 set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME} PARENT_SCOPE)
 
+if(NOT IS_DIRECTORY ${PREBUILTS_PREFIX})
+    execute_process(COMMAND bash "-c" "${CMAKE_CURRENT_SOURCE_DIR}/fetch_prebuilts.sh")
+endif()
+
 add_library(prebuilts INTERFACE)
 target_include_directories(prebuilts INTERFACE ${PREBUILTS_PREFIX}/include)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cmake/detect_architecture.cmake)

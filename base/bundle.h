@@ -29,16 +29,13 @@
 #include <thread>
 #include <vector>
 
-namespace openrasp {
+namespace openrasp_v8 {
 
-// Only accept Latin-1
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, size_t len = -1) {
-  auto data = reinterpret_cast<const uint8_t*>(str);
-  return v8::String::NewFromOneByte(isolate, data, v8::NewStringType::kInternalized, len)
+  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, len)
       .FromMaybe(v8::String::Empty(isolate));
 }
 
-// Only accept Latin-1
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const std::string& str) {
   return NewV8Key(isolate, str.c_str(), str.length());
 }
@@ -55,6 +52,8 @@ class Exception : public std::string {
  public:
   Exception(v8::Isolate* isolate, v8::TryCatch& try_catch);
 };
+
+typedef void (*Logger)(const std::string& message);
 
 class Platform : public v8::Platform {
  public:
@@ -86,6 +85,8 @@ class Platform : public v8::Platform {
   void Startup();
   void Shutdown();
 
+  static Logger logger;
+
  private:
   static std::unique_ptr<Platform> instance;
   int thread_pool_size;
@@ -114,6 +115,7 @@ class PluginFile {
 class IsolateData {
  public:
   v8::Isolate::CreateParams create_params;
+  v8::Persistent<v8::Context> context;
   v8::Persistent<v8::Object> RASP;
   v8::Persistent<v8::Function> check;
   v8::Persistent<v8::Function> console_log;
@@ -146,6 +148,7 @@ class Isolate : public v8::Isolate {
   static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp);
   Isolate() = delete;
   ~Isolate() = delete;
+  void Initialize();
   IsolateData* GetData();
   void SetData(IsolateData* data);
   void Dispose();
@@ -160,14 +163,27 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
   static size_t NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit);
+  static void FatalErrorCallback(const char* location, const char* message);
 };
 
-inline bool Initialize(size_t pool_size) {
+inline bool Initialize(size_t pool_size, Logger logger) {
   const char* flags = std::getenv("OPENRASP_V8_OPTIONS");
   if (flags) {
     v8::V8::SetFlagsFromString(flags, strlen(flags));
   }
+  Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
+  v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
+    std::string msg = "\nDebug check failed: ";
+    msg += message;
+    msg += ", in ";
+    msg += file;
+    msg += ", line ";
+    msg += std::to_string(line);
+    msg += "\n";
+    Platform::logger(msg);
+    printf("%s", msg.c_str());
+  });
   return v8::V8::Initialize();
 }
 
@@ -177,11 +193,7 @@ inline bool Dispose() {
   return rst;
 }
 
-// To be implemented Start
-void plugin_info(Isolate* isolate, const std::string& message);
-// To be implemented End
-
-}  // namespace openrasp
+}  // namespace openrasp_v8
 
 #ifdef UNLIKELY
 #undef UNLIKELY

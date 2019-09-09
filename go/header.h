@@ -20,34 +20,34 @@
 #include "base/bundle.h"
 #include "export.h"
 
-extern openrasp::Snapshot* snapshot;
-extern std::vector<openrasp::PluginFile> plugin_list;
+extern openrasp_v8::Snapshot* snapshot;
+extern std::vector<openrasp_v8::PluginFile> plugin_list;
 class CustomData {
  public:
   int context_index = 0;
 };
-inline CustomData* GetCustomData(openrasp::IsolateData* data) {
+inline CustomData* GetCustomData(openrasp_v8::IsolateData* data) {
   return reinterpret_cast<CustomData*>(data->custom_data);
 }
-inline CustomData* GetCustomData(openrasp::Isolate* isolate) {
+inline CustomData* GetCustomData(openrasp_v8::Isolate* isolate) {
   return GetCustomData(isolate->GetData());
 }
 class IsolateDeleter {
  public:
-  void operator()(openrasp::Isolate* isolate) {
+  void operator()(openrasp_v8::Isolate* isolate) {
     delete GetCustomData(isolate);
     isolate->Dispose();
   }
 };
-typedef std::unique_ptr<openrasp::Isolate, IsolateDeleter> IsolatePtr;
-inline openrasp::Isolate* GetIsolate() {
+typedef std::unique_ptr<openrasp_v8::Isolate, IsolateDeleter> IsolatePtr;
+inline openrasp_v8::Isolate* GetIsolate() {
   static thread_local IsolatePtr isolate_ptr;
   auto isolate = isolate_ptr.get();
   if (snapshot) {
     if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
       auto duration = std::chrono::system_clock::now().time_since_epoch();
       auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-      isolate = openrasp::Isolate::New(snapshot, millis);
+      isolate = openrasp_v8::Isolate::New(snapshot, millis);
       isolate->GetData()->custom_data = new CustomData();
       isolate_ptr.reset(isolate);
     }

@@ -19,7 +19,7 @@
 #include "flex/flex.h"
 #include "gen/builtins.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 Snapshot::Snapshot(const char* data, size_t raw_size, uint64_t timestamp)
     : v8::StartupData({data, static_cast<int>(raw_size)}), timestamp(timestamp) {}
@@ -82,18 +82,18 @@ Snapshot::Snapshot(const std::string& config,
         v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked());
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
-      plugin_info(isolate, e);
+      Platform::logger(e);
       // no need to continue
       return;
     }
     if (isolate->ExecScript(config, "config.js").IsEmpty()) {
       Exception e(isolate, try_catch);
-      plugin_info(isolate, e);
+      Platform::logger(e);
     }
     for (auto& plugin_src : plugin_list) {
       if (isolate->ExecScript("(function(){\n" + plugin_src.source + "\n})()", plugin_src.filename, -1).IsEmpty()) {
         Exception e(isolate, try_catch);
-        plugin_info(isolate, e);
+        Platform::logger(e);
       }
     }
     creator.SetDefaultContext(context);
@@ -122,4 +122,4 @@ bool Snapshot::Save(const std::string& path) const {
   // check errno when return value is false
   return false;
 }
-}  // namespace openrasp
+}  // namespace openrasp_v8

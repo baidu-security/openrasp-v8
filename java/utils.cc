@@ -18,23 +18,41 @@
 #include <vector>
 #include "header.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
+JavaVM* jvm = nullptr;
 V8Class v8_class;
 ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex snapshot_mtx;
+std::mutex mtx;
+std::queue<std::weak_ptr<openrasp_v8::Isolate>> PerThreadRuntime::shared_isolate;
+std::mutex PerThreadRuntime::shared_isolate_mtx;
+thread_local PerThreadRuntime per_thread_runtime;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
-  auto env = GetJNIEnv(isolate);
+void plugin_log(JNIEnv* env, const std::string& message) {
   auto msg = String2Jstring(env, message);
   env->CallStaticVoidMethod(v8_class.cls, v8_class.Log, msg);
 }
 
+void plugin_log(const std::string& message) {
+  JNIEnv* env;
+  auto rst = jvm->GetEnv((void**)&env, JNI_VERSION_1_6);
+  if (rst == JNI_ERR) {
+    printf("%s", message.c_str());
+    return;
+  }
+  if (rst == JNI_EDETACHED) {
+    jvm->AttachCurrentThread((void**)&env, nullptr);
+  }
+  plugin_log(env, message);
+  if (rst == JNI_EDETACHED) {
+    jvm->DetachCurrentThread();
+  }
+}
+
 void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto isolate = reinterpret_cast<openrasp::Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
+  auto isolate = reinterpret_cast<openrasp_v8::Isolate*>(info.GetIsolate());
   auto env = GetJNIEnv(isolate);
   jbyteArray jbuf = reinterpret_cast<jbyteArray>(env->CallStaticObjectMethod(v8_class.cls, v8_class.GetStack));
   if (jbuf == nullptr) {
@@ -58,30 +76,6 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
   info.GetReturnValue().Set(value);
-}
-
-Isolate* GetIsolate(JNIEnv* env) {
-  static thread_local IsolatePtr isolate_ptr;
-  Isolate* isolate = isolate_ptr.get();
-  if (snapshot) {
-    if (!isolate || isolate->IsExpired(snapshot->timestamp)) {
-      std::unique_lock<std::mutex> lock = isolate ? std::unique_lock<std::mutex>(snapshot_mtx, std::try_to_lock)
-                                                  : std::unique_lock<std::mutex>(snapshot_mtx);
-      if (lock) {
-        auto duration = std::chrono::system_clock::now().time_since_epoch();
-        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-        isolate_ptr.reset();
-        isolate = Isolate::New(snapshot, millis);
-        isolate_ptr.reset(isolate);
-        v8::HandleScope handle_scope(isolate);
-        isolate->GetData()->request_context_templ.Reset(isolate, CreateRequestContextTemplate(isolate));
-      }
-    }
-  }
-  if (isolate) {
-    isolate->GetData()->custom_data = env;
-  }
-  return isolate;
 }
 
 std::string Jstring2String(JNIEnv* env, jstring str) {
@@ -115,13 +109,13 @@ v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   if (data == nullptr) {
     return {};
   }
-  auto rst =
-      v8::String::NewFromTwoByte(GetIsolate(env), static_cast<const uint16_t*>(data), v8::NewStringType::kNormal, size);
+  auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
+                                        v8::NewStringType::kNormal, size);
   env->ReleaseStringCritical(jstr, data);
   return rst;
 }
 
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {
-  v8::String::Value str(GetIsolate(env), val);
+  v8::String::Value str(v8::Isolate::GetCurrent(), val);
   return env->NewString(*str, str.length());
 }

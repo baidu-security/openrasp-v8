@@ -16,8 +16,8 @@
 
 #include "base/bundle.h"
 #include "header.h"
-using namespace openrasp;
+using namespace openrasp_v8;
 
-void openrasp::plugin_info(Isolate* isolate, const std::string& message) {
+void openrasp_v8::plugin_info(Isolate* isolate, const std::string& message) {
   pluginLog({message.c_str(), message.length()});
 }

@@ -16,9 +16,10 @@
 
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 std::unique_ptr<Platform> Platform::instance;
+Logger Platform::logger = [](const std::string& message) { printf("%s", message.c_str()); };
 
 Platform* Platform::New(int thread_pool_size) {
   instance.reset(new Platform(thread_pool_size));
@@ -101,4 +102,4 @@ v8::Platform::StackTracePrinter Platform::GetStackTracePrinter() {
 //   return nullptr;
 // }
 
-}  // namespace openrasp
+}  // namespace openrasp_v8

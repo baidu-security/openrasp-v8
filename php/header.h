@@ -18,9 +18,25 @@
 
 #include "base/bundle.h"
 
-bool ExtractBuildinAction(openrasp::Isolate* isolate, std::map<std::string, std::string>& buildin_action_map);
-bool ExtractCallableBlacklist(openrasp::Isolate* isolate, std::vector<std::string>& callable_blacklist);
-bool ExtractXSSConfig(openrasp::Isolate* isolate,
-                      std::string& filter_regex,
-                      int64_t& min_length,
-                      int64_t& max_detection_num);
+namespace openrasp {
+using openrasp_v8::Initialize;
+using openrasp_v8::NewV8String;
+using openrasp_v8::Platform;
+using openrasp_v8::PluginFile;
+using openrasp_v8::Snapshot;
+class Isolate : public openrasp_v8::Isolate {
+ public:
+  static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp) {
+    auto isolate = reinterpret_cast<Isolate*>(openrasp_v8::Isolate::New(snapshot_blob, timestamp));
+    isolate->Enter();
+    v8::HandleScope handle_scope(isolate);
+    isolate->Initialize();
+    isolate->GetData()->context.Get(isolate)->Enter();
+    return isolate;
+  }
+  void Dispose() {
+    Exit();
+    openrasp_v8::Isolate::Dispose();
+  }
+};
+}

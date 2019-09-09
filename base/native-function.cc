@@ -1,19 +1,18 @@
 #include "bundle.h"
 #include "flex/flex.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 
 void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
   for (int i = 0; i < info.Length(); i++) {
     v8::String::Utf8Value message(isolate, info[i]);
-    plugin_info(isolate, {*message, static_cast<size_t>(message.length())});
+    Platform::logger({*message, static_cast<size_t>(message.length())});
   }
 }
 
 void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
-  v8::HandleScope handle_scope(isolate);
   if (info.Length() < 2 || !info[0]->IsString() || !info[1]->IsString()) {
     return;
   }
@@ -41,4 +40,4 @@ intptr_t* Snapshot::external_references = new intptr_t[4]{
     reinterpret_cast<intptr_t>(request_callback),
     0,
 };
-}  // namespace openrasp
+}  // namespace openrasp_v8

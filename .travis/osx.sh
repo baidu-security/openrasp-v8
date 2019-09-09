@@ -2,6 +2,8 @@
 
 set -ev
 
+pushd `git rev-parse --show-toplevel`
+
 mkdir -p build64 && pushd $_
 
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..

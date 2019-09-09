@@ -19,7 +19,7 @@
 #include <thread>
 #include "bundle.h"
 
-namespace openrasp {
+namespace openrasp_v8 {
 TimeoutTask::TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int milliseconds)
     : isolate(isolate),
       fut(std::move(fut)),
@@ -30,4 +30,4 @@ void TimeoutTask::Run() {
     isolate->TerminateExecution();
   }
 }
-}  // namespace openrasp
+}  // namespace openrasp_v8

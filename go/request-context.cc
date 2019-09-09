@@ -18,7 +18,7 @@
 #include "header.h"
 #include "string.h"
 
-using namespace openrasp;
+using namespace openrasp_v8;
 
 void* CreateV8String(void* isolate, Buffer buf) {
   auto maybe =
@@ -224,7 +224,7 @@ static void body_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo
   delete maybe_ptr;
 }
 
-v8::Local<v8::ObjectTemplate> openrasp::CreateRequestContextTemplate(Isolate* isolate) {
+v8::Local<v8::ObjectTemplate> openrasp_v8::CreateRequestContextTemplate(Isolate* isolate) {
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   obj_templ->SetAccessor(NewV8String(isolate, "url"), url_getter);
   obj_templ->SetAccessor(NewV8String(isolate, "header"), header_getter);
