@@ -29,10 +29,14 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
   if (message.IsEmpty()) {
     ref.append(*exception).append("\n");
   } else {
-    v8::String::Utf8Value filename(isolate, message->GetScriptOrigin().ResourceName());
-    v8::Local<v8::Context> context(isolate->GetCurrentContext());
-    int linenum = message->GetLineNumber(context).FromMaybe(0);
-    ref.append(*filename).append(":").append(to_string(linenum)).append("\n");
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    std::string filename = "<native code>";
+    int linenum = 0;
+    if (!message->GetScriptOrigin().ResourceName()->IsUndefined()) {
+      filename = *v8::String::Utf8Value(isolate, message->GetScriptOrigin().ResourceName());
+      linenum = message->GetLineNumber(context).FromMaybe(0);
+    }
+    ref.append(filename).append(":").append(to_string(linenum)).append("\n");
     v8::String::Utf8Value sourceline(isolate, message->GetSourceLine(context).ToLocalChecked());
     ref.append(*sourceline).append("\n");
     int start = message->GetStartColumn(context).FromMaybe(-1);
