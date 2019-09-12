@@ -172,7 +172,7 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
 }
 
 size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
-  return current_heap_limit + 128 * 1024;
+  return current_heap_limit + 1024 * 1024;
 }
 
 void Isolate::FatalErrorCallback(const char* location, const char* message) {

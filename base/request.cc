@@ -48,6 +48,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
       if (object->GetOwnPropertyNames(context).ToLocal(&props)) {
         cpr::Parameters parameters;
         for (int i = 0; i < props->Length(); i++) {
+          v8::HandleScope handle_scope(isolate);
           v8::Local<v8::Value> key, val;
           if (props->Get(context, i).ToLocal(&key) && object->Get(context, key).ToLocal(&val)) {
             parameters.AddParameter({*v8::String::Utf8Value(isolate, key), *v8::String::Utf8Value(isolate, val)});
@@ -103,6 +104,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
       v8::Local<v8::Array> props;
       if (object->GetOwnPropertyNames(context).ToLocal(&props)) {
         for (int i = 0; i < props->Length(); i++) {
+          v8::HandleScope handle_scope(isolate);
           v8::Local<v8::Value> key, val;
           if (props->Get(context, i).ToLocal(&key) && object->Get(context, key).ToLocal(&val)) {
             header.emplace(*v8::String::Utf8Value(isolate, key), *v8::String::Utf8Value(isolate, val));
