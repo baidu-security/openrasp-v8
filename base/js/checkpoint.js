@@ -11,6 +11,7 @@ global.checkPoints = [
     'request',
     'requestEnd',
     'sql',
+    'sql_exception',
     'writeFile',
     'xxe',
     'ognl',
