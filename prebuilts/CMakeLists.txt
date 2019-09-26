@@ -8,7 +8,10 @@ set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME})
 set(PREBUILTS_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/${SYSTEM_NAME} PARENT_SCOPE)
 
 if(NOT IS_DIRECTORY ${PREBUILTS_PREFIX})
-    execute_process(COMMAND bash "-c" "${CMAKE_CURRENT_SOURCE_DIR}/fetch_prebuilts.sh")
+    execute_process(COMMAND bash "-c" "${CMAKE_CURRENT_SOURCE_DIR}/fetch_prebuilts.sh" RESULT_VARIABLE ret)
+    if(NOT ret EQUAL "0")
+        message(FATAL_ERROR "Failed to to fetch prebuilts")
+    endif()
 endif()
 
 add_library(prebuilts INTERFACE)
