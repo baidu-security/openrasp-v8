@@ -46,8 +46,13 @@ void Isolate::Initialize() {
 
   auto RASP = context->Global()->Get(context, NewV8Key(this, "RASP")).ToLocalChecked().As<v8::Object>();
   auto check = RASP->Get(context, NewV8Key(this, "check")).ToLocalChecked().As<v8::Function>();
-  auto console_log =
-      context->Global()->Get(NewV8Key(this, "console")).As<v8::Object>()->Get(NewV8Key(this, "log")).As<v8::Function>();
+  auto console_log = context->Global()
+                         ->Get(context, NewV8Key(this, "console"))
+                         .ToLocalChecked()
+                         .As<v8::Object>()
+                         ->Get(context, NewV8Key(this, "log"))
+                         .ToLocalChecked()
+                         .As<v8::Function>();
   auto data = GetData();
   data->context.Reset(this, context);
   data->RASP.Reset(this, RASP);
@@ -101,8 +106,8 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
       msg = NewV8String(isolate, Exception(isolate, try_catch));
     }
     auto rst = v8::Object::New(isolate);
-    rst->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "exception"));
-    rst->Set(NewV8Key(isolate, "message"), msg);
+    rst->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "exception")).Check();
+    rst->Set(v8_context, NewV8Key(isolate, "message"), msg).Check();
     v8::Local<v8::Value> argv[]{rst.As<v8::Value>()};
     return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
   }

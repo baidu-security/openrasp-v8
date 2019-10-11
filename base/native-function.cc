@@ -13,6 +13,7 @@ void log_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Isolate* isolate = reinterpret_cast<Isolate*>(info.GetIsolate());
+  auto context = isolate->GetCurrentContext();
   if (info.Length() < 2 || !info[0]->IsString() || !info[1]->IsString()) {
     return;
   }
@@ -26,7 +27,7 @@ void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   auto arr = v8::Array::New(isolate, token_result.result_len);
   for (int i = 0; i < token_result.result_len; i++) {
-    arr->Set(i, v8::Integer::New(isolate, token_result.result[i]));
+    arr->Set(context, i, v8::Integer::New(isolate, token_result.result[i])).Check();
   }
   free(token_result.result);
   info.GetReturnValue().Set(arr);

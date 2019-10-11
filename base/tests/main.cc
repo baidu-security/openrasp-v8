@@ -12,7 +12,7 @@ using namespace openrasp_v8;
 std::string message;
 void plugin_log(const std::string& msg) {
   message = msg;
-  // std::cout << msg << std::endl;
+  std::cout << msg << std::endl;
 }
 
 class IsolateDeleter {
@@ -49,7 +49,7 @@ TEST_CASE("Bench", "[!benchmark]") {
                             R"({"action":"ignore","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
-    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).Check();
     auto rst = isolate->Check(type, params, context, 100);
     auto n = rst->Length();
     REQUIRE(n == 0);
@@ -75,7 +75,7 @@ TEST_CASE("Bench", "[!benchmark]") {
                             R"({"action":"log","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
-    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).Check();
     auto rst = isolate->Check(type, params, context, 100);
     auto n = rst->Length();
     REQUIRE(n == 1);
@@ -551,13 +551,13 @@ TEST_CASE("Check") {
   auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
   }
 
   SECTION("log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(std::string(*v8::String::Utf8Value(
                 isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
@@ -565,7 +565,7 @@ TEST_CASE("Check") {
   }
 
   SECTION("block") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "block"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "block")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(std::string(*v8::String::Utf8Value(
                 isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
@@ -573,8 +573,8 @@ TEST_CASE("Check") {
   }
 
   SECTION("timeout") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "timeout"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "timeout")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(std::string(*v8::String::Utf8Value(
                 isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
@@ -582,8 +582,8 @@ TEST_CASE("Check") {
   }
 
   SECTION("throw") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "throw"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "throw")).Check();
     auto rst = isolate->Check(type, params, context);
     auto str = std::string(
         *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
@@ -591,15 +591,15 @@ TEST_CASE("Check") {
   }
 
   SECTION("promise resolve ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).Check();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
   }
 
   SECTION("promise resolve log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve")).Check();
     auto rst = isolate->Check(type, params, context);
     auto str = std::string(
         *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
@@ -607,8 +607,8 @@ TEST_CASE("Check") {
   }
 
   SECTION("promise reject") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise reject"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise reject")).Check();
     auto rst = isolate->Check(type, params, context);
     auto str = std::string(
         *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
@@ -646,13 +646,13 @@ TEST_CASE("Plugins") {
   auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 1);
   }
 
   SECTION("log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).Check();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 2);
   }

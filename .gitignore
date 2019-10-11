@@ -32,9 +32,10 @@
 *.app
 
 # Build
-[Bb]uild*/
+[Bb]uild*/ 
 [Dd]ebug*/
 [Rr]elease*/
+vscodebuild
 
 .vscode
 .DS_Store
