@@ -119,11 +119,13 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
+  std::string type;
 
   {
-    if (!Jstring2V8string(env, jtype).ToLocal(&request_type)) {
-      return nullptr;
-    }
+    const char* tmp = env->GetStringUTFChars(jtype, nullptr);
+    type = std::string(tmp);
+    env->ReleaseStringUTFChars(jtype, tmp);
+    request_type = NewV8String(isolate, type);
   }
 
   {
@@ -146,7 +148,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   request_context = per_thread_runtime.request_context.Get(isolate);
-  if (jnew_request || request_context.IsEmpty()) {
+  if (type == "request" || request_context.IsEmpty()) {
     request_context =
         data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
     per_thread_runtime.request_context.Reset(isolate, request_context);
@@ -154,6 +156,10 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
   auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
+
+  if (type == "requestEnd") {
+    per_thread_runtime.request_context.Reset();
+  }
 
   if (rst->Length() == 0) {
     return nullptr;
