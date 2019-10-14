@@ -24,8 +24,10 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.array_buffer_allocator = array_buffer_allocator;
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
-  data->create_params.constraints.set_max_old_space_size(4);
-  // data->create_params.constraints.set_max_semi_space_size_in_kb(512);
+  // set a very low value, v8 will adjust to min limit
+  data->create_params.constraints.set_max_young_generation_size_in_bytes(1);
+  data->create_params.constraints.set_max_old_generation_size_in_bytes(10 * 1024 * 1024);
+  data->create_params.constraints.set_initial_old_generation_size_in_bytes(1024 * 1024 / 2);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
   if (!isolate) {
@@ -33,6 +35,13 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   }
   isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
   isolate->SetFatalErrorHandler(FatalErrorCallback);
+  isolate->AddGCEpilogueCallback([](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags) {
+    v8::HeapStatistics hs;
+    isolate->GetHeapStatistics(&hs);
+    if (hs.used_heap_size() > 1024 * 1024) {
+      isolate->LowMemoryNotification();
+    }
+  });
   isolate->SetData(data);
   data->timestamp = timestamp;
 
@@ -177,7 +186,9 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
 }
 
 size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
-  return current_heap_limit + 1024 * 1024;
+  auto isolate = reinterpret_cast<Isolate*>(data);
+  isolate->TerminateExecution();
+  return 0;
 }
 
 void Isolate::FatalErrorCallback(const char* location, const char* message) {
