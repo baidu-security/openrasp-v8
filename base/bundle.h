@@ -54,6 +54,7 @@ class Exception : public std::string {
 };
 
 typedef void (*Logger)(const std::string& message);
+typedef bool (*CriticalMemoryPressureCallback)(size_t length);
 
 class Platform : public v8::Platform {
  public:
@@ -79,6 +80,7 @@ class Platform : public v8::Platform {
   v8::TracingController* GetTracingController() override;
   v8::Platform::StackTracePrinter GetStackTracePrinter() override;
   // v8::PageAllocator* GetPageAllocator() override;
+  bool OnCriticalMemoryPressure(size_t length) override;
 
   static Platform* New(int thread_pool_size);
   static Platform* Get();
@@ -86,6 +88,7 @@ class Platform : public v8::Platform {
   void Shutdown();
 
   static Logger logger;
+  static CriticalMemoryPressureCallback criticalMemoryPressureCallback;
 
  private:
   static std::unique_ptr<Platform> instance;
