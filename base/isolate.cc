@@ -33,15 +33,22 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   if (!isolate) {
     return nullptr;
   }
-  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
   isolate->SetFatalErrorHandler(FatalErrorCallback);
-  isolate->AddGCEpilogueCallback([](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags) {
-    v8::HeapStatistics hs;
-    isolate->GetHeapStatistics(&hs);
-    if (hs.used_heap_size() > 1024 * 1024) {
-      isolate->LowMemoryNotification();
-    }
-  });
+  isolate->AddGCEpilogueCallback(
+      [](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags, void* data) {
+        v8::HeapStatistics* hs_old = reinterpret_cast<v8::HeapStatistics*>(data);
+        v8::HeapStatistics* hs_new = new v8::HeapStatistics();
+        isolate->GetHeapStatistics(hs_new);
+        if (hs_old->used_heap_size() / (1024 * 1024) < hs_new->used_heap_size() / (1024 * 1024)) {
+          isolate->LowMemoryNotification();
+          isolate->GetHeapStatistics(hs_new);
+        }
+        if (hs_new->used_heap_size() > hs_new->heap_size_limit() / 10 * 6) {
+          isolate->TerminateExecution();
+        }
+        *hs_old = *hs_new;
+      },
+      &data->hs);
   isolate->SetData(data);
   data->timestamp = timestamp;
 
@@ -183,12 +190,6 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
     continue;
   }
   return handle_scope.EscapeMaybe(rst);
-}
-
-size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
-  auto isolate = reinterpret_cast<Isolate*>(data);
-  isolate->TerminateExecution();
-  return 0;
 }
 
 void Isolate::FatalErrorCallback(const char* location, const char* message) {

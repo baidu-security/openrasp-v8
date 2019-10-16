@@ -121,6 +121,7 @@ class IsolateData {
   v8::Persistent<v8::Function> console_log;
   v8::Persistent<v8::Object> request_context;
   v8::Persistent<v8::ObjectTemplate> request_context_templ;
+  v8::HeapStatistics hs;
   uint64_t timestamp = 0;
   void* custom_data = nullptr;
 };
@@ -162,7 +163,6 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
-  static size_t NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit);
   static void FatalErrorCallback(const char* location, const char* message);
 };
 
