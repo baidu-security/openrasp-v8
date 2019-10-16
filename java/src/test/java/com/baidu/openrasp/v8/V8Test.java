@@ -209,7 +209,7 @@ public class V8Test {
         + "plugin.register('request', (params, context) => { context.flag = params.flag; while(true); })\n"
         + "plugin.register('requestEnd', (params, context) => { return {action: 'log', message: context.flag == params.flag ? 'ok' : `${context.flag} ${params.flag}`}; })\n" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
-    ExecutorService service = Executors.newFixedThreadPool(5);
+    ExecutorService service = Executors.newFixedThreadPool(20);
     List<Future<String>> futs = new ArrayList<Future<String>>();
     for (int i = 0; i < 50; i++) {
       Future<String> fut = service.submit(new Task(i));

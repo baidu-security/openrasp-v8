@@ -25,9 +25,7 @@ V8Class v8_class;
 ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex mtx;
-std::queue<std::weak_ptr<openrasp_v8::Isolate>> PerThreadRuntime::shared_isolate;
-std::mutex PerThreadRuntime::shared_isolate_mtx;
+std::mutex snapshot_mtx;
 thread_local PerThreadRuntime per_thread_runtime;
 
 void plugin_log(JNIEnv* env, const std::string& message) {

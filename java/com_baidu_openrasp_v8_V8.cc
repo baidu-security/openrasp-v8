@@ -86,7 +86,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
     delete blob;
     return false;
   }
-  std::lock_guard<std::mutex> lock(mtx);
+  std::lock_guard<std::mutex> lock(snapshot_mtx);
   delete snapshot;
   snapshot = blob;
   return true;

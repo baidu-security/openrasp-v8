@@ -47,4 +47,11 @@ public class V8 {
         V8.stackGetter = stackGetter;
     }
 
+    public static long GetFreeMemory() {
+        return Runtime.getRuntime().freeMemory();
+    }
+
+    public static void Gc() {
+        System.gc();
+    }
 }
