@@ -125,6 +125,7 @@ class IsolateData {
   v8::Persistent<v8::Object> request_context;
   v8::Persistent<v8::ObjectTemplate> request_context_templ;
   v8::HeapStatistics hs;
+  bool is_dead = false;
   uint64_t timestamp = 0;
   void* custom_data = nullptr;
 };
@@ -156,6 +157,7 @@ class Isolate : public v8::Isolate {
   IsolateData* GetData();
   void SetData(IsolateData* data);
   void Dispose();
+  bool IsDead();
   bool IsExpired(uint64_t timestamp);
   v8::Local<v8::Array> Check(v8::Local<v8::String> type,
                              v8::Local<v8::Object> params,

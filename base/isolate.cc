@@ -36,7 +36,8 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   isolate->SetFatalErrorHandler(FatalErrorCallback);
   isolate->AddGCEpilogueCallback(
       [](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags, void* data) {
-        v8::HeapStatistics* hs_old = reinterpret_cast<v8::HeapStatistics*>(data);
+        auto d = reinterpret_cast<IsolateData*>(data);
+        v8::HeapStatistics* hs_old = &(d->hs);
         v8::HeapStatistics* hs_new = new v8::HeapStatistics();
         isolate->GetHeapStatistics(hs_new);
         if (hs_old->used_heap_size() / (1024 * 1024) < hs_new->used_heap_size() / (1024 * 1024)) {
@@ -45,10 +46,11 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
         }
         if (hs_new->used_heap_size() > hs_new->heap_size_limit() / 10 * 6) {
           isolate->TerminateExecution();
+          d->is_dead = true;
         }
         *hs_old = *hs_new;
       },
-      &data->hs);
+      data);
   isolate->SetData(data);
   data->timestamp = timestamp;
 
@@ -87,6 +89,10 @@ void Isolate::SetData(IsolateData* data) {
 void Isolate::Dispose() {
   delete GetData();
   v8::Isolate::Dispose();
+}
+
+bool Isolate::IsDead() {
+  return v8::Isolate::IsDead() || GetData()->is_dead;
 }
 
 bool Isolate::IsExpired(uint64_t timestamp) {
