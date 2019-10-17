@@ -27,10 +27,13 @@ ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
- * Signature: ()Z
+ * Signature: (I)Z
  */
-ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
+ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
+                                                                                   jclass cls,
+                                                                                   jint jsize) {
   if (!is_initialized) {
+    isolate_pool::size = jsize;
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
     is_initialized = Initialize(0, plugin_log);
@@ -95,7 +98,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)[B
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;JI)[B
  */
 ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                                                 jclass cls,
@@ -103,7 +106,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
                                                                                 jbyteArray jparams,
                                                                                 jint jparams_size,
                                                                                 jobject jcontext,
-                                                                                jboolean jnew_request,
+                                                                                jlong jfree_memory,
                                                                                 jint jtimeout) {
   Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {

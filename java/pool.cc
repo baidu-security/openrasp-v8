@@ -4,27 +4,35 @@
 #include <mutex>
 #include "header.h"
 
+namespace isolate_pool {
+
 class IsolateDeleter {
  public:
   ALIGN_FUNCTION void operator()(openrasp_v8::Isolate* isolate) { isolate->Dispose(); }
 };
 
-std::shared_ptr<openrasp_v8::Isolate> GetIsolate() {
-  static std::mutex mtx;
-  static std::list<std::weak_ptr<openrasp_v8::Isolate>> isolates;
+size_t size = 1;
+static std::mutex mtx;
+static std::list<std::weak_ptr<openrasp_v8::Isolate>> isolates;
 
+std::shared_ptr<openrasp_v8::Isolate> GetIsolate() {
   std::lock_guard<std::mutex> lock1(mtx);
-  isolates.remove_if([](std::weak_ptr<openrasp_v8::Isolate> ptr) { return ptr.use_count() == 0; });
-  for (auto ptr : isolates) {
-    if (ptr.use_count() < 5) {
-      auto isolate = ptr.lock();
-      if (!isolate->IsExpired(snapshot->timestamp)) {
-        return isolate;
-      }
+  std::lock_guard<std::mutex> lock2(snapshot_mtx);
+  isolates.remove_if([](std::weak_ptr<openrasp_v8::Isolate> ptr) {
+    auto p = ptr.lock();
+    return !p || p->IsDead() || p->IsExpired(snapshot->timestamp);
+  });
+  isolates.sort([](std::weak_ptr<openrasp_v8::Isolate> p1, std::weak_ptr<openrasp_v8::Isolate> p2) {
+    return p1.use_count() < p2.use_count();
+  });
+
+  if (isolates.size() == size) {
+    auto p = isolates.front().lock();
+    if (p) {
+      return p;
     }
   }
 
-  std::lock_guard<std::mutex> lock2(snapshot_mtx);
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   auto isolate = openrasp_v8::Isolate::New(snapshot, millis);
@@ -39,3 +47,4 @@ std::shared_ptr<openrasp_v8::Isolate> GetIsolate() {
 
   return ptr;
 }
+}  // namespace isolate_pool

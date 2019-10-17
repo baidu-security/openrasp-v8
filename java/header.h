@@ -82,7 +82,10 @@ inline JNIEnv* GetJNIEnv(openrasp_v8::Isolate* isolate) {
   return reinterpret_cast<JNIEnv*>(isolate->GetData()->custom_data);
 }
 
+namespace isolate_pool {
+extern size_t size;
 extern std::shared_ptr<openrasp_v8::Isolate> GetIsolate();
+}  // namespace isolate_pool
 
 class PerThreadRuntime {
  public:
@@ -93,7 +96,7 @@ class PerThreadRuntime {
     }
     if (!isolate || isolate->IsDead() || isolate->IsExpired(snapshot->timestamp)) {
       Dispose();
-      isolate = ::GetIsolate();
+      isolate = isolate_pool::GetIsolate();
     }
     return isolate.get();
   }
