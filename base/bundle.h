@@ -172,10 +172,12 @@ class Isolate : public v8::Isolate {
 };
 
 inline bool Initialize(size_t pool_size, Logger logger) {
-  const char* flags = std::getenv("OPENRASP_V8_OPTIONS");
-  if (flags) {
-    v8::V8::SetFlagsFromString(flags, strlen(flags));
+  std::string flags = "--stress-compaction --stress-compaction-random ";
+  const char* env = std::getenv("OPENRASP_V8_OPTIONS");
+  if (env) {
+    flags += env;
   }
+  v8::V8::SetFlagsFromString(flags.data(), flags.size());
   Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
   v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
@@ -190,7 +192,7 @@ inline bool Initialize(size_t pool_size, Logger logger) {
     printf("%s", msg.c_str());
   });
   return v8::V8::Initialize();
-}
+}  // namespace openrasp_v8
 
 inline bool Dispose() {
   bool rst = v8::V8::Dispose();
