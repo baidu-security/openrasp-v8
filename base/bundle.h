@@ -168,7 +168,6 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
-  static void FatalErrorCallback(const char* location, const char* message);
 };
 
 inline bool Initialize(size_t pool_size, Logger logger) {

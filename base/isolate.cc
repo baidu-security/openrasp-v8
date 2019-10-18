@@ -33,7 +33,16 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   if (!isolate) {
     return nullptr;
   }
-  isolate->SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler([](const char* location, const char* message) {
+    std::string msg;
+    msg += "\n#\n# Native error in ";
+    msg += location;
+    msg += "\n# ";
+    msg += message;
+    msg += "\n#\n\n";
+    Platform::logger(msg);
+    printf("%s", msg.c_str());
+  });
   isolate->AddNearHeapLimitCallback(
       [](void* data, size_t current_heap_limit, size_t initial_heap_limit) -> size_t {
         auto isolate = reinterpret_cast<Isolate*>(data);
@@ -187,17 +196,6 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
     continue;
   }
   return handle_scope.EscapeMaybe(rst);
-}
-
-void Isolate::FatalErrorCallback(const char* location, const char* message) {
-  std::string msg;
-  msg += "\n#\n# Native error in ";
-  msg += location;
-  msg += "\n# ";
-  msg += message;
-  msg += "\n#\n\n";
-  Platform::logger(msg);
-  printf("%s", msg.c_str());
 }
 
 }  // namespace openrasp_v8
