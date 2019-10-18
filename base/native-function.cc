@@ -27,7 +27,7 @@ void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   auto arr = v8::Array::New(isolate, token_result.result_len);
   for (int i = 0; i < token_result.result_len; i++) {
-    arr->Set(context, i, v8::Integer::New(isolate, token_result.result[i])).Check();
+    arr->Set(context, i, v8::Integer::New(isolate, token_result.result[i])).IsJust();
   }
   free(token_result.result);
   info.GetReturnValue().Set(arr);

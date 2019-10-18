@@ -65,27 +65,27 @@ Snapshot::Snapshot(const std::string& config,
     v8::Context::Scope context_scope(context);
     v8::TryCatch try_catch(isolate);
     v8::Local<v8::Object> global = context->Global();
-    global->Set(context, NewV8Key(isolate, "version"), NewV8String(isolate, version)).Check();
-    global->Set(context, NewV8Key(isolate, "global"), global).Check();
-    global->Set(context, NewV8Key(isolate, "window"), global).Check();
+    global->Set(context, NewV8Key(isolate, "version"), NewV8String(isolate, version)).IsJust();
+    global->Set(context, NewV8Key(isolate, "global"), global).IsJust();
+    global->Set(context, NewV8Key(isolate, "window"), global).IsJust();
     v8::Local<v8::Object> v8_stdout = v8::Object::New(isolate);
     v8_stdout
         ->Set(
             context, NewV8Key(isolate, "write"),
             v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[0])).ToLocalChecked())
-        .Check();
-    global->Set(context, NewV8Key(isolate, "stdout"), v8_stdout).Check();
-    global->Set(context, NewV8Key(isolate, "stderr"), v8_stdout).Check();
+        .IsJust();
+    global->Set(context, NewV8Key(isolate, "stdout"), v8_stdout).IsJust();
+    global->Set(context, NewV8Key(isolate, "stderr"), v8_stdout).IsJust();
     global
         ->Set(
             context, NewV8Key(isolate, "flex_tokenize"),
             v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[1])).ToLocalChecked())
-        .Check();
+        .IsJust();
     global
         ->Set(
             context, NewV8Key(isolate, "request"),
             v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked())
-        .Check();
+        .IsJust();
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       Platform::logger(e);

@@ -25,9 +25,11 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
   // set a very low value, v8 will adjust to min limit
-  data->create_params.constraints.set_max_young_generation_size_in_bytes(1);
-  data->create_params.constraints.set_max_old_generation_size_in_bytes(20 * 1024 * 1024);
-  data->create_params.constraints.set_initial_old_generation_size_in_bytes(1024 * 1024 / 2);
+  // data->create_params.constraints.set_max_young_generation_size_in_bytes(1);
+  // data->create_params.constraints.set_max_old_generation_size_in_bytes(20 * 1024 * 1024);
+  // data->create_params.constraints.set_initial_old_generation_size_in_bytes(1024 * 1024 / 2);
+  data->create_params.constraints.set_max_semi_space_size_in_kb(1024);
+  data->create_params.constraints.set_max_old_space_size(20);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
   if (!isolate) {
@@ -128,8 +130,8 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
       msg = NewV8String(isolate, Exception(isolate, try_catch));
     }
     auto rst = v8::Object::New(isolate);
-    rst->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "exception")).Check();
-    rst->Set(v8_context, NewV8Key(isolate, "message"), msg).Check();
+    rst->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "exception")).IsJust();
+    rst->Set(v8_context, NewV8Key(isolate, "message"), msg).IsJust();
     v8::Local<v8::Value> argv[]{rst.As<v8::Value>()};
     return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
   }
