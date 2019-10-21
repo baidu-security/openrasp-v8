@@ -194,10 +194,6 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
  * Method:    ExecuteScript
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
- *
- * 暂时地:jstinrg->uint16_t*->std::u16string->std::string
- * 下个版本应该在Isolate类中增加ExecScript(v8::Local<v8::String>, ...)，以便免去转换过程
- * 不直接用env->GetStringUTFChars的原因是jni不能正确转换一些特殊字符到utf8
  */
 ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
                                                                                      jclass cls,
@@ -219,12 +215,12 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> v8_context = data->context.Get(isolate);
-  v8::Context::Scope context_scope(v8_context);
+  v8::Local<v8::Context> context = data->context.Get(isolate);
+  v8::Context::Scope context_scope(context);
   v8::TryCatch try_catch(isolate);
-  std::string source = Jstring2String(env, jsource);
-  std::string filename = Jstring2String(env, jfilename);
-  auto maybe_rst = isolate->ExecScript(source, filename);
+  auto maybe_rst = isolate->ExecScript(Jstring2V8string(env, jsource).FromMaybe(v8::String::Empty(isolate)),
+                                       Jstring2V8string(env, jfilename).FromMaybe(v8::String::Empty(isolate)),
+                                       v8::Integer::New(isolate, 0));
   if (maybe_rst.IsEmpty()) {
     Exception e(isolate, try_catch);
     jclass ExceptionClass = env->FindClass("java/lang/Exception");
