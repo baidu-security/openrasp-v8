@@ -113,6 +113,9 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     return nullptr;
   }
   v8::Locker lock(isolate);
+  if (isolate->IsDead()) {
+    return nullptr;
+  }
   auto data = isolate->GetData();
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
@@ -207,6 +210,11 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
     return nullptr;
   }
   v8::Locker lock(isolate);
+  if (isolate->IsDead()) {
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, "V8 isolate is dead");
+    return nullptr;
+  }
   auto data = isolate->GetData();
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
