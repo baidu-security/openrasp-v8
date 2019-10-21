@@ -19,10 +19,14 @@
 namespace openrasp_v8 {
 using namespace std;
 Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
+  string& ref = *this;
   if (!try_catch.HasCaught()) {
     return;
   }
-  string& ref = *this;
+  if (try_catch.HasCaught()) {
+    ref.append("Terminated").append("\n");
+    return;
+  }
   v8::HandleScope handle_scope(isolate);
   v8::String::Utf8Value exception(isolate, try_catch.Exception());
   v8::Local<v8::Message> message = try_catch.Message();
