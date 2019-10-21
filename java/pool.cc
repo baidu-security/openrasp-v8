@@ -12,12 +12,10 @@ class IsolateDeleter {
 };
 
 size_t size = 1;
-static std::mutex mtx;
 static std::list<std::weak_ptr<openrasp_v8::Isolate>> isolates;
 
 std::shared_ptr<openrasp_v8::Isolate> GetIsolate() {
-  std::lock_guard<std::mutex> lock1(mtx);
-  std::lock_guard<std::mutex> lock2(snapshot_mtx);
+  std::lock_guard<std::mutex> lock1(snapshot_mtx);
   isolates.remove_if([](std::weak_ptr<openrasp_v8::Isolate> ptr) {
     auto p = ptr.lock();
     return !p || p->IsDead() || p->IsExpired(snapshot->timestamp);
@@ -36,7 +34,7 @@ std::shared_ptr<openrasp_v8::Isolate> GetIsolate() {
   auto duration = std::chrono::system_clock::now().time_since_epoch();
   auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
   auto isolate = openrasp_v8::Isolate::New(snapshot, millis);
-  v8::Locker lock3(isolate);
+  v8::Locker lock2(isolate);
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   isolate->Initialize();
