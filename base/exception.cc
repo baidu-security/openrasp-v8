@@ -23,7 +23,7 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
   if (!try_catch.HasCaught()) {
     return;
   }
-  if (try_catch.HasCaught()) {
+  if (try_catch.HasTerminated()) {
     ref.append("Terminated").append("\n");
     return;
   }

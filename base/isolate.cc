@@ -123,7 +123,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
     v8::Local<v8::String> msg;
-    if (try_catch.HasTerminated()) {
+    if (try_catch.HasTerminated() && !isolate->IsDead()) {
       isolate->CancelTerminateExecution();
       msg = NewV8String(isolate, "Javascript plugin execution timeout");
     } else {
