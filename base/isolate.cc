@@ -47,10 +47,10 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   });
   isolate->AddNearHeapLimitCallback(
       [](void* data, size_t current_heap_limit, size_t initial_heap_limit) -> size_t {
+        Platform::logger("Javascript plugin execution out of memory\n");
         auto isolate = reinterpret_cast<Isolate*>(data);
         isolate->TerminateExecution();
         isolate->GetData()->is_dead = true;
-        Platform::logger("Javascript plugin execution out of memory\n");
         return current_heap_limit * 2;
       },
       isolate);
@@ -123,9 +123,10 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   }
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    Platform::logger(Exception(isolate, try_catch));
-    if (isolate->IsExecutionTerminating()) {
+    if (try_catch.HasTerminated()) {
       isolate->CancelTerminateExecution();
+    } else {
+      Platform::logger(Exception(isolate, try_catch));
     }
     return handle_scope.Escape(v8::Array::New(isolate, 0));
   }

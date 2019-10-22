@@ -128,7 +128,7 @@ public class V8Test {
     {
       String params = "{\"timeout\":true}";
       assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200));
-      assertEquals("Terminated", log);
+      assertEquals("Javascript plugin execution timeout", log);
     }
   }
 
@@ -182,7 +182,7 @@ public class V8Test {
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
     assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400));
-    assertEquals("Terminated", log);
+    assertEquals("Javascript plugin execution timeout", log);
   }
 
   public class Task implements Callable<String> {

@@ -576,7 +576,7 @@ TEST_CASE("Check") {
     params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "timeout")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
-    REQUIRE(message == "Terminated\n");
+    REQUIRE(message == "Javascript plugin execution timeout\n");
   }
 
   SECTION("throw") {
