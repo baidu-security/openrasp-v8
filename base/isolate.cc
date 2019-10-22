@@ -50,6 +50,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
         auto isolate = reinterpret_cast<Isolate*>(data);
         isolate->TerminateExecution();
         isolate->GetData()->is_dead = true;
+        Platform::logger("Javascript plugin execution out of memory\n");
         return current_heap_limit * 2;
       },
       isolate);
@@ -122,18 +123,11 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   }
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    v8::Local<v8::String> msg;
-    if (try_catch.HasTerminated() && !isolate->IsDead()) {
+    Platform::logger(Exception(isolate, try_catch));
+    if (isolate->IsExecutionTerminating()) {
       isolate->CancelTerminateExecution();
-      msg = NewV8String(isolate, "Javascript plugin execution timeout");
-    } else {
-      msg = NewV8String(isolate, Exception(isolate, try_catch));
     }
-    auto rst = v8::Object::New(isolate);
-    rst->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "exception")).IsJust();
-    rst->Set(v8_context, NewV8Key(isolate, "message"), msg).IsJust();
-    v8::Local<v8::Value> argv[]{rst.As<v8::Value>()};
-    return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
+    return handle_scope.Escape(v8::Array::New(isolate, 0));
   }
   auto rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {

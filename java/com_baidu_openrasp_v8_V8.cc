@@ -131,7 +131,10 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     const char* tmp = env->GetStringUTFChars(jtype, nullptr);
     type = std::string(tmp);
     env->ReleaseStringUTFChars(jtype, tmp);
-    request_type = NewV8String(isolate, type);
+    if (!v8::String::NewFromUtf8(isolate, type.data(), v8::NewStringType::kInternalized, type.size())
+             .ToLocal(&request_type)) {
+      return nullptr;
+    }
   }
 
   {
@@ -155,8 +158,9 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
 
   request_context = per_thread_runtime.request_context.Get(isolate);
   if (type == "request" || request_context.IsEmpty()) {
-    request_context =
-        data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
+    if (!data->request_context_templ.Get(isolate)->NewInstance(context).ToLocal(&request_context)) {
+      return nullptr;
+    }
     per_thread_runtime.request_context.Reset(isolate, request_context);
   }
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));

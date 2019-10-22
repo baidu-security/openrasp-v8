@@ -24,7 +24,7 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
     return;
   }
   if (try_catch.HasTerminated()) {
-    ref.append("Terminated").append("\n");
+    ref.append("Terminated\n");
     return;
   }
   v8::HandleScope handle_scope(isolate);

@@ -460,7 +460,6 @@ RASP.request({
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":8)==="));
     REQUIRE_THAT(rst, Catch::Matchers::Matches(R"===(.*timed out.*)==="));
   }
   SECTION("error") {
@@ -576,18 +575,16 @@ TEST_CASE("Check") {
     params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
     params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "timeout")).IsJust();
     auto rst = isolate->Check(type, params, context);
-    REQUIRE(std::string(*v8::String::Utf8Value(
-                isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-            R"([{"action":"exception","message":"Javascript plugin execution timeout"}])");
+    REQUIRE(rst->Length() == 0);
+    REQUIRE(message == "Terminated\n");
   }
 
   SECTION("throw") {
     params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
     params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "throw")).IsJust();
     auto rst = isolate->Check(type, params, context);
-    auto str = std::string(
-        *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
-    REQUIRE_THAT(str, Catch::Matchers::Matches(".*exception.*a is not defined.*"));
+    REQUIRE(rst->Length() == 0);
+    REQUIRE_THAT(message, Catch::Matchers::Contains("ReferenceError: a is not defined"));
   }
 
   SECTION("promise resolve ignore") {

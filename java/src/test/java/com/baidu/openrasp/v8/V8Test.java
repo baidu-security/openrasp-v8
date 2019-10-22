@@ -1,16 +1,28 @@
 package com.baidu.openrasp.v8;
 
-import static org.junit.Assert.*;
-import org.junit.*;
-import java.util.*;
-import com.jsoniter.output.JsonStream;
-import com.jsoniter.JsonIterator;
-import com.jsoniter.any.Any;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Callable;
+
+import com.jsoniter.JsonIterator;
+import com.jsoniter.any.Any;
+import com.jsoniter.output.JsonStream;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class V8Test {
 
@@ -26,7 +38,7 @@ public class V8Test {
     V8.SetLogger(new Logger() {
       @Override
       public void log(String msg) {
-        System.out.println(msg);
+        // System.out.println(msg);
         log = msg;
       }
     });
@@ -115,10 +127,8 @@ public class V8Test {
     }
     {
       String params = "{\"timeout\":true}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200);
-      Any any = JsonIterator.deserialize(rst).asList().get(0);
-      assertEquals("exception", any.toString("action"));
-      assertEquals("Javascript plugin execution timeout", any.toString("message"));
+      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200));
+      assertEquals("Terminated", log);
     }
   }
 
@@ -171,8 +181,8 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params) => {\nfor(;;) {}\n})" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    assertArrayEquals(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400),
-        "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
+    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400));
+    assertEquals("Terminated", log);
   }
 
   public class Task implements Callable<String> {
@@ -188,9 +198,9 @@ public class V8Test {
       ByteArrayOutputStream data = new ByteArrayOutputStream();
       params.put("flag", id);
       JsonStream.serialize(params, data);
-      String msg = new String(V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200));
-      if (!msg.contains("timeout")) {
-        return msg;
+      byte[] rst = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
+      if (rst != null) {
+        return new String(rst);
       }
       Thread.sleep(id / 20);
       return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), false, 200));
