@@ -30,8 +30,6 @@ public class ContextImpl extends Context {
   }
 
   public byte[] getObject(String key) {
-    if (key.equals("body"))
-      return getBody();
     if (key.equals("json"))
       return getJson();
     if (key.equals("header"))

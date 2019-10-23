@@ -138,13 +138,14 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   {
-    auto raw = static_cast<uint8_t*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
+    auto raw = env->GetByteArrayElements(jparams, nullptr);
     // https://stackoverflow.com/questions/36101913/should-i-always-call-releaseprimitivearraycritical-even-if-getprimitivearraycrit
     if (raw == nullptr) {
       return nullptr;
     }
-    auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jparams_size);
-    env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
+    auto maybe_string =
+        v8::String::NewFromOneByte(isolate, reinterpret_cast<uint8_t*>(raw), v8::NewStringType::kNormal, jparams_size);
+    env->ReleaseByteArrayElements(jparams, raw, JNI_ABORT);
     if (maybe_string.IsEmpty()) {
       return nullptr;
     }
@@ -180,16 +181,12 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     return nullptr;
   }
 
-  auto bytearray = env->NewByteArray(json->Utf8Length(isolate));
+  v8::String::Utf8Value val(isolate, json);
+  auto bytearray = env->NewByteArray(val.length());
   if (bytearray == nullptr) {
     return nullptr;
   }
-  auto bytes = env->GetPrimitiveArrayCritical(bytearray, nullptr);
-  if (bytes == nullptr) {
-    return nullptr;
-  }
-  json->WriteUtf8(isolate, static_cast<char*>(bytes));
-  env->ReleasePrimitiveArrayCritical(bytearray, bytes, 0);
+  env->SetByteArrayRegion(bytearray, 0, val.length(), reinterpret_cast<jbyte*>(*val));
   return bytearray;
 }
 

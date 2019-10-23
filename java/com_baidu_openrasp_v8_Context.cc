@@ -96,12 +96,12 @@ static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf == nullptr) {
     return;
   }
-  auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
+  auto raw = jenv->GetByteArrayElements(jbuf, nullptr);
   if (raw == nullptr) {
     return;
   }
-  auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
-  jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
+  auto maybe_string = v8::String::NewFromOneByte(isolate, reinterpret_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
+  jenv->ReleaseByteArrayElements(jbuf, raw, JNI_ABORT);
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -130,12 +130,12 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf_size <= 0) {
     return;
   }
-  auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
+  auto raw = jenv->GetByteArrayElements(jbuf, nullptr);
   if (raw == nullptr) {
     return;
   }
   auto buffer = v8::ArrayBuffer::New(isolate, raw, jbuf_size);
-  jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
+  jenv->ReleaseByteArrayElements(jbuf, raw, JNI_ABORT);
 
   info.GetReturnValue().Set(buffer);
 }

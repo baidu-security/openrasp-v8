@@ -45,7 +45,13 @@ public class V8Test {
     V8.SetStackGetter(new StackGetter() {
       @Override
       public byte[] get() {
-        return "[1,2,3,4]".getBytes();
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        try {
+          data.write("[1,2,3,4]".getBytes());
+          data.write(0);
+        } catch (Exception e) {
+        }
+        return data.getByteArray();
       }
     });
     assertTrue(V8.Initialize());
