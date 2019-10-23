@@ -102,21 +102,21 @@ bool Isolate::IsExpired(uint64_t timestamp) {
   return timestamp > GetData()->timestamp;
 }
 
-v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
-                                    v8::Local<v8::Object> params,
-                                    v8::Local<v8::Object> context,
-                                    int timeout) {
+v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
+                                         v8::Local<v8::String> request_type,
+                                         v8::Local<v8::Object> request_params,
+                                         v8::Local<v8::Object> request_context,
+                                         int timeout) {
   auto isolate = this;
   v8::EscapableHandleScope handle_scope(isolate);
   auto data = isolate->GetData();
-  auto v8_context = isolate->GetCurrentContext();
   v8::TryCatch try_catch(isolate);
   auto check = data->check.Get(isolate);
-  v8::Local<v8::Value> argv[]{type, params, context};
+  v8::Local<v8::Value> argv[]{request_type, request_params, request_context};
 
   std::promise<void> pro;
   Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), timeout)));
-  auto maybe_rst = check->Call(v8_context, check, 3, argv);
+  auto maybe_rst = check->Call(context, check, 3, argv);
   pro.set_value();
   while (Platform::Get()->PumpMessageLoop(isolate)) {
     continue;
@@ -128,11 +128,11 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
     } else {
       Platform::logger(Exception(isolate, try_catch));
     }
-    return handle_scope.Escape(v8::Array::New(isolate, 0));
+    return {};
   }
   auto rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
-    return handle_scope.Escape(v8::Array::New(isolate, 0));
+    return {};
   }
   auto arr = rst.As<v8::Array>();
   // all results are ignore, fast track
@@ -145,17 +145,29 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   int idx = 0;
   for (int i = 0; i < arr->Length(); i++) {
     v8::Local<v8::Value> item;
-    if (arr->Get(v8_context, i).ToLocal(&item)) {
+    if (arr->Get(context, i).ToLocal(&item)) {
       if (item->IsPromise()) {
         item = item.As<v8::Promise>()->Result();
         if (item->IsUndefined()) {
           continue;
         }
       }
-      ret_arr->Set(v8_context, idx++, item).IsJust();
+      ret_arr->Set(context, idx++, item).IsJust();
     }
   }
   return handle_scope.Escape(ret_arr);
+}
+
+v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> request_type,
+                                    v8::Local<v8::Object> request_params,
+                                    v8::Local<v8::Object> request_context,
+                                    int timeout) {
+  auto maybe_rst = Check(this->GetCurrentContext(), request_type, request_params, request_context, timeout);
+  if (maybe_rst.IsEmpty()) {
+    return v8::Array::New(this, 0);
+  } else {
+    return maybe_rst.ToLocalChecked();
+  }
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(const std::string& source, const std::string& filename, int line_offset) {

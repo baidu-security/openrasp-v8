@@ -159,10 +159,15 @@ class Isolate : public v8::Isolate {
   void Dispose();
   bool IsDead();
   bool IsExpired(uint64_t timestamp);
-  v8::Local<v8::Array> Check(v8::Local<v8::String> type,
-                             v8::Local<v8::Object> params,
-                             v8::Local<v8::Object> context,
+  v8::Local<v8::Array> Check(v8::Local<v8::String> request_type,
+                             v8::Local<v8::Object> request_params,
+                             v8::Local<v8::Object> request_context,
                              int timeout = 100);
+  v8::MaybeLocal<v8::Array> Check(v8::Local<v8::Context> context,
+                                  v8::Local<v8::String> request_type,
+                                  v8::Local<v8::Object> request_params,
+                                  v8::Local<v8::Object> request_context,
+                                  int timeout = 100);
   v8::MaybeLocal<v8::Value> ExecScript(const std::string& source, const std::string& filename, int line_offset = 0);
   v8::MaybeLocal<v8::Value> ExecScript(v8::Local<v8::String> source,
                                        v8::Local<v8::String> filename,
