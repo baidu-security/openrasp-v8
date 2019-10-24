@@ -138,14 +138,8 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   {
-    auto raw = env->GetByteArrayElements(jparams, nullptr);
-    // https://stackoverflow.com/questions/36101913/should-i-always-call-releaseprimitivearraycritical-even-if-getprimitivearraycrit
-    if (raw == nullptr) {
-      return nullptr;
-    }
     auto maybe_string =
-        v8::String::NewFromOneByte(isolate, reinterpret_cast<uint8_t*>(raw), v8::NewStringType::kNormal, jparams_size);
-    env->ReleaseByteArrayElements(jparams, raw, JNI_ABORT);
+        v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jparams, jparams_size));
     if (maybe_string.IsEmpty()) {
       return nullptr;
     }

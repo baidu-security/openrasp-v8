@@ -56,12 +56,7 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
   if (jbuf == nullptr) {
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
-  auto raw = env->GetByteArrayElements(jbuf, nullptr);
-  if (raw == nullptr) {
-    return info.GetReturnValue().Set(v8::Array::New(isolate));
-  }
-  auto maybe_string = v8::String::NewFromOneByte(isolate, reinterpret_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
-  env->ReleaseByteArrayElements(jbuf, raw, JNI_ABORT);
+  auto maybe_string = v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jbuf));
   if (maybe_string.IsEmpty()) {
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
@@ -102,15 +97,7 @@ jstring String2Jstring(JNIEnv* env, const std::string& str) {
 }
 
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
-  auto data = env->GetStringChars(jstr, nullptr);
-  auto size = env->GetStringLength(jstr);
-  if (data == nullptr) {
-    return {};
-  }
-  auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
-                                        v8::NewStringType::kNormal, size);
-  env->ReleaseStringChars(jstr, data);
-  return rst;
+  return v8::String::NewExternalTwoByte(v8::Isolate::GetCurrent(), new ExternalStringResource(env, jstr));
 }
 
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {

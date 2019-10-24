@@ -150,7 +150,7 @@ public class V8Test {
   public void Context() {
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",
-        "const plugin = new RASP('test')\nplugin.register('request', (params, context) => console.log(JSON.stringify(context)))" });
+        "const plugin = new RASP('test')\nplugin.register('request', (params, context) => { if ((new Int32Array(context.body))[0] == 50462976) console.log(JSON.stringify(context)) })" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
     byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
