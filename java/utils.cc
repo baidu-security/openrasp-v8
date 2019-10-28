@@ -97,7 +97,16 @@ jstring String2Jstring(JNIEnv* env, const std::string& str) {
 }
 
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
-  return v8::String::NewExternalTwoByte(v8::Isolate::GetCurrent(), new ExternalStringResource(env, jstr));
+  auto data = env->GetStringChars(jstr, nullptr);
+  if (data == nullptr) {
+    return {};
+  }
+  auto size = env->GetStringLength(jstr);
+  size = std::min(std::max(size, 0), 8 * 1024 * 1024 / 2);
+  auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
+                                        v8::NewStringType::kNormal, size);
+  env->ReleaseStringChars(jstr, data);
+  return rst;
 }
 
 jstring V8value2Jstring(JNIEnv* env, v8::Local<v8::Value> val) {

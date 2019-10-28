@@ -76,7 +76,7 @@ public class ContextImpl extends Context {
   }
 
   public String getRequestId() {
-    return "test 中文 & 😊";
+    return "";
   }
 
   public byte[] getBody() {

@@ -4,9 +4,9 @@ import org.scijava.nativelib.NativeLoader;
 
 public class V8 {
 
-    public static Logger logger = null;
+    private static Logger logger = null;
 
-    public static StackGetter stackGetter = null;
+    private static StackGetter stackGetter = null;
 
     private static boolean isLoad = false;
 

@@ -110,22 +110,20 @@ class PerThreadRuntime {
 
 class ExternalOneByteStringResource : public v8::String::ExternalOneByteStringResource {
  public:
-  ExternalOneByteStringResource(JNIEnv* env, jbyteArray jbuf, size_t jsize = 0) {
+  ExternalOneByteStringResource(JNIEnv* env, jbyteArray jbuf, jsize jbuf_size = 0) {
     if (jbuf == nullptr) {
       return;
     }
-    if (jsize <= 0) {
-      jsize = env->GetArrayLength(jbuf);
-      if (jsize <= 0) {
-        return;
-      }
+    if (jbuf_size == 0) {
+      jbuf_size = env->GetArrayLength(jbuf);
     }
-    buf = new char[jsize];
+    jbuf_size = std::min(std::max(jbuf_size, 0), 8 * 1024 * 1024);
+    buf = new char[jbuf_size];
     if (buf == nullptr) {
       return;
     }
-    env->GetByteArrayRegion(jbuf, 0, jsize, reinterpret_cast<jbyte*>(buf));
-    size = strnlen(buf, jsize);
+    env->GetByteArrayRegion(jbuf, 0, jbuf_size, reinterpret_cast<jbyte*>(buf));
+    size = strnlen(buf, jbuf_size);
   };
   ~ExternalOneByteStringResource() override { delete[] buf; }
   const char* data() const override { return buf; }
@@ -134,32 +132,6 @@ class ExternalOneByteStringResource : public v8::String::ExternalOneByteStringRe
  private:
   size_t size = 0;
   char* buf = nullptr;
-};
-
-class ExternalStringResource : public v8::String::ExternalStringResource {
- public:
-  ExternalStringResource(JNIEnv* env, jstring jstr) {
-    if (jstr == nullptr) {
-      return;
-    }
-    size = env->GetStringLength(jstr);
-    if (size <= 0) {
-      size = 0;
-      return;
-    }
-    buf = new uint16_t[size];
-    if (buf == nullptr) {
-      return;
-    }
-    env->GetStringRegion(jstr, 0, size, reinterpret_cast<jchar*>(buf));
-  };
-  ~ExternalStringResource() override { delete[] buf; }
-  const uint16_t* data() const override { return buf; }
-  size_t length() const override { return size; }
-
- private:
-  size_t size = 0;
-  uint16_t* buf = nullptr;
 };
 
 extern JavaVM* jvm;
