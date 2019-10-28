@@ -117,7 +117,12 @@ class ExternalOneByteStringResource : public v8::String::ExternalOneByteStringRe
     if (jbuf_size == 0) {
       jbuf_size = env->GetArrayLength(jbuf);
     }
-    jbuf_size = std::min(std::max(jbuf_size, 0), 8 * 1024 * 1024);
+    if (jbuf_size < 0) {
+      return;
+    }
+    if (jbuf_size > 8 * 1024 * 1024) {
+      jbuf_size = 8 * 1024 * 1024;
+    }
     buf = new char[jbuf_size];
     if (buf == nullptr) {
       return;

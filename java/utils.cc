@@ -102,7 +102,12 @@ v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
     return {};
   }
   auto size = env->GetStringLength(jstr);
-  size = std::min(std::max(size, 0), 8 * 1024 * 1024 / 2);
+  if (size < 0) {
+    return {};
+  }
+  if (size > 8 * 1024 * 1024 / 2) {
+    size = 8 * 1024 * 1024 / 2;
+  }
   auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
                                         v8::NewStringType::kNormal, size);
   env->ReleaseStringChars(jstr, data);
