@@ -447,6 +447,25 @@ RASP.request({
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("json":{"a":2333,"b":"6666"})==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Content-Type":"application/json")==="));
     }
+    SECTION("deflate") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+RASP.request({
+    method: 'post',
+    url: 'https://www.httpbin.org/post',
+    data: { a: 1 },
+    deflate: true
+}).then(ret => {
+  ret.data = JSON.parse(ret.data)
+  return JSON.stringify(ret)
+})
+          )",
+          "request");
+      auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+      REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+      auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===(eJyrVkpUsjKsBQAIKgIJ)==="));
+    }
   }
   SECTION("timeout") {
     auto maybe_rst = isolate->ExecScript(

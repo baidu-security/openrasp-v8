@@ -1,4 +1,5 @@
 #include <cpr/cpr.h>
+#include <zlib.h>
 #include <algorithm>
 #include <string>
 #include "bundle.h"
@@ -60,6 +61,7 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
+    cpr::Body body;
     auto tmp = config->Get(context, NewV8Key(isolate, "data")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       v8::Local<v8::Value> json;
@@ -67,15 +69,40 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
         resolver->Reject(context, try_catch.Exception()).IsJust();
         return;
       }
-      session.SetBody(cpr::Body(*v8::String::Utf8Value(isolate, json)));
+      body = cpr::Body(*v8::String::Utf8Value(isolate, json));
       header.emplace("content-type", "application/json");
     } else if (tmp->IsString()) {
-      session.SetBody(cpr::Body(*v8::String::Utf8Value(isolate, tmp)));
+      body = cpr::Body(*v8::String::Utf8Value(isolate, tmp));
     } else if (tmp->IsArrayBuffer()) {
       auto arraybuffer = tmp.As<v8::ArrayBuffer>();
       auto content = arraybuffer->GetContents();
-      session.SetBody(cpr::Body(static_cast<const char*>(content.Data()), content.ByteLength()));
+      body = cpr::Body(static_cast<const char*>(content.Data()), content.ByteLength());
       header.emplace("content-type", "application/octet-stream");
+    }
+    if (body.size() != 0) {
+      if (config->Get(context, NewV8Key(isolate, "deflate")).FromMaybe(undefined)->IsTrue()) {
+        uLong dest_len = compressBound(body.size());
+        char* dest = new char[dest_len];
+        int rst = compress(reinterpret_cast<Bytef*>(dest), &dest_len, reinterpret_cast<const Bytef*>(body.data()),
+                           body.size());
+        if (rst != Z_OK) {
+          delete[] dest;
+          const char* msg;
+          if (rst == Z_MEM_ERROR) {
+            msg = "zlib error: there was not enough memory";
+          } else if (rst == Z_BUF_ERROR) {
+            msg = "zlib error: there was not enough room in the output buffer";
+          } else {
+            msg = "zlib error: unknown error";
+          }
+          resolver->Reject(context, v8::Exception::Error(NewV8String(isolate, msg))).IsJust();
+          return;
+        }
+        body = cpr::Body(dest, dest_len);
+        delete[] dest;
+        header.emplace("content-encoding", "deflate");
+      }
+      session.SetBody(body);
     }
   }
   {
