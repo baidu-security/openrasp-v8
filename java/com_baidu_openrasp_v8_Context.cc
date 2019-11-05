@@ -125,6 +125,9 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf_size <= 0) {
     return;
   }
+  if (jbuf_size > 4 * 1024 * 1024) {
+    jbuf_size = 4 * 1024 * 1024;
+  }
   auto buffer = v8::ArrayBuffer::New(isolate, jbuf_size);
   jenv->GetByteArrayRegion(jbuf, 0, jbuf_size, reinterpret_cast<jbyte*>(buffer->GetContents().Data()));
   info.GetReturnValue().Set(buffer);

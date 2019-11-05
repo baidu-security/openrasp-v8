@@ -105,8 +105,8 @@ v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   if (size < 0) {
     return {};
   }
-  if (size > 8 * 1024 * 1024 / 2) {
-    size = 8 * 1024 * 1024 / 2;
+  if (size > 4 * 1024 * 1024) {
+    size = 4 * 1024 * 1024;
   }
   auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
                                         v8::NewStringType::kNormal, size);

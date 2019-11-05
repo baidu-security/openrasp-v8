@@ -120,8 +120,8 @@ class ExternalOneByteStringResource : public v8::String::ExternalOneByteStringRe
     if (jbuf_size < 0) {
       return;
     }
-    if (jbuf_size > 8 * 1024 * 1024) {
-      jbuf_size = 8 * 1024 * 1024;
+    if (jbuf_size > 4 * 1024 * 1024) {
+      jbuf_size = 4 * 1024 * 1024;
     }
     buf = new char[jbuf_size];
     if (buf == nullptr) {
