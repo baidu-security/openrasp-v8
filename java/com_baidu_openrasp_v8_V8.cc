@@ -157,6 +157,9 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
       return nullptr;
     }
     per_thread_runtime.request_context.Reset(isolate, request_context);
+    if (data->hs.used_heap_size() > 10 * 1024 * 1024) {
+      per_thread_runtime.request_context.SetWeak();
+    }
   }
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
