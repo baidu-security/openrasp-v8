@@ -97,17 +97,6 @@ class Platform : public v8::Platform {
   std::unique_ptr<v8::platform::tracing::TracingController> tracing_controller;
 };
 
-class TimeoutTask : public v8::Task {
- public:
-  TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int milliseconds = 100);
-  void Run() override;
-
- private:
-  v8::Isolate* isolate;
-  std::future<void> fut;
-  std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
-};
-
 class PluginFile {
  public:
   PluginFile(const std::string& filename, const std::string& source) : filename(filename), source(source){};
@@ -125,7 +114,8 @@ class IsolateData {
   v8::Persistent<v8::Object> request_context;
   v8::Persistent<v8::ObjectTemplate> request_context_templ;
   v8::HeapStatistics hs;
-  bool is_dead = false;
+  bool is_timeout = false;
+  bool is_oom = false;
   uint64_t timestamp = 0;
   void* custom_data = nullptr;
 };
@@ -173,6 +163,17 @@ class Isolate : public v8::Isolate {
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
+};
+
+class TimeoutTask : public v8::Task {
+ public:
+  TimeoutTask(Isolate* isolate, std::future<void> fut, int milliseconds = 100);
+  void Run() override;
+
+ private:
+  Isolate* isolate;
+  std::future<void> fut;
+  std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 };
 
 inline bool Initialize(size_t pool_size, Logger logger) {

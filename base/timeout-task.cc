@@ -20,14 +20,14 @@
 #include "bundle.h"
 
 namespace openrasp_v8 {
-TimeoutTask::TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int milliseconds)
+TimeoutTask::TimeoutTask(Isolate* isolate, std::future<void> fut, int milliseconds)
     : isolate(isolate),
       fut(std::move(fut)),
       time_point(std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(milliseconds)) {}
 
 void TimeoutTask::Run() {
   if (std::future_status::timeout == fut.wait_until(time_point)) {
-    Platform::logger("Javascript plugin execution timeout\n");
+    isolate->GetData()->is_timeout = true;
     isolate->TerminateExecution();
   }
 }

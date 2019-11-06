@@ -52,7 +52,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
         if (data->hs.used_heap_size() > 20 * 1024 * 1024) {
           Platform::logger("Javascript plugin execution out of memory\n");
           isolate->TerminateExecution();
-          data->is_dead = true;
+          data->is_oom = true;
         }
       },
       data);
@@ -61,7 +61,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
         Platform::logger("Near v8 isolate heap limit\n");
         auto isolate = reinterpret_cast<Isolate*>(data);
         isolate->TerminateExecution();
-        isolate->GetData()->is_dead = true;
+        isolate->GetData()->is_oom = true;
         return current_heap_limit * 2;
       },
       isolate);
@@ -106,7 +106,7 @@ void Isolate::Dispose() {
 }
 
 bool Isolate::IsDead() {
-  return v8::Isolate::IsDead() || GetData()->is_dead;
+  return v8::Isolate::IsDead() || GetData()->is_oom;
 }
 
 bool Isolate::IsExpired(uint64_t timestamp) {
@@ -134,6 +134,10 @@ v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
   }
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
+    if (data->is_timeout) {
+      data->is_timeout = false;
+      Platform::logger("Javascript plugin execution timeout\n");
+    }
     if (try_catch.HasTerminated()) {
       isolate->CancelTerminateExecution();
     } else {
