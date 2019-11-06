@@ -27,8 +27,10 @@ endif()
 file(GLOB LIBS LIST_DIRECTORIES false ${LIBS_PREFIX}/*)
 
 if(APPLE)
+    find_package(CURL)
+    find_package(ZLIB)
+    target_link_libraries(prebuilts INTERFACE CURL::libcurl ZLIB::ZLIB)
     target_link_libraries(prebuilts INTERFACE ${LIBS})
-    target_link_libraries(prebuilts INTERFACE -lcurl)
 endif()
 
 if(WIN32)

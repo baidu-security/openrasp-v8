@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
- * Signature: ()Z
+ * Signature: (I)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize
-  (JNIEnv *, jclass);
+  (JNIEnv *, jclass, jint);
 
 /*
  * Class:     com_baidu_openrasp_v8_V8
@@ -34,10 +34,10 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)[B
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;JI)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check
-  (JNIEnv *, jclass, jstring, jbyteArray, jint, jobject, jboolean, jint);
+  (JNIEnv *, jclass, jstring, jbyteArray, jint, jobject, jlong, jint);
 
 /*
  * Class:     com_baidu_openrasp_v8_V8

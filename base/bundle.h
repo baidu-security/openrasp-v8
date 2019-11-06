@@ -54,6 +54,7 @@ class Exception : public std::string {
 };
 
 typedef void (*Logger)(const std::string& message);
+typedef bool (*CriticalMemoryPressureCallback)(size_t length);
 
 class Platform : public v8::Platform {
  public:
@@ -79,6 +80,7 @@ class Platform : public v8::Platform {
   v8::TracingController* GetTracingController() override;
   v8::Platform::StackTracePrinter GetStackTracePrinter() override;
   // v8::PageAllocator* GetPageAllocator() override;
+  bool OnCriticalMemoryPressure(size_t length) override;
 
   static Platform* New(int thread_pool_size);
   static Platform* Get();
@@ -86,6 +88,7 @@ class Platform : public v8::Platform {
   void Shutdown();
 
   static Logger logger;
+  static CriticalMemoryPressureCallback criticalMemoryPressureCallback;
 
  private:
   static std::unique_ptr<Platform> instance;
@@ -121,6 +124,8 @@ class IsolateData {
   v8::Persistent<v8::Function> console_log;
   v8::Persistent<v8::Object> request_context;
   v8::Persistent<v8::ObjectTemplate> request_context_templ;
+  v8::HeapStatistics hs;
+  bool is_dead = false;
   uint64_t timestamp = 0;
   void* custom_data = nullptr;
 };
@@ -152,25 +157,31 @@ class Isolate : public v8::Isolate {
   IsolateData* GetData();
   void SetData(IsolateData* data);
   void Dispose();
+  bool IsDead();
   bool IsExpired(uint64_t timestamp);
-  v8::Local<v8::Array> Check(v8::Local<v8::String> type,
-                             v8::Local<v8::Object> params,
-                             v8::Local<v8::Object> context,
+  v8::Local<v8::Array> Check(v8::Local<v8::String> request_type,
+                             v8::Local<v8::Object> request_params,
+                             v8::Local<v8::Object> request_context,
                              int timeout = 100);
+  v8::MaybeLocal<v8::Array> Check(v8::Local<v8::Context> context,
+                                  v8::Local<v8::String> request_type,
+                                  v8::Local<v8::Object> request_params,
+                                  v8::Local<v8::Object> request_context,
+                                  int timeout = 100);
   v8::MaybeLocal<v8::Value> ExecScript(const std::string& source, const std::string& filename, int line_offset = 0);
   v8::MaybeLocal<v8::Value> ExecScript(v8::Local<v8::String> source,
                                        v8::Local<v8::String> filename,
                                        v8::Local<v8::Integer> line_offset);
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
-  static size_t NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit);
-  static void FatalErrorCallback(const char* location, const char* message);
 };
 
 inline bool Initialize(size_t pool_size, Logger logger) {
-  const char* flags = std::getenv("OPENRASP_V8_OPTIONS");
-  if (flags) {
-    v8::V8::SetFlagsFromString(flags, strlen(flags));
+  std::string flags = "--stress-compaction --stress-compaction-random ";
+  const char* env = std::getenv("OPENRASP_V8_OPTIONS");
+  if (env) {
+    flags += env;
   }
+  v8::V8::SetFlagsFromString(flags.data(), flags.size());
   Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
   v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
@@ -185,7 +196,7 @@ inline bool Initialize(size_t pool_size, Logger logger) {
     printf("%s", msg.c_str());
   });
   return v8::V8::Initialize();
-}
+}  // namespace openrasp_v8
 
 inline bool Dispose() {
   bool rst = v8::V8::Dispose();

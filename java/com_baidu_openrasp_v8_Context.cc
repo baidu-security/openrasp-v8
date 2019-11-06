@@ -17,8 +17,6 @@
 #include "com_baidu_openrasp_v8_Context.h"
 #include "header.h"
 
-using namespace openrasp_v8;
-
 static std::vector<std::string> stringKeys;
 static std::vector<std::string> objectKeys;
 static std::vector<std::string> bufferKeys;
@@ -36,7 +34,9 @@ static inline void fill_keys(JNIEnv* env, jobjectArray jarr, std::vector<std::st
  * Method:    setStringKeys
  * Signature: ([Ljava/lang/String;)V
  */
-ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStringKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStringKeys(JNIEnv* env,
+                                                                                       jclass cls,
+                                                                                       jobjectArray jarr) {
   fill_keys(env, jarr, stringKeys);
 }
 
@@ -45,7 +45,9 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setStri
  * Method:    setObjectKeys
  * Signature: ([Ljava/lang/String;)V
  */
-ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObjectKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObjectKeys(JNIEnv* env,
+                                                                                       jclass cls,
+                                                                                       jobjectArray jarr) {
   fill_keys(env, jarr, objectKeys);
 }
 
@@ -54,7 +56,9 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setObje
  * Method:    setBufferKeys
  * Signature: ([Ljava/lang/String;)V
  */
-ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBufferKeys(JNIEnv* env, jclass cls, jobjectArray jarr) {
+ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_Context_setBufferKeys(JNIEnv* env,
+                                                                                       jclass cls,
+                                                                                       jobjectArray jarr) {
   fill_keys(env, jarr, bufferKeys);
 }
 
@@ -92,12 +96,7 @@ static void object_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf == nullptr) {
     return;
   }
-  auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
-  if (raw == nullptr) {
-    return;
-  }
-  auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
-  jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
+  auto maybe_string = v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(jenv, jbuf));
   if (maybe_string.IsEmpty()) {
     return;
   }
@@ -126,17 +125,15 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf_size <= 0) {
     return;
   }
-  auto raw = jenv->GetPrimitiveArrayCritical(jbuf, nullptr);
-  if (raw == nullptr) {
-    return;
+  if (jbuf_size > 4 * 1024 * 1024) {
+    jbuf_size = 4 * 1024 * 1024;
   }
-  auto buffer = v8::ArrayBuffer::New(isolate, raw, jbuf_size);
-  jenv->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
-
+  auto buffer = v8::ArrayBuffer::New(isolate, jbuf_size);
+  jenv->GetByteArrayRegion(jbuf, 0, jbuf_size, reinterpret_cast<jbyte*>(buffer->GetContents().Data()));
   info.GetReturnValue().Set(buffer);
 }
 
-v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(Isolate *isolate) {
+v8::Local<v8::ObjectTemplate> CreateRequestContextTemplate(openrasp_v8::Isolate* isolate) {
   v8::EscapableHandleScope handle_scope(isolate);
   auto obj_templ = v8::ObjectTemplate::New(isolate);
   for (auto& key : stringKeys) {

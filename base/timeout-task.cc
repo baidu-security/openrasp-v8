@@ -27,6 +27,7 @@ TimeoutTask::TimeoutTask(v8::Isolate* isolate, std::future<void> fut, int millis
 
 void TimeoutTask::Run() {
   if (std::future_status::timeout == fut.wait_until(time_point)) {
+    Platform::logger("Javascript plugin execution timeout\n");
     isolate->TerminateExecution();
   }
 }

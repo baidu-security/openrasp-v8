@@ -24,15 +24,47 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   data->create_params.array_buffer_allocator = array_buffer_allocator;
   data->create_params.snapshot_blob = snapshot_blob;
   data->create_params.external_references = snapshot_blob->external_references;
-  data->create_params.constraints.set_max_old_space_size(4);
-  // data->create_params.constraints.set_max_semi_space_size_in_kb(512);
+  // set a very low value, v8 will adjust to min limit
+  // data->create_params.constraints.set_max_young_generation_size_in_bytes(1);
+  // data->create_params.constraints.set_max_old_generation_size_in_bytes(20 * 1024 * 1024);
+  // data->create_params.constraints.set_initial_old_generation_size_in_bytes(1024 * 1024 / 2);
+  // data->create_params.constraints.set_max_semi_space_size_in_kb(1024);
+  // data->create_params.constraints.set_max_old_space_size(20);
 
   Isolate* isolate = reinterpret_cast<Isolate*>(v8::Isolate::New(data->create_params));
   if (!isolate) {
     return nullptr;
   }
-  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
-  isolate->SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler([](const char* location, const char* message) {
+    std::string msg;
+    msg += "\n#\n# Native error in ";
+    msg += location;
+    msg += "\n# ";
+    msg += message;
+    msg += "\n#\n\n";
+    Platform::logger(msg);
+    printf("%s", msg.c_str());
+  });
+  isolate->AddGCEpilogueCallback(
+      [](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags, void* d) {
+        auto data = reinterpret_cast<IsolateData*>(d);
+        isolate->GetHeapStatistics(&data->hs);
+        if (data->hs.used_heap_size() > 20 * 1024 * 1024) {
+          Platform::logger("Javascript plugin execution out of memory\n");
+          isolate->TerminateExecution();
+          data->is_dead = true;
+        }
+      },
+      data);
+  isolate->AddNearHeapLimitCallback(
+      [](void* data, size_t current_heap_limit, size_t initial_heap_limit) -> size_t {
+        Platform::logger("Near v8 isolate heap limit\n");
+        auto isolate = reinterpret_cast<Isolate*>(data);
+        isolate->TerminateExecution();
+        isolate->GetData()->is_dead = true;
+        return current_heap_limit * 2;
+      },
+      isolate);
   isolate->SetData(data);
   data->timestamp = timestamp;
 
@@ -46,8 +78,13 @@ void Isolate::Initialize() {
 
   auto RASP = context->Global()->Get(context, NewV8Key(this, "RASP")).ToLocalChecked().As<v8::Object>();
   auto check = RASP->Get(context, NewV8Key(this, "check")).ToLocalChecked().As<v8::Function>();
-  auto console_log =
-      context->Global()->Get(NewV8Key(this, "console")).As<v8::Object>()->Get(NewV8Key(this, "log")).As<v8::Function>();
+  auto console_log = context->Global()
+                         ->Get(context, NewV8Key(this, "console"))
+                         .ToLocalChecked()
+                         .As<v8::Object>()
+                         ->Get(context, NewV8Key(this, "log"))
+                         .ToLocalChecked()
+                         .As<v8::Function>();
   auto data = GetData();
   data->context.Reset(this, context);
   data->RASP.Reset(this, RASP);
@@ -68,47 +105,45 @@ void Isolate::Dispose() {
   v8::Isolate::Dispose();
 }
 
+bool Isolate::IsDead() {
+  return v8::Isolate::IsDead() || GetData()->is_dead;
+}
+
 bool Isolate::IsExpired(uint64_t timestamp) {
   return timestamp > GetData()->timestamp;
 }
 
-v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
-                                    v8::Local<v8::Object> params,
-                                    v8::Local<v8::Object> context,
-                                    int timeout) {
+v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
+                                         v8::Local<v8::String> request_type,
+                                         v8::Local<v8::Object> request_params,
+                                         v8::Local<v8::Object> request_context,
+                                         int timeout) {
   auto isolate = this;
   v8::EscapableHandleScope handle_scope(isolate);
   auto data = isolate->GetData();
-  auto v8_context = isolate->GetCurrentContext();
   v8::TryCatch try_catch(isolate);
   auto check = data->check.Get(isolate);
-  v8::Local<v8::Value> argv[]{type, params, context};
+  v8::Local<v8::Value> argv[]{request_type, request_params, request_context};
 
   std::promise<void> pro;
   Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), timeout)));
-  auto maybe_rst = check->Call(v8_context, check, 3, argv);
+  auto maybe_rst = check->Call(context, check, 3, argv);
   pro.set_value();
   while (Platform::Get()->PumpMessageLoop(isolate)) {
     continue;
   }
 
   if (UNLIKELY(maybe_rst.IsEmpty())) {
-    v8::Local<v8::String> msg;
     if (try_catch.HasTerminated()) {
       isolate->CancelTerminateExecution();
-      msg = NewV8String(isolate, "Javascript plugin execution timeout");
     } else {
-      msg = NewV8String(isolate, Exception(isolate, try_catch));
+      Platform::logger(Exception(isolate, try_catch));
     }
-    auto rst = v8::Object::New(isolate);
-    rst->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "exception"));
-    rst->Set(NewV8Key(isolate, "message"), msg);
-    v8::Local<v8::Value> argv[]{rst.As<v8::Value>()};
-    return handle_scope.Escape(v8::Array::New(isolate, argv, 1));
+    return {};
   }
   auto rst = maybe_rst.ToLocalChecked();
   if (UNLIKELY(!rst->IsArray())) {
-    return handle_scope.Escape(v8::Array::New(isolate, 0));
+    return {};
   }
   auto arr = rst.As<v8::Array>();
   // all results are ignore, fast track
@@ -121,17 +156,29 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> type,
   int idx = 0;
   for (int i = 0; i < arr->Length(); i++) {
     v8::Local<v8::Value> item;
-    if (arr->Get(v8_context, i).ToLocal(&item)) {
+    if (arr->Get(context, i).ToLocal(&item)) {
       if (item->IsPromise()) {
         item = item.As<v8::Promise>()->Result();
         if (item->IsUndefined()) {
           continue;
         }
       }
-      ret_arr->Set(v8_context, idx++, item).IsJust();
+      ret_arr->Set(context, idx++, item).IsJust();
     }
   }
   return handle_scope.Escape(ret_arr);
+}
+
+v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> request_type,
+                                    v8::Local<v8::Object> request_params,
+                                    v8::Local<v8::Object> request_context,
+                                    int timeout) {
+  auto maybe_rst = Check(this->GetCurrentContext(), request_type, request_params, request_context, timeout);
+  if (maybe_rst.IsEmpty()) {
+    return v8::Array::New(this, 0);
+  } else {
+    return maybe_rst.ToLocalChecked();
+  }
 }
 
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(const std::string& source, const std::string& filename, int line_offset) {
@@ -169,21 +216,6 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
     continue;
   }
   return handle_scope.EscapeMaybe(rst);
-}
-
-size_t Isolate::NearHeapLimitCallback(void* data, size_t current_heap_limit, size_t initial_heap_limit) {
-  return current_heap_limit + 1024 * 1024;
-}
-
-void Isolate::FatalErrorCallback(const char* location, const char* message) {
-  std::string msg;
-  msg += "\n#\n# Native error in ";
-  msg += location;
-  msg += "\n# ";
-  msg += message;
-  msg += "\n#\n\n";
-  Platform::logger(msg);
-  printf("%s", msg.c_str());
 }
 
 }  // namespace openrasp_v8

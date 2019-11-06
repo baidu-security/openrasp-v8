@@ -25,9 +25,7 @@ V8Class v8_class;
 ContextClass ctx_class;
 bool is_initialized = false;
 Snapshot* snapshot = nullptr;
-std::mutex mtx;
-std::queue<std::weak_ptr<openrasp_v8::Isolate>> PerThreadRuntime::shared_isolate;
-std::mutex PerThreadRuntime::shared_isolate_mtx;
+std::mutex snapshot_mtx;
 thread_local PerThreadRuntime per_thread_runtime;
 
 void plugin_log(JNIEnv* env, const std::string& message) {
@@ -58,12 +56,7 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
   if (jbuf == nullptr) {
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
-  auto raw = env->GetPrimitiveArrayCritical(jbuf, nullptr);
-  if (raw == nullptr) {
-    return info.GetReturnValue().Set(v8::Array::New(isolate));
-  }
-  auto maybe_string = v8::String::NewFromOneByte(isolate, static_cast<uint8_t*>(raw), v8::NewStringType::kNormal);
-  env->ReleasePrimitiveArrayCritical(jbuf, raw, JNI_ABORT);
+  auto maybe_string = v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jbuf));
   if (maybe_string.IsEmpty()) {
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
@@ -79,7 +72,7 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
 }
 
 std::string Jstring2String(JNIEnv* env, jstring str) {
-  auto data = env->GetStringCritical(str, nullptr);
+  auto data = env->GetStringChars(str, nullptr);
   auto size = env->GetStringLength(str);
   if (data == nullptr) {
     return {};
@@ -89,7 +82,7 @@ std::string Jstring2String(JNIEnv* env, jstring str) {
   for (int i = 0; i < size; i++) {
     u16[i] = data[i];
   }
-  env->ReleaseStringCritical(str, data);
+  env->ReleaseStringChars(str, data);
   return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(u16);
 }
 
@@ -104,14 +97,20 @@ jstring String2Jstring(JNIEnv* env, const std::string& str) {
 }
 
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
-  auto data = env->GetStringCritical(jstr, nullptr);
-  auto size = env->GetStringLength(jstr);
+  auto data = env->GetStringChars(jstr, nullptr);
   if (data == nullptr) {
     return {};
   }
+  auto size = env->GetStringLength(jstr);
+  if (size < 0) {
+    return {};
+  }
+  if (size > 4 * 1024 * 1024) {
+    size = 4 * 1024 * 1024;
+  }
   auto rst = v8::String::NewFromTwoByte(v8::Isolate::GetCurrent(), static_cast<const uint16_t*>(data),
                                         v8::NewStringType::kNormal, size);
-  env->ReleaseStringCritical(jstr, data);
+  env->ReleaseStringChars(jstr, data);
   return rst;
 }
 

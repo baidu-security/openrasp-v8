@@ -12,7 +12,7 @@ using namespace openrasp_v8;
 std::string message;
 void plugin_log(const std::string& msg) {
   message = msg;
-  // std::cout << msg << std::endl;
+  std::cout << msg << std::endl;
 }
 
 class IsolateDeleter {
@@ -49,7 +49,7 @@ TEST_CASE("Bench", "[!benchmark]") {
                             R"({"action":"ignore","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
-    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).IsJust();
     auto rst = isolate->Check(type, params, context, 100);
     auto n = rst->Length();
     REQUIRE(n == 0);
@@ -75,7 +75,7 @@ TEST_CASE("Bench", "[!benchmark]") {
                             R"({"action":"log","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
-    context->Set(NewV8Key(isolate, "index"), v8::Int32::New(isolate, i));
+    context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).IsJust();
     auto rst = isolate->Check(type, params, context, 100);
     auto n = rst->Length();
     REQUIRE(n == 1);
@@ -447,6 +447,25 @@ RASP.request({
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("json":{"a":2333,"b":"6666"})==="));
       REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Content-Type":"application/json")==="));
     }
+    SECTION("deflate") {
+      auto maybe_rst = isolate->ExecScript(
+          R"(
+RASP.request({
+    method: 'post',
+    url: 'https://www.httpbin.org/post',
+    data: { a: 1 },
+    deflate: true
+}).then(ret => {
+  ret.data = JSON.parse(ret.data)
+  return JSON.stringify(ret)
+})
+          )",
+          "request");
+      auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
+      REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
+      auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
+      REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===(eJyrVkpUsjKsBQAIKgIJ)==="));
+    }
   }
   SECTION("timeout") {
     auto maybe_rst = isolate->ExecScript(
@@ -460,7 +479,6 @@ RASP.request({
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("code":8)==="));
     REQUIRE_THAT(rst, Catch::Matchers::Matches(R"===(.*timed out.*)==="));
   }
   SECTION("error") {
@@ -551,13 +569,13 @@ TEST_CASE("Check") {
   auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
   }
 
   SECTION("log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(std::string(*v8::String::Utf8Value(
                 isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
@@ -565,7 +583,7 @@ TEST_CASE("Check") {
   }
 
   SECTION("block") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "block"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "block")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(std::string(*v8::String::Utf8Value(
                 isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
@@ -573,33 +591,31 @@ TEST_CASE("Check") {
   }
 
   SECTION("timeout") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "timeout"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "timeout")).IsJust();
     auto rst = isolate->Check(type, params, context);
-    REQUIRE(std::string(*v8::String::Utf8Value(
-                isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked())) ==
-            R"([{"action":"exception","message":"Javascript plugin execution timeout"}])");
+    REQUIRE(rst->Length() == 0);
+    REQUIRE(message == "Javascript plugin execution timeout\n");
   }
 
   SECTION("throw") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "throw"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "throw")).IsJust();
     auto rst = isolate->Check(type, params, context);
-    auto str = std::string(
-        *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
-    REQUIRE_THAT(str, Catch::Matchers::Matches(".*exception.*a is not defined.*"));
+    REQUIRE(rst->Length() == 0);
+    REQUIRE_THAT(message, Catch::Matchers::Contains("ReferenceError: a is not defined"));
   }
 
   SECTION("promise resolve ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).IsJust();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 0);
   }
 
   SECTION("promise resolve log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise resolve")).IsJust();
     auto rst = isolate->Check(type, params, context);
     auto str = std::string(
         *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
@@ -607,8 +623,8 @@ TEST_CASE("Check") {
   }
 
   SECTION("promise reject") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
-    params->Set(NewV8Key(isolate, "case"), NewV8String(isolate, "promise reject"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
+    params->Set(v8_context, NewV8Key(isolate, "case"), NewV8String(isolate, "promise reject")).IsJust();
     auto rst = isolate->Check(type, params, context);
     auto str = std::string(
         *v8::String::Utf8Value(isolate, v8::JSON::Stringify(isolate->GetCurrentContext(), rst).ToLocalChecked()));
@@ -646,13 +662,13 @@ TEST_CASE("Plugins") {
   auto context = v8::Object::New(isolate);
 
   SECTION("ignore") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "ignore"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "ignore")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 1);
   }
 
   SECTION("log") {
-    params->Set(NewV8Key(isolate, "action"), NewV8String(isolate, "log"));
+    params->Set(v8_context, NewV8Key(isolate, "action"), NewV8String(isolate, "log")).IsJust();
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 2);
   }

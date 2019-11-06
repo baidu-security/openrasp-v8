@@ -30,8 +30,6 @@ public class ContextImpl extends Context {
   }
 
   public byte[] getObject(String key) {
-    if (key.equals("body"))
-      return getBody();
     if (key.equals("json"))
       return getJson();
     if (key.equals("header"))
@@ -78,14 +76,15 @@ public class ContextImpl extends Context {
   }
 
   public String getRequestId() {
-    return "test 中文 & 😊";
+    return "";
   }
 
   public byte[] getBody() {
-    List<String> list = new ArrayList<String>();
-    list.add("test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
-    JsonStream.serialize(list, data);
+    data.write((byte) 0);
+    data.write((byte) 1);
+    data.write((byte) 2);
+    data.write((byte) 3);
     return data.toByteArray();
   }
 

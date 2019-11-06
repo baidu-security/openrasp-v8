@@ -4,19 +4,19 @@ import org.scijava.nativelib.NativeLoader;
 
 public class V8 {
 
-    public static Logger logger = null;
+    private static Logger logger = null;
 
-    public static StackGetter stackGetter = null;
+    private static StackGetter stackGetter = null;
 
     private static boolean isLoad = false;
 
-    public synchronized static native boolean Initialize();
+    public synchronized static native boolean Initialize(int isolate_pool_size);
 
     public synchronized static native boolean Dispose();
 
     public synchronized static native boolean CreateSnapshot(String config, Object[] plugins, String version);
 
-    public static native byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
+    public static native byte[] Check(String type, byte[] params, int params_size, Context context, long free_memory,
             int timeout);
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
@@ -27,6 +27,15 @@ public class V8 {
         }
         NativeLoader.loadLibrary("openrasp_v8_java");
         isLoad = true;
+    }
+
+    public synchronized static boolean Initialize() {
+        return Initialize(Runtime.getRuntime().availableProcessors());
+    }
+
+    public static byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
+            int timeout) {
+        return Check(type, params, params_size, context, -1, timeout);
     }
 
     public static void Log(String msg) {
@@ -47,4 +56,11 @@ public class V8 {
         V8.stackGetter = stackGetter;
     }
 
+    public static long GetFreeMemory() {
+        return Runtime.getRuntime().freeMemory();
+    }
+
+    public static void Gc() {
+        System.gc();
+    }
 }

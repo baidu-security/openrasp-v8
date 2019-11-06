@@ -1,16 +1,28 @@
 package com.baidu.openrasp.v8;
 
-import static org.junit.Assert.*;
-import org.junit.*;
-import java.util.*;
-import com.jsoniter.output.JsonStream;
-import com.jsoniter.JsonIterator;
-import com.jsoniter.any.Any;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Callable;
+
+import com.jsoniter.JsonIterator;
+import com.jsoniter.any.Any;
+import com.jsoniter.output.JsonStream;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class V8Test {
 
@@ -26,14 +38,20 @@ public class V8Test {
     V8.SetLogger(new Logger() {
       @Override
       public void log(String msg) {
-        System.out.println(msg);
+        // System.out.println(msg);
         log = msg;
       }
     });
     V8.SetStackGetter(new StackGetter() {
       @Override
       public byte[] get() {
-        return "[1,2,3,4]".getBytes();
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        try {
+          data.write("[1,2,3,4]".getBytes());
+          data.write(0);
+        } catch (Exception e) {
+        }
+        return data.getByteArray();
       }
     });
     assertTrue(V8.Initialize());
@@ -115,10 +133,8 @@ public class V8Test {
     }
     {
       String params = "{\"timeout\":true}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200);
-      Any any = JsonIterator.deserialize(rst).asList().get(0);
-      assertEquals("exception", any.toString("action"));
-      assertEquals("Javascript plugin execution timeout", any.toString("message"));
+      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200));
+      assertEquals("Javascript plugin execution timeout", log);
     }
   }
 
@@ -134,13 +150,13 @@ public class V8Test {
   public void Context() {
     List<String[]> scripts = new ArrayList<String[]>();
     scripts.add(new String[] { "test.js",
-        "const plugin = new RASP('test')\nplugin.register('request', (params, context) => console.log(JSON.stringify(context)))" });
+        "const plugin = new RASP('test')\nplugin.register('request', (params, context) => { if ((new Int32Array(context.body))[0] == 50462976) console.log(JSON.stringify(context)) })" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
     byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
     assertNull(result);
     assertEquals(
-        "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"test 中文 & 😊\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}",
+        "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}",
         log);
   }
 
@@ -171,8 +187,8 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params) => {\nfor(;;) {}\n})" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    assertArrayEquals(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400),
-        "[{\"action\":\"exception\",\"message\":\"Javascript plugin execution timeout\"}]".getBytes("UTF-8"));
+    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400));
+    assertEquals("Javascript plugin execution timeout", log);
   }
 
   public class Task implements Callable<String> {
@@ -188,9 +204,9 @@ public class V8Test {
       ByteArrayOutputStream data = new ByteArrayOutputStream();
       params.put("flag", id);
       JsonStream.serialize(params, data);
-      String msg = new String(V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200));
-      if (!msg.contains("timeout")) {
-        return msg;
+      byte[] rst = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
+      if (rst != null) {
+        return new String(rst);
       }
       Thread.sleep(id / 20);
       return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), false, 200));
@@ -209,7 +225,7 @@ public class V8Test {
         + "plugin.register('request', (params, context) => { context.flag = params.flag; while(true); })\n"
         + "plugin.register('requestEnd', (params, context) => { return {action: 'log', message: context.flag == params.flag ? 'ok' : `${context.flag} ${params.flag}`}; })\n" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
-    ExecutorService service = Executors.newFixedThreadPool(5);
+    ExecutorService service = Executors.newFixedThreadPool(20);
     List<Future<String>> futs = new ArrayList<Future<String>>();
     for (int i = 0; i < 50; i++) {
       Future<String> fut = service.submit(new Task(i));

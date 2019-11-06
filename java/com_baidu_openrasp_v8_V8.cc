@@ -27,10 +27,13 @@ ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
- * Signature: ()Z
+ * Signature: (I)Z
  */
-ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env, jclass cls) {
+ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
+                                                                                   jclass cls,
+                                                                                   jint jsize) {
   if (!is_initialized) {
+    isolate_pool::size = jsize;
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
     is_initialized = Initialize(0, plugin_log);
@@ -86,7 +89,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
     delete blob;
     return false;
   }
-  std::lock_guard<std::mutex> lock(mtx);
+  std::lock_guard<std::mutex> lock(snapshot_mtx);
   delete snapshot;
   snapshot = blob;
   return true;
@@ -95,7 +98,7 @@ ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSn
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;ZI)[B
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;JI)[B
  */
 ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(JNIEnv* env,
                                                                                 jclass cls,
@@ -103,42 +106,47 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
                                                                                 jbyteArray jparams,
                                                                                 jint jparams_size,
                                                                                 jobject jcontext,
-                                                                                jboolean jnew_request,
+                                                                                jlong jfree_memory,
                                                                                 jint jtimeout) {
   Isolate* isolate = per_thread_runtime.GetIsolate();
   if (!isolate) {
     return nullptr;
   }
   v8::Locker lock(isolate);
+  if (isolate->IsDead()) {
+    return nullptr;
+  }
   auto data = isolate->GetData();
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::TryCatch try_catch(isolate);
   v8::Local<v8::Context> context = data->context.Get(isolate);
   v8::Context::Scope context_scope(context);
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
+  std::string type;
 
   {
-    if (!Jstring2V8string(env, jtype).ToLocal(&request_type)) {
+    const char* tmp = env->GetStringUTFChars(jtype, nullptr);
+    type = std::string(tmp);
+    env->ReleaseStringUTFChars(jtype, tmp);
+    if (!v8::String::NewFromUtf8(isolate, type.data(), v8::NewStringType::kInternalized, type.size())
+             .ToLocal(&request_type)) {
       return nullptr;
     }
   }
 
   {
-    auto raw = static_cast<uint8_t*>(env->GetPrimitiveArrayCritical(jparams, nullptr));
-    // https://stackoverflow.com/questions/36101913/should-i-always-call-releaseprimitivearraycritical-even-if-getprimitivearraycrit
-    if (raw == nullptr) {
-      return nullptr;
-    }
-    auto maybe_string = v8::String::NewFromOneByte(isolate, raw, v8::NewStringType::kNormal, jparams_size);
-    env->ReleasePrimitiveArrayCritical(jparams, raw, JNI_ABORT);
+    auto maybe_string =
+        v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jparams, jparams_size));
     if (maybe_string.IsEmpty()) {
       return nullptr;
     }
     auto maybe_obj = v8::JSON::Parse(context, maybe_string.ToLocalChecked());
     if (maybe_obj.IsEmpty()) {
+      plugin_log(Exception(isolate, try_catch));
       return nullptr;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
@@ -146,14 +154,22 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   }
 
   request_context = per_thread_runtime.request_context.Get(isolate);
-  if (jnew_request || request_context.IsEmpty()) {
-    request_context =
-        data->request_context_templ.Get(isolate)->NewInstance(context).FromMaybe(v8::Object::New(isolate));
+  if (type == "request" || request_context.IsEmpty()) {
+    if (!data->request_context_templ.Get(isolate)->NewInstance(context).ToLocal(&request_context)) {
+      return nullptr;
+    }
     per_thread_runtime.request_context.Reset(isolate, request_context);
+    if (data->hs.used_heap_size() > 10 * 1024 * 1024) {
+      per_thread_runtime.request_context.SetWeak();
+    }
   }
   request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
   auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
+
+  if (type == "requestEnd") {
+    per_thread_runtime.request_context.Reset();
+  }
 
   if (rst->Length() == 0) {
     return nullptr;
@@ -161,19 +177,16 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
 
   v8::Local<v8::String> json;
   if (!v8::JSON::Stringify(context, rst).ToLocal(&json)) {
+    plugin_log(Exception(isolate, try_catch));
     return nullptr;
   }
 
-  auto bytearray = env->NewByteArray(json->Utf8Length(isolate));
+  v8::String::Utf8Value val(isolate, json);
+  auto bytearray = env->NewByteArray(val.length());
   if (bytearray == nullptr) {
     return nullptr;
   }
-  auto bytes = env->GetPrimitiveArrayCritical(bytearray, nullptr);
-  if (bytes == nullptr) {
-    return nullptr;
-  }
-  json->WriteUtf8(isolate, static_cast<char*>(bytes));
-  env->ReleasePrimitiveArrayCritical(bytearray, bytes, 0);
+  env->SetByteArrayRegion(bytearray, 0, val.length(), reinterpret_cast<jbyte*>(*val));
   return bytearray;
 }
 
@@ -182,10 +195,6 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
  * Method:    ExecuteScript
  * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  * 尽量在脚本中返回字符串类型，因为v8::JSON::Stringify在序列化大对象时可能会导致崩溃
- *
- * 暂时地:jstinrg->uint16_t*->std::u16string->std::string
- * 下个版本应该在Isolate类中增加ExecScript(v8::Local<v8::String>, ...)，以便免去转换过程
- * 不直接用env->GetStringUTFChars的原因是jni不能正确转换一些特殊字符到utf8
  */
 ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteScript(JNIEnv* env,
                                                                                      jclass cls,
@@ -198,16 +207,21 @@ ALIGN_FUNCTION JNIEXPORT jstring JNICALL Java_com_baidu_openrasp_v8_V8_ExecuteSc
     return nullptr;
   }
   v8::Locker lock(isolate);
+  if (isolate->IsDead()) {
+    jclass ExceptionClass = env->FindClass("java/lang/Exception");
+    env->ThrowNew(ExceptionClass, "V8 isolate is dead");
+    return nullptr;
+  }
   auto data = isolate->GetData();
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> v8_context = data->context.Get(isolate);
-  v8::Context::Scope context_scope(v8_context);
+  v8::Local<v8::Context> context = data->context.Get(isolate);
+  v8::Context::Scope context_scope(context);
   v8::TryCatch try_catch(isolate);
-  std::string source = Jstring2String(env, jsource);
-  std::string filename = Jstring2String(env, jfilename);
-  auto maybe_rst = isolate->ExecScript(source, filename);
+  auto maybe_rst = isolate->ExecScript(Jstring2V8string(env, jsource).FromMaybe(v8::String::Empty(isolate)),
+                                       Jstring2V8string(env, jfilename).FromMaybe(v8::String::Empty(isolate)),
+                                       v8::Integer::New(isolate, 0));
   if (maybe_rst.IsEmpty()) {
     Exception e(isolate, try_catch);
     jclass ExceptionClass = env->FindClass("java/lang/Exception");

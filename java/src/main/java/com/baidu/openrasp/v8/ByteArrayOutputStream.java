@@ -21,7 +21,7 @@ public class ByteArrayOutputStream extends java.io.ByteArrayOutputStream {
      * @return the current contents of this output stream, as a byte array.
      * @see java.io.ByteArrayOutputStream#size()
      */
-    public synchronized byte getByteArray()[] {
+    public byte getByteArray()[] {
         return buf;
     }
 }
