@@ -45,16 +45,17 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
     Platform::logger(msg);
     printf("%s", msg.c_str());
   });
-  isolate->AddGCEpilogueCallback([](v8::Isolate* data, v8::GCType type, v8::GCCallbackFlags flags) {
-    auto isolate = reinterpret_cast<Isolate*>(data);
-    auto hs = &isolate->GetData()->hs;
-    isolate->GetHeapStatistics(hs);
-    if (hs->used_heap_size() > 20 * 1024 * 1024) {
-      Platform::logger("Javascript plugin execution out of memory\n");
-      isolate->TerminateExecution();
-      reinterpret_cast<Isolate*>(isolate)->GetData()->is_dead = true;
-    }
-  });
+  isolate->AddGCEpilogueCallback(
+      [](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags, void* d) {
+        auto data = reinterpret_cast<IsolateData*>(d);
+        isolate->GetHeapStatistics(&data->hs);
+        if (data->hs.used_heap_size() > 20 * 1024 * 1024) {
+          Platform::logger("Javascript plugin execution out of memory\n");
+          isolate->TerminateExecution();
+          data->is_dead = true;
+        }
+      },
+      data);
   isolate->AddNearHeapLimitCallback(
       [](void* data, size_t current_heap_limit, size_t initial_heap_limit) -> size_t {
         Platform::logger("Near v8 isolate heap limit\n");
