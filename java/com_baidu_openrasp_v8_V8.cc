@@ -120,6 +120,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   data->custom_data = env;
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
+  v8::TryCatch try_catch(isolate);
   v8::Local<v8::Context> context = data->context.Get(isolate);
   v8::Context::Scope context_scope(context);
   v8::Local<v8::String> request_type;
@@ -145,6 +146,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     }
     auto maybe_obj = v8::JSON::Parse(context, maybe_string.ToLocalChecked());
     if (maybe_obj.IsEmpty()) {
+      plugin_log(Exception(isolate, try_catch));
       return nullptr;
     }
     request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
@@ -175,6 +177,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
 
   v8::Local<v8::String> json;
   if (!v8::JSON::Stringify(context, rst).ToLocal(&json)) {
+    plugin_log(Exception(isolate, try_catch));
     return nullptr;
   }
 
