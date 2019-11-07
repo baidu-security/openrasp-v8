@@ -10,7 +10,7 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=ja
 
 make VERBOSE=1 -j
 
-make test
+./base/tests -s
 
 popd
 

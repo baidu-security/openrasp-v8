@@ -12,7 +12,7 @@ using namespace openrasp_v8;
 std::string message;
 void plugin_log(const std::string& msg) {
   message = msg;
-  std::cout << msg << std::endl;
+  // std::cout << msg << std::endl;
 }
 
 class IsolateDeleter {

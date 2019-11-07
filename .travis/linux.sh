@@ -10,7 +10,7 @@ mkdir -p build64 && pushd $_
 
 make VERBOSE=1 -j
 
-make test
+./base/tests -s
 
 ldd base/tests
 
@@ -22,7 +22,7 @@ mkdir -p build32 && pushd $_
 
 make VERBOSE=1 -j
 
-make test
+./base/tests -s
 
 ldd base/tests
 
