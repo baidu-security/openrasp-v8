@@ -24,6 +24,8 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto undefined = v8::Undefined(isolate).As<v8::Value>();
   cpr::Session session;
   cpr::Header header;
+  cpr::Parameters parameters;
+  cpr::Body body;
   std::string method;
   {
     v8::HandleScope handle_scope(isolate);
@@ -47,7 +49,6 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
       auto object = tmp.As<v8::Object>();
       v8::Local<v8::Array> props;
       if (object->GetOwnPropertyNames(context).ToLocal(&props)) {
-        cpr::Parameters parameters;
         for (int i = 0; i < props->Length(); i++) {
           v8::HandleScope handle_scope(isolate);
           v8::Local<v8::Value> key, val;
@@ -61,7 +62,6 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
-    cpr::Body body;
     auto tmp = config->Get(context, NewV8Key(isolate, "data")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       v8::Local<v8::Value> json;
