@@ -1,4 +1,4 @@
-const plugin_version = '2019-1008-1500'
+const plugin_version = '2019-1107-1500'
 const plugin_name = 'official'
 const plugin_desc = '官方插件'
 
@@ -427,7 +427,7 @@ var algorithmConfig = {
         name: '算法2 - 拦截输出在响应里的反射 XSS',
         action: 'log',
 
-        filter_regex: "<![\\-\\[A-Za-z]|<([A-Za-z]{1,12})[\\/ >]",
+        filter_regex: "<![\\-\\[A-Za-z]|<([A-Za-z]{1,12})[\\/>\\x00-\\x20]",
         min_length: 15,
 
         // v1.1.2 之后废弃
@@ -439,7 +439,7 @@ var algorithmConfig = {
         name: '算法1 - PHP: 禁止直接输出 GPC 参数',
         action: 'log',
 
-        filter_regex: "<![\\-\\[A-Za-z]|<([A-Za-z]{1,12})[\\/ >]"
+        filter_regex: "<![\\-\\[A-Za-z]|<([A-Za-z]{1,12})[\\/>\\x00-\\x20]"
     },
 
     webshell_eval: {
@@ -637,9 +637,12 @@ if (algorithmConfig.eval_regex.action != 'ignore') {
 
 
 // 常用函数
-String.prototype.replaceAll = function (token, tokenValue) {
+String.prototype.replaceAll = function (token, tokenValue, maxLength) {
+    if (maxLength === undefined) {
+        maxLength = 4096
+    }
     // 空值判断，防止死循环
-    if (!token || token.length == 0) {
+    if (!token || token.length == 0 || this.length > maxLength) {
         return this
     }
 
@@ -1027,6 +1030,7 @@ if (!algorithmConfig.meta.is_dev && RASP.get_jsengine() !== 'v8') {
 } else {
     // 对于PHP + V8，性能还不错，我们保留JS检测逻辑
     plugin.register('sql', function (params, context) {
+
         var reason = false
         var min_length = algorithmConfig.sql_userinput.min_length
         var allow_full = algorithmConfig.sql_userinput.allow_full
@@ -1232,7 +1236,7 @@ if (!algorithmConfig.meta.is_dev && RASP.get_jsengine() !== 'v8') {
                 } else if (features['information_schema'] && i < tokens_lc.length - 1 && tokens_lc[i] == 'from') {
                     // `information_schema`.tables
                     // information_schema  .tables
-                    var part = tokens_lc[i + 1].replaceAll('`', '')
+                    var part = tokens_lc[i + 1].replaceAll('`', '', 40)
                     // 正常的antlr和flex返回1个token
                     if (part == 'information_schema.tables') {
                         reason = _("SQLi - Detected access to MySQL information_schema.tables table")
@@ -1240,7 +1244,7 @@ if (!algorithmConfig.meta.is_dev && RASP.get_jsengine() !== 'v8') {
                     }
                     // flex在1.1.2以前会产生3个token
                     else if (part == 'information_schema' && i < tokens_lc.length - 3) {
-                        var part2 = tokens_lc[i + 3].replaceAll('`', '')
+                        var part2 = tokens_lc[i + 3].replaceAll('`', '', 10)
                         if (part2 == "tables") {
                             reason = _("SQLi - Detected access to MySQL information_schema.tables table")
                             break
@@ -1296,7 +1300,7 @@ if (!algorithmConfig.meta.is_dev && RASP.get_jsengine() !== 'v8') {
                         confidence: 100,
                         algorithm: 'ssrf_userinput'
                     }
-                } else if (hostname == '[::]' || hostname == '0.0.0.0') {
+                } else if (hostname == '[::]' || hostname == '::1' || hostname == '0.0.0.0') {
                     return {
                         action: algorithmConfig.ssrf_userinput.action,
                         message: _("SSRF - Requesting intranet address: %1%", [hostname]),
@@ -1749,8 +1753,6 @@ if (algorithmConfig.rename_webshell.action != 'ignore') {
 
 
 plugin.register('command', function (params, context) {
-    context.stacks = context.stacks || []
-    context.stacks.push(params.stack)
     var server = context.server
     var message = undefined
 
@@ -1774,7 +1776,9 @@ plugin.register('command', function (params, context) {
                 'freemarker.template.utility.Execute.exec': _("Reflected command execution - Using FreeMarker template"),
                 'org.jboss.el.util.ReflectionUtil.invokeMethod': _("Reflected command execution - Using JBoss EL method"),
                 'net.rebeyond.behinder.payload.java.Cmd.RunCMD': _("Reflected command execution - Using BeHinder defineClass webshell"),
-                'org.codehaus.groovy.runtime.ProcessGroovyMethods.execute': _("Reflected command execution - Using Groovy library")
+                'org.codehaus.groovy.runtime.ProcessGroovyMethods.execute': _("Reflected command execution - Using Groovy library"),
+                'bsh.Reflect.invokeMethod': _("Reflected command execution - Using BeanShell library"),
+                'jdk.scripting.nashorn/jdk.nashorn.internal.runtime.ScriptFunction.invoke': _("Reflected Command execution - Using Nashorn engine")
             }
 
             var userCode = false,

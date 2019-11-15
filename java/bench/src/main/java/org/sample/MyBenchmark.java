@@ -33,7 +33,7 @@ import com.baidu.openrasp.v8.V8;
 import com.baidu.openrasp.v8.ByteArrayOutputStream;
 
 @Fork(1)
-@Threads(10)
+@Threads(1000)
 @Warmup(iterations = 1, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2000, time = 10, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Benchmark)
