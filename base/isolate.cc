@@ -75,6 +75,7 @@ void Isolate::Initialize() {
   v8::HandleScope handle_scope(this);
   v8::Local<v8::Context> context = v8::Context::New(this);
   v8::Context::Scope context_scope(context);
+  auto data = GetData();
 
   auto RASP = context->Global()->Get(context, NewV8Key(this, "RASP")).ToLocalChecked().As<v8::Object>();
   auto check = RASP->Get(context, NewV8Key(this, "check")).ToLocalChecked().As<v8::Function>();
@@ -85,7 +86,17 @@ void Isolate::Initialize() {
                          ->Get(context, NewV8Key(this, "log"))
                          .ToLocalChecked()
                          .As<v8::Function>();
-  auto data = GetData();
+
+  auto check_points = RASP->Get(context, NewV8Key(this, "checkPoints"))
+                          .ToLocalChecked()
+                          .As<v8::Object>()
+                          ->GetOwnPropertyNames(context)
+                          .ToLocalChecked();
+  for (uint32_t i = 0; i < check_points->Length(); i++) {
+    auto key = check_points->Get(context, i).ToLocalChecked();
+    v8::String::Utf8Value val(this, key);
+    data->check_points.emplace(*val, val.length());
+  }
   data->context.Reset(this, context);
   data->RASP.Reset(this, RASP);
   data->check.Reset(this, check);

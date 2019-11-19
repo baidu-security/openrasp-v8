@@ -647,12 +647,19 @@ TEST_CASE("Plugins") {
         plugin.register('request', (params) => {
             return { action: 'log' }
         })
+        plugin.register('requestEnd', (params) => {})
+        plugin.register('xxxx', (params) => {})
     )"}},
                     "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   REQUIRE(isolate != nullptr);
   IsolatePtr ptr(isolate);
   isolate->Initialize();
+
+  auto data = isolate->GetData();
+  REQUIRE(data->check_points.size() == 2);
+  REQUIRE(message == "[test2] Unknown check point name 'xxxx'\n");
+
   v8::Isolate::Scope isolate_scope(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);

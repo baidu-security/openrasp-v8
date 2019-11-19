@@ -126,6 +126,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   v8::Local<v8::String> request_type;
   v8::Local<v8::Object> request_params;
   v8::Local<v8::Object> request_context;
+  v8::Local<v8::Array> rst;
   std::string type;
 
   {
@@ -138,40 +139,42 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
     }
   }
 
-  {
-    auto maybe_string =
-        v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jparams, jparams_size));
-    if (maybe_string.IsEmpty()) {
-      return nullptr;
+  if (data->check_points.find(type) != data->check_points.end()) {
+    {
+      auto maybe_string =
+          v8::String::NewExternalOneByte(isolate, new ExternalOneByteStringResource(env, jparams, jparams_size));
+      if (maybe_string.IsEmpty()) {
+        return nullptr;
+      }
+      auto maybe_obj = v8::JSON::Parse(context, maybe_string.ToLocalChecked());
+      if (maybe_obj.IsEmpty()) {
+        plugin_log(Exception(isolate, try_catch));
+        return nullptr;
+      }
+      request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
+      request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).IsJust();
     }
-    auto maybe_obj = v8::JSON::Parse(context, maybe_string.ToLocalChecked());
-    if (maybe_obj.IsEmpty()) {
-      plugin_log(Exception(isolate, try_catch));
-      return nullptr;
-    }
-    request_params = maybe_obj.ToLocalChecked().As<v8::Object>();
-    request_params->SetLazyDataProperty(context, NewV8Key(isolate, "stack", 5), GetStack).IsJust();
-  }
 
-  request_context = per_thread_runtime.request_context.Get(isolate);
-  if (type == "request" || request_context.IsEmpty()) {
-    if (!data->request_context_templ.Get(isolate)->NewInstance(context).ToLocal(&request_context)) {
-      return nullptr;
+    request_context = per_thread_runtime.request_context.Get(isolate);
+    if (type == "request" || request_context.IsEmpty()) {
+      if (!data->request_context_templ.Get(isolate)->NewInstance(context).ToLocal(&request_context)) {
+        return nullptr;
+      }
+      per_thread_runtime.request_context.Reset(isolate, request_context);
+      if (data->hs.used_heap_size() > 10 * 1024 * 1024) {
+        per_thread_runtime.request_context.SetWeak();
+      }
     }
-    per_thread_runtime.request_context.Reset(isolate, request_context);
-    if (data->hs.used_heap_size() > 10 * 1024 * 1024) {
-      per_thread_runtime.request_context.SetWeak();
-    }
-  }
-  request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
+    request_context->SetInternalField(0, v8::External::New(isolate, jcontext));
 
-  auto rst = isolate->Check(request_type, request_params, request_context, jtimeout);
+    rst = isolate->Check(request_type, request_params, request_context, jtimeout);
+  }
 
   if (type == "requestEnd") {
     per_thread_runtime.request_context.Reset();
   }
 
-  if (rst->Length() == 0) {
+  if (rst.IsEmpty() || rst->Length() == 0) {
     return nullptr;
   }
 

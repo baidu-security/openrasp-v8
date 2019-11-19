@@ -23,10 +23,10 @@
 #include <chrono>
 #include <functional>
 #include <future>
-#include <map>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_set>
 #include <vector>
 
 namespace openrasp_v8 {
@@ -114,6 +114,7 @@ class IsolateData {
   v8::Persistent<v8::Object> request_context;
   v8::Persistent<v8::ObjectTemplate> request_context_templ;
   v8::HeapStatistics hs;
+  std::unordered_set<std::string> check_points;
   bool is_timeout = false;
   bool is_oom = false;
   uint64_t timestamp = 0;

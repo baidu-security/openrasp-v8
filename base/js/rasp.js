@@ -50,13 +50,14 @@ global.RASP = class {
         if (typeof (checkPoint) !== 'string' || checkPoint.length == 0) {
             throw new TypeError('Check point name must be a string');
         }
-        if (!RASP.checkPoints[checkPoint]) {
+        if (checkPoints.indexOf(checkPoint) < 0) {
             this.log('Unknown check point name \'' + checkPoint + '\'');
             return;
         }
         if (typeof (checkProcess) !== 'function') {
             throw new TypeError('Check process must be a function');
         }
+        RASP.checkPoints[checkPoint] = RASP.checkPoints[checkPoint] || []
         RASP.checkPoints[checkPoint].push({
             func: checkProcess,
             plugin: this
@@ -96,4 +97,3 @@ global.RASP = class {
 };
 RASP.plugins = {};
 RASP.checkPoints = {};
-checkPoints.forEach(checkPoint => RASP.checkPoints[checkPoint] = [])
