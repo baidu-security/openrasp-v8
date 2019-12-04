@@ -635,7 +635,7 @@ TEST_CASE("Check") {
 }
 
 TEST_CASE("Plugins") {
-  Snapshot snapshot("",
+  Snapshot snapshot("global.checkPoints=['request','requestEnd'];",
                     {{"test1", R"(
         const plugin = new RASP('test1')
         plugin.register('request', (params) => {

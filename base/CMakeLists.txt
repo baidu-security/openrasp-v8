@@ -10,7 +10,7 @@ target_include_directories(base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRE
 add_dependencies(base prebuilts)
 target_link_libraries(base PUBLIC prebuilts)
 
-set(JS_SRCS console.js checkpoint.js flex.js rasp.js)
+set(JS_SRCS console.js flex.js rasp.js)
 list(TRANSFORM JS_SRCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/js/)
 find_program(XXD xxd ${PREBUILTS_PREFIX}/bin)
 add_custom_target(builtinjs2cheader
