@@ -3,6 +3,7 @@ matrix:
   include:
   - os: linux
     dist: xenial
+    jdk: openjdk8
     addons:
       apt:
         packages:
@@ -11,7 +12,12 @@ matrix:
     - vendors/fetch_centos6_sysroot.sh
     - prebuilts/fetch_prebuilts.sh
   - os: osx
-    osx_image: xcode10
+    jdk: openjdk8
+    addons:
+      homebrew:
+        packages:
+        - cmake
+        update: true
     before_install:
     - prebuilts/fetch_prebuilts.sh
   - os: windows
