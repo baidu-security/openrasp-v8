@@ -14,7 +14,7 @@ global.RASP = class {
 
     static check(checkPoint, checkParams, checkContext) {
         if (!RASP.checkPoints[checkPoint]) {
-            throw new Error('Unknown check point name \'' + checkPoint + '\'');
+            return;
         }
         const results = []
         for (const checkProcess of RASP.checkPoints[checkPoint]) {
@@ -50,7 +50,7 @@ global.RASP = class {
         if (typeof (checkPoint) !== 'string' || checkPoint.length == 0) {
             throw new TypeError('Check point name must be a string');
         }
-        if (Array.isArray(global.checkPoints) && checkPoints.indexOf(global.checkPoint) < 0) {
+        if (Array.isArray(global.checkPoints) && global.checkPoints.indexOf(checkPoint) < 0) {
             this.log('Unknown check point name \'' + checkPoint + '\'');
             return;
         }
