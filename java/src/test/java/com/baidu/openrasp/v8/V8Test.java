@@ -151,7 +151,7 @@ public class V8Test {
     List<String[]> scripts = new ArrayList<String[]>();
     // scripts.add(new String[] { "test.js", "" });
     scripts.add(new String[] { "test.js", "const plugin = new RASP('test')\nplugin.register('xxx', (params) => {})" });
-    assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
+    assertTrue(V8.CreateSnapshot("global.checkPoints=['request'];", scripts.toArray(), "1.2.3"));
     String params = "wrong json";
     assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100));
     assertEquals("[test] Unknown check point name 'xxx'", log);
