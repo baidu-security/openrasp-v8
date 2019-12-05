@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ev
+set -e
  
 ROOT=$(git rev-parse --show-toplevel)
 
