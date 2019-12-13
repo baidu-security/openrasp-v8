@@ -34,10 +34,10 @@ JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_CreateSnapshot
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Check
- * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;JI)[B
+ * Signature: (Ljava/lang/String;[BILcom/baidu/openrasp/v8/Context;I)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check
-  (JNIEnv *, jclass, jstring, jbyteArray, jint, jobject, jlong, jint);
+  (JNIEnv *, jclass, jstring, jbyteArray, jint, jobject, jint);
 
 /*
  * Class:     com_baidu_openrasp_v8_V8
