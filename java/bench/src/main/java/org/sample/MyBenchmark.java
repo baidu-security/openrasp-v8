@@ -61,25 +61,25 @@ public class MyBenchmark {
     @TearDown(Level.Trial)
     public void tearDownTrial() throws Exception {
         for (int i = 0; i < 10; i++) {
-            V8.Check("requestEnd", "{}".getBytes(), 2, context, -1, 100);
+            V8.Check("requestEnd", "{}".getBytes(), 2, context, 100);
         }
     }
 
     @Setup(Level.Iteration)
     public void setupIteration() throws Exception {
         context = new Context();
-        V8.Check("request", "{}".getBytes(), 2, context, -1, 100);
+        V8.Check("request", "{}".getBytes(), 2, context, 100);
     }
 
     @TearDown(Level.Iteration)
     public void tearDownIteration() throws Exception {
-        V8.Check("requestEnd", "{}".getBytes(), 2, context, -1, 100);
+        V8.Check("requestEnd", "{}".getBytes(), 2, context, 100);
     }
 
     @Benchmark
     public void testCheck() {
         String type = Params.GetType();
         byte[] params = Params.GetParams(type);
-        V8.Check(type, params, 0, context, -1, 1000);
+        V8.Check(type, params, 0, context, 1000);
     }
 }
