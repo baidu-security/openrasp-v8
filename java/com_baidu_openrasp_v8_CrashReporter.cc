@@ -31,10 +31,13 @@
 #define PATH_MAX 1024
 #endif
 
-static char url[PATH_MAX + 128] = {0};
-static char filename[PATH_MAX + 128] = {0};
-static char hostname_form[PATH_MAX + 128] = "hostname=";
-static char crash_log_form[PATH_MAX + 128] = "crash_log=@";
+static char url[PATH_MAX] = {0};
+static char appid_header[PATH_MAX + 32] = "X-OpenRASP-AppID: ";
+static char appsecret_header[PATH_MAX + 32] = "X-OpenRASP-AppSecret: ";
+static char raspid_form[PATH_MAX + 32] = "rasp_id=";
+static char filename[PATH_MAX] = {0};
+static char hostname_form[PATH_MAX + 32] = "hostname=";
+static char crash_log_form[PATH_MAX + 32] = "crash_log=@";
 static bool raised = false;
 
 int fork_and_exec(const char* path, char* const* argv) {
@@ -86,7 +89,7 @@ int fork_and_exec(const char* path, char* const* argv) {
   }
 }
 
-void signal_handler(int sig) {
+void abort_handler(int sig) {
   if (access(filename, F_OK) == -1) {
     if (raised == false) {
       raised = true;
@@ -102,10 +105,16 @@ void signal_handler(int sig) {
                               url,
                               "--connect-timeout",
                               "5",
+                              "-H",
+                              appid_header,
+                              "-H",
+                              appsecret_header,
                               "-F",
                               "job=crash",
                               "-F",
                               "language=java",
+                              "-F",
+                              raspid_form,
                               "-F",
                               hostname_form,
                               "-F",
@@ -124,12 +133,18 @@ void signal_handler(int sig) {
 /*
  * Class:     com_baidu_openrasp_v8_CrashReporter
  * Method:    install
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
  */
 ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_CrashReporter_install(JNIEnv* env,
                                                                                        jclass cls,
-                                                                                       jstring u) {
-  strncpy(url, Jstring2String(env, u).c_str(), PATH_MAX);
+                                                                                       jstring jurl,
+                                                                                       jstring jappid,
+                                                                                       jstring jappsecret,
+                                                                                       jstring jraspid) {
+  strncpy(url, Jstring2String(env, jurl).c_str(), PATH_MAX);
+  strncpy(appid_header + strlen(appid_header), Jstring2String(env, jappid).c_str(), PATH_MAX);
+  strncpy(appsecret_header + strlen(appsecret_header), Jstring2String(env, jappsecret).c_str(), PATH_MAX);
+  strncpy(raspid_form + strlen(raspid_form), Jstring2String(env, jraspid).c_str(), PATH_MAX);
   if (getcwd(filename, PATH_MAX) == nullptr) {
     return;
   }
@@ -138,7 +153,7 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_CrashReporter_i
     return;
   }
   strncpy(crash_log_form + strlen(crash_log_form), filename, PATH_MAX);
-  signal(SIGABRT, signal_handler);
+  signal(SIGABRT, abort_handler);
 }
 
 #else
@@ -146,11 +161,14 @@ ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_CrashReporter_i
 /*
  * Class:     com_baidu_openrasp_v8_CrashReporter
  * Method:    install
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
  */
 ALIGN_FUNCTION JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_CrashReporter_install(JNIEnv* env,
                                                                                        jclass cls,
-                                                                                       jstring u) {
+                                                                                       jstring u,
+                                                                                       jstring appid,
+                                                                                       jstring appSecret,
+                                                                                       jstring raspid) {
   return;
 }
 

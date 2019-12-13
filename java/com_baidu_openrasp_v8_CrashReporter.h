@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     com_baidu_openrasp_v8_CrashReporter
  * Method:    install
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_baidu_openrasp_v8_CrashReporter_install
-  (JNIEnv *, jclass, jstring);
+  (JNIEnv *, jclass, jstring, jstring, jstring, jstring);
 
 #ifdef __cplusplus
 }
