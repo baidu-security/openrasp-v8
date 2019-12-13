@@ -30,7 +30,7 @@ public class V8Test {
 
   @BeforeClass
   public static void Initialize() throws Exception {
-    V8.Load();
+    Loader.load();
     Context.setStringKeys(
         new String[] { "path", "method", "url", "querystring", "protocol", "remoteAddr", "appBasePath", "requestId" });
     Context.setObjectKeys(new String[] { "json", "server", "parameter", "header" });
@@ -61,7 +61,7 @@ public class V8Test {
     } catch (Exception e) {
       assertNotNull(e);
     }
-    assertNull(V8.Check(null, null, 0, null, true, 100));
+    assertNull(V8.Check(null, null, 0, null, 100));
   }
 
   @AfterClass
@@ -92,7 +92,7 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', params => console.log(params))" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100));
+    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 100));
     assertEquals("{ action: 'ignore', stack: [ 1, 2, 3, 4 ] }", log);
   }
 
@@ -111,11 +111,11 @@ public class V8Test {
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     {
       String params = "{\"action\":\"ignore\"}";
-      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 100));
+      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 100));
     }
     {
       String params = "{\"action\":\"log\"}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 200);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("log", any.toString("action"));
       assertEquals("", any.toString("message"));
@@ -124,7 +124,7 @@ public class V8Test {
     }
     {
       String params = "{\"action\":\"block\"}";
-      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
+      byte[] rst = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 200);
       Any any = JsonIterator.deserialize(rst).asList().get(0);
       assertEquals("block", any.toString("action"));
       assertEquals("", any.toString("message"));
@@ -133,7 +133,7 @@ public class V8Test {
     }
     {
       String params = "{\"timeout\":true}";
-      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), false, 200));
+      assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 200));
       assertEquals("Javascript plugin execution timeout", log);
     }
   }
@@ -164,7 +164,7 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params, context) => { if ((new Int32Array(context.body))[0] == 50462976) console.log(JSON.stringify(context)) })" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 200);
+    byte[] result = V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 200);
     assertNull(result);
     assertEquals(
         "{\"body\":{},\"header\":[\"test 中文 & 😊\"],\"parameter\":[\"test 中文 & 😊\"],\"server\":[\"test 中文 & 😊\"],\"json\":[\"test 中文 & 😊\"],\"requestId\":\"\",\"appBasePath\":\"test 中文 & 😊\",\"remoteAddr\":\"test 中文 & 😊\",\"protocol\":\"test 中文 & 😊\",\"querystring\":\"test 中文 & 😊\",\"url\":\"test 中文 & 😊\",\"method\":\"test 中文 & 😊\",\"path\":\"test 中文 & 😊\"}",
@@ -183,7 +183,7 @@ public class V8Test {
     params.put("message", "test 中文 & 😊");
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     JsonStream.serialize(params, data);
-    byte[] result = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
+    byte[] result = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), 200);
     assertEquals("test 中文 & 😊", log);
     Any any = JsonIterator.deserialize(result);
     assertEquals(any.asList().get(0).toString("message"), "test 中文 & 😊");
@@ -198,7 +198,7 @@ public class V8Test {
         "const plugin = new RASP('test')\nplugin.register('request', (params) => {\nfor(;;) {}\n})" });
     assertTrue(V8.CreateSnapshot("{}", scripts.toArray(), "1.2.3"));
     String params = "{\"action\":\"ignore\"}";
-    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), true, 400));
+    assertNull(V8.Check("request", params.getBytes(), params.getBytes().length, new ContextImpl(), 400));
     assertEquals("Javascript plugin execution timeout", log);
   }
 
@@ -215,12 +215,12 @@ public class V8Test {
       ByteArrayOutputStream data = new ByteArrayOutputStream();
       params.put("flag", id);
       JsonStream.serialize(params, data);
-      byte[] rst = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), true, 200);
+      byte[] rst = V8.Check("request", data.getByteArray(), data.size(), new ContextImpl(), 200);
       if (rst != null) {
         return new String(rst);
       }
       Thread.sleep(id / 20);
-      return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), false, 200));
+      return new String(V8.Check("requestEnd", data.getByteArray(), data.size(), new ContextImpl(), 200));
     }
   }
 

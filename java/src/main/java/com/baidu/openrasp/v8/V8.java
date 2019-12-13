@@ -16,11 +16,11 @@ public class V8 {
 
     public synchronized static native boolean CreateSnapshot(String config, Object[] plugins, String version);
 
-    public static native byte[] Check(String type, byte[] params, int params_size, Context context, long free_memory,
-            int timeout);
+    public static native byte[] Check(String type, byte[] params, int params_size, Context context, int timeout);
 
     public static native String ExecuteScript(String source, String filename) throws Exception;
 
+    @Deprecated
     public synchronized static void Load() throws Exception {
         if (isLoad) {
             return;
@@ -33,9 +33,10 @@ public class V8 {
         return Initialize(Runtime.getRuntime().availableProcessors());
     }
 
+    @Deprecated
     public static byte[] Check(String type, byte[] params, int params_size, Context context, boolean new_request,
             int timeout) {
-        return Check(type, params, params_size, context, -1, timeout);
+        return Check(type, params, params_size, context, timeout);
     }
 
     public static void Log(String msg) {
