@@ -48,7 +48,6 @@ class V8Class {
   V8Class(JNIEnv* env) {
     auto ref = env->FindClass("com/baidu/openrasp/v8/V8");
     cls = (jclass)env->NewGlobalRef(ref);
-    env->DeleteLocalRef(ref);
     Log = env->GetStaticMethodID(cls, "Log", "(Ljava/lang/String;)V");
     GetStack = env->GetStaticMethodID(cls, "GetStack", "()[B");
     GetFreeMemory = env->GetStaticMethodID(cls, "GetFreeMemory", "()J");
@@ -67,7 +66,6 @@ class ContextClass {
   ContextClass(JNIEnv* env) {
     auto ref = env->FindClass("com/baidu/openrasp/v8/Context");
     cls = (jclass)env->NewGlobalRef(ref);
-    env->DeleteLocalRef(ref);
     getString = env->GetMethodID(cls, "getString", "(Ljava/lang/String;)Ljava/lang/String;");
     getObject = env->GetMethodID(cls, "getObject", "(Ljava/lang/String;)[B");
     getBuffer = env->GetMethodID(cls, "getBuffer", "(Ljava/lang/String;)[B");

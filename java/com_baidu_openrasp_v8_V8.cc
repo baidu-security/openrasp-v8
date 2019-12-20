@@ -128,9 +128,7 @@ ALIGN_FUNCTION JNIEXPORT jbyteArray JNICALL Java_com_baidu_openrasp_v8_V8_Check(
   std::string type;
 
   {
-    const char* tmp = env->GetStringUTFChars(jtype, nullptr);
-    type = std::string(tmp);
-    env->ReleaseStringUTFChars(jtype, tmp);
+    type = Jstring2String(env, jtype);
     if (!v8::String::NewFromUtf8(isolate, type.data(), v8::NewStringType::kInternalized, type.size())
              .ToLocal(&request_type)) {
       return nullptr;
