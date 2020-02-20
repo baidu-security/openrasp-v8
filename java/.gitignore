@@ -5,3 +5,7 @@ target
 .classpath
 lib
 natives
+
+# idea
+.idea
+*.iml

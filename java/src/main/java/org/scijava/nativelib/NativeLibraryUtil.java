@@ -349,6 +349,12 @@ public class NativeLibraryUtil {
 				LOGGER.log(Level.FINE, "Problem with library", e);
 			} catch (IOException e) {
 				LOGGER.log(Level.FINE, "Problem with extracting the library", e);
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (NoSuchFieldException e) {
+				e.printStackTrace();
 			}
 		}
 		return false;

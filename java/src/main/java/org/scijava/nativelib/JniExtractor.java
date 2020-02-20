@@ -52,7 +52,7 @@ public interface JniExtractor {
 	 * @return the extracted file
 	 * @throws IOException when extracting the desired file failed
 	 */
-	public File extractJni(String libPath, String libname) throws IOException;
+	public File extractJni(String libPath, String libname) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException;
 
 	/**
 	 * Extract all libraries which are registered for auto-extraction to files in

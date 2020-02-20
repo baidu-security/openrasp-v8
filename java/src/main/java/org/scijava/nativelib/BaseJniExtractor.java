@@ -127,7 +127,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 
 	/**
 	 * this is where native dependencies are extracted to (e.g. tmplib/).
-	 * 
+	 *
 	 * @return native working dir
 	 */
 	public abstract File getNativeDir();
@@ -135,15 +135,14 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	/**
 	 * this is where JNI libraries are extracted to (e.g.
 	 * tmplib/classloaderName.1234567890000.0/).
-	 * 
+	 *
 	 * @return jni working dir
 	 */
 	public abstract File getJniDir();
 
 	@Override
 	public File extractJni(final String libPath, final String libname)
-		throws IOException
-	{
+			throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
 		String mappedlibName = System.mapLibraryName(libname);
 		debug("mappedLib is " + mappedlibName);
 		/*
@@ -160,7 +159,12 @@ public abstract class BaseJniExtractor implements JniExtractor {
 		// foolproof
 		String combinedPath = (libPath.equals("") || libPath.endsWith(NativeLibraryUtil.DELIM) ?
 				libPath : libPath + NativeLibraryUtil.DELIM) + mappedlibName;
-		lib = libraryJarClass.getClassLoader().getResource(combinedPath);
+		if(libraryJarClass.getClassLoader() == null){
+			Class engineClass = (Class)Class.forName("com.baidu.openrasp.ModuleContainer").getField("engineClass").get(null);
+			lib = engineClass.getClassLoader().getResource(combinedPath);
+		}else{
+			lib = libraryJarClass.getClassLoader().getResource(combinedPath);
+		}
 		if (null == lib) {
 			/*
 			 * On OS X, the default mapping changed from .jnilib to .dylib as of JDK 7, so
@@ -247,7 +251,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	/**
 	 * Extract a resource to the tmp dir (this entry point is used for unit
 	 * testing)
-	 * 
+	 *
 	 * @param dir the directory to extract the resource to
 	 * @param resource the resource on the classpath
 	 * @param outputName the filename to copy to (within the tmp dir)
@@ -334,7 +338,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	}
 	/**
 	 * copy an InputStream to an OutputStream.
-	 * 
+	 *
 	 * @param in InputStream to copy from
 	 * @param out OutputStream to copy to
 	 * @throws IOException if there's an error
