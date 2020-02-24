@@ -34,7 +34,7 @@
 
 // Copyright 2006 MX Telecom Ltd
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,11 +54,11 @@ import java.util.logging.Logger;
  */
 public abstract class BaseJniExtractor implements JniExtractor {
 
-	private static final Logger LOGGER = Logger.getLogger("org.scijava.nativelib.BaseJniExtractor");
+	private static final Logger LOGGER = Logger.getLogger("com.baidu.openrasp.nativelib.BaseJniExtractor");
 	protected static final String JAVA_TMPDIR = "java.io.tmpdir";
-	protected static final String ALTR_TMPDIR = "."+ NativeLibraryUtil.DELIM + "tmplib";
+	protected static final String ALTR_TMPDIR = "." + NativeLibraryUtil.DELIM + "tmplib";
 	protected static final String TMP_PREFIX = "nativelib-loader_";
-	private static final String LEFTOVER_MIN_AGE = "org.scijava.nativelib.leftoverMinAgeMs";
+	private static final String LEFTOVER_MIN_AGE = "com.baidu.openrasp.nativelib.leftoverMinAgeMs";
 	private static final long LEFTOVER_MIN_AGE_DEFAULT = 5 * 60 * 1000; // 5 minutes
 
 	private Class<?> libraryJarClass;
@@ -85,10 +85,8 @@ public abstract class BaseJniExtractor implements JniExtractor {
 		final String mxSysInfo = MxSysInfo.getMxSysInfo();
 
 		if (mxSysInfo != null) {
-			nativeResourcePaths =
-				new String[] { "natives/", "META-INF/lib/" + mxSysInfo + "/", "META-INF/lib/" };
-		}
-		else {
+			nativeResourcePaths = new String[] { "natives/", "META-INF/lib/" + mxSysInfo + "/", "META-INF/lib/" };
+		} else {
 			nativeResourcePaths = new String[] { "natives/", "META-INF/lib/" };
 		}
 		// clean up leftover libraries from previous runs
@@ -96,15 +94,18 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	}
 
 	private static boolean deleteRecursively(final File directory) {
-		if (directory == null) return true;
+		if (directory == null)
+			return true;
 		final File[] list = directory.listFiles();
-		if (list == null) return true;
+		if (list == null)
+			return true;
 		for (final File file : list) {
 			if (file.isFile()) {
-				if (!file.delete()) return false;
-			}
-			else if (file.isDirectory()) {
-				if (!deleteRecursively(file)) return false;
+				if (!file.delete())
+					return false;
+			} else if (file.isDirectory()) {
+				if (!deleteRecursively(file))
+					return false;
 			}
 		}
 		return directory.delete();
@@ -146,8 +147,9 @@ public abstract class BaseJniExtractor implements JniExtractor {
 		String mappedlibName = System.mapLibraryName(libname);
 		debug("mappedLib is " + mappedlibName);
 		/*
-		 * On Darwin, the default mapping is to .jnilib; but we use .dylibs so that library interdependencies are
-		 * handled correctly. if we don't find a .jnilib, try .dylib instead.
+		 * On Darwin, the default mapping is to .jnilib; but we use .dylibs so that
+		 * library interdependencies are handled correctly. if we don't find a .jnilib,
+		 * try .dylib instead.
 		 */
 		URL lib = null;
 
@@ -157,30 +159,26 @@ public abstract class BaseJniExtractor implements JniExtractor {
 		}
 
 		// foolproof
-		String combinedPath = (libPath.equals("") || libPath.endsWith(NativeLibraryUtil.DELIM) ?
-				libPath : libPath + NativeLibraryUtil.DELIM) + mappedlibName;
-		if(libraryJarClass.getClassLoader() == null){
-			Class engineClass = (Class)Class.forName("com.baidu.openrasp.ModuleContainer").getField("engineClass").get(null);
+		String combinedPath = (libPath.equals("") || libPath.endsWith(NativeLibraryUtil.DELIM) ? libPath
+				: libPath + NativeLibraryUtil.DELIM) + mappedlibName;
+		if (libraryJarClass.getClassLoader() == null) {
+			Class engineClass = (Class) Class.forName("com.baidu.openrasp.ModuleContainer").getField("engineClass").get(null);
 			lib = engineClass.getClassLoader().getResource(combinedPath);
-		}else{
+		} else {
 			lib = libraryJarClass.getClassLoader().getResource(combinedPath);
 		}
 		if (null == lib) {
 			/*
 			 * On OS X, the default mapping changed from .jnilib to .dylib as of JDK 7, so
 			 * we need to be prepared for the actual library and mapLibraryName disagreeing
-			 * in either direction. 
+			 * in either direction.
 			 */
 			final String altLibName;
 			if (mappedlibName.endsWith(".jnilib")) {
-				altLibName =
-					mappedlibName.substring(0, mappedlibName.length() - 7) + ".dylib";
-			}
-			else if (mappedlibName.endsWith(".dylib")) {
-				altLibName =
-					mappedlibName.substring(0, mappedlibName.length() - 6) + ".jnilib";
-			}
-			else {
+				altLibName = mappedlibName.substring(0, mappedlibName.length() - 7) + ".dylib";
+			} else if (mappedlibName.endsWith(".dylib")) {
+				altLibName = mappedlibName.substring(0, mappedlibName.length() - 6) + ".jnilib";
+			} else {
 				altLibName = null;
 			}
 			if (altLibName != null) {
@@ -202,12 +200,10 @@ public abstract class BaseJniExtractor implements JniExtractor {
 
 	@Override
 	public void extractRegistered() throws IOException {
-		debug("Extracting libraries registered in classloader " +
-			this.getClass().getClassLoader());
+		debug("Extracting libraries registered in classloader " + this.getClass().getClassLoader());
 		for (final String nativeResourcePath : nativeResourcePaths) {
-			final Enumeration<URL> resources =
-				this.getClass().getClassLoader().getResources(
-					nativeResourcePath + "AUTOEXTRACT.LIST");
+			final Enumeration<URL> resources = this.getClass().getClassLoader()
+					.getResources(nativeResourcePath + "AUTOEXTRACT.LIST");
 			while (resources.hasMoreElements()) {
 				final URL res = resources.nextElement();
 				extractLibrariesFromResource(res);
@@ -215,33 +211,25 @@ public abstract class BaseJniExtractor implements JniExtractor {
 		}
 	}
 
-	private void extractLibrariesFromResource(final URL resource)
-		throws IOException
-	{
+	private void extractLibrariesFromResource(final URL resource) throws IOException {
 		debug("Extracting libraries listed in " + resource);
 		BufferedReader reader = null;
 		try {
-			reader =
-				new BufferedReader(
-					new InputStreamReader(resource.openStream(), "UTF-8"));
+			reader = new BufferedReader(new InputStreamReader(resource.openStream(), "UTF-8"));
 			for (String line; (line = reader.readLine()) != null;) {
 				URL lib = null;
 				for (final String nativeResourcePath : nativeResourcePaths) {
-					lib =
-						this.getClass().getClassLoader().getResource(
-							nativeResourcePath + line);
-					if (lib != null) break;
+					lib = this.getClass().getClassLoader().getResource(nativeResourcePath + line);
+					if (lib != null)
+						break;
 				}
 				if (lib != null) {
 					extractResource(getNativeDir(), lib, line);
-				}
-				else {
-					throw new IOException("Couldn't find native library " + line +
-						"on the classpath");
+				} else {
+					throw new IOException("Couldn't find native library " + line + "on the classpath");
 				}
 			}
-		}
-		finally {
+		} finally {
 			if (reader != null) {
 				reader.close();
 			}
@@ -249,18 +237,15 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	}
 
 	/**
-	 * Extract a resource to the tmp dir (this entry point is used for unit
-	 * testing)
+	 * Extract a resource to the tmp dir (this entry point is used for unit testing)
 	 *
-	 * @param dir the directory to extract the resource to
-	 * @param resource the resource on the classpath
+	 * @param dir        the directory to extract the resource to
+	 * @param resource   the resource on the classpath
 	 * @param outputName the filename to copy to (within the tmp dir)
 	 * @return the extracted file
 	 * @throws IOException
 	 */
-	File extractResource(final File dir, final URL resource,
-		final String outputName) throws IOException
-	{
+	File extractResource(final File dir, final URL resource, final String outputName) throws IOException {
 		InputStream in = null;
 		try {
 			in = resource.openStream();
@@ -268,8 +253,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 
 			// make a lib file with exactly the same lib name
 			final File outfile = new File(getJniDir(), outputName);
-			debug("Extracting '" + resource + "' to '" +
-				outfile.getAbsolutePath() + "'");
+			debug("Extracting '" + resource + "' to '" + outfile.getAbsolutePath() + "'");
 
 			// copy resource stream to temporary file
 			FileOutputStream out = null;
@@ -277,7 +261,9 @@ public abstract class BaseJniExtractor implements JniExtractor {
 				out = new FileOutputStream(outfile);
 				copy(in, out);
 			} finally {
-				if (out != null) { out.close(); }
+				if (out != null) {
+					out.close();
+				}
 			}
 
 			// note that this doesn't always work:
@@ -285,7 +271,9 @@ public abstract class BaseJniExtractor implements JniExtractor {
 
 			return outfile;
 		} finally {
-			if (in != null) { in.close(); }
+			if (in != null) {
+				in.close();
+			}
 		}
 	}
 
@@ -293,13 +281,13 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	 * Looks in the temporary directory for leftover versions of temporary shared
 	 * libraries.
 	 * <p>
-	 * If a temporary shared library is in use by another instance it won't
-	 * delete.
+	 * If a temporary shared library is in use by another instance it won't delete.
 	 * <p>
 	 * An old library will be deleted only if its last modified date is at least
-	 * LEFTOVER_MIN_AGE milliseconds old (default to 5 minutes)
-	 * This was introduced to avoid a possible race condition when two instances (JVMs) run the same unpacking code
-	 * and one of which manage to delete the extracted file of the other before the other gets a chance to load it
+	 * LEFTOVER_MIN_AGE milliseconds old (default to 5 minutes) This was introduced
+	 * to avoid a possible race condition when two instances (JVMs) run the same
+	 * unpacking code and one of which manage to delete the extracted file of the
+	 * other before the other gets a chance to load it
 	 * <p>
 	 * Another issue is that createTempFile only guarantees to use the first three
 	 * characters of the prefix, so I could delete a similarly-named temporary
@@ -314,7 +302,8 @@ public abstract class BaseJniExtractor implements JniExtractor {
 				return name.startsWith(TMP_PREFIX);
 			}
 		});
-		if (folders == null) return;
+		if (folders == null)
+			return;
 		long leftoverMinAge = getLeftoverMinAge();
 		for (final File folder : folders) {
 			// attempt to delete
@@ -336,16 +325,15 @@ public abstract class BaseJniExtractor implements JniExtractor {
 			return LEFTOVER_MIN_AGE_DEFAULT;
 		}
 	}
+
 	/**
 	 * copy an InputStream to an OutputStream.
 	 *
-	 * @param in InputStream to copy from
+	 * @param in  InputStream to copy from
 	 * @param out OutputStream to copy to
 	 * @throws IOException if there's an error
 	 */
-	static void copy(final InputStream in, final OutputStream out)
-		throws IOException
-	{
+	static void copy(final InputStream in, final OutputStream out) throws IOException {
 		final byte[] tmp = new byte[8192];
 		int len = 0;
 		while (true) {

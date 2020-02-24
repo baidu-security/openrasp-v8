@@ -32,33 +32,49 @@
 // http://opensource.mxtelecom.com/maven/repo/com/wapmx/native/mx-native-loader/1.7/
 // See NOTICE.txt for details.
 
-// Copyright 2006 MX Telecom Ltd
+// Copyright 2009 MX Telecom Ltd
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.File;
 import java.io.IOException;
 
 /**
+ * JniExtractor suitable for single application deployments per virtual machine
+ * <p>
+ * WARNING: This extractor can result in UnsatisifiedLinkError if it is used in
+ * more than one classloader.
+ * 
  * @author Richard van der Hoff (richardv@mxtelecom.com)
  */
-public interface JniExtractor {
+public class DefaultJniExtractor extends BaseJniExtractor {
 
 	/**
-	 * Extract a JNI library from the classpath to a temporary file.
-	 *
-	 * @param libPath library path
-	 * @param libname System.loadLibrary() compatible library name
-	 * @return the extracted file
-	 * @throws IOException when extracting the desired file failed
+	 * this is where native dependencies are extracted to (e.g. tmplib/).
 	 */
-	public File extractJni(String libPath, String libname) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException;
+	private File nativeDir;
 
-	/**
-	 * Extract all libraries which are registered for auto-extraction to files in
-	 * the temporary directory.
-	 * 
-	 * @throws IOException when extracting the desired file failed
-	 */
-	public void extractRegistered() throws IOException;
+	public DefaultJniExtractor(final Class<?> libraryJarClass) throws IOException {
+		super(libraryJarClass);
+
+		nativeDir = getTempDir();
+		// Order of operations is such that we do not error if we are racing with
+		// another thread to create the directory.
+		nativeDir.mkdirs();
+		if (!nativeDir.isDirectory()) {
+			throw new IOException("Unable to create native library working directory " + nativeDir);
+		}
+		nativeDir.deleteOnExit();
+	}
+
+	@Override
+	public File getJniDir() {
+		return nativeDir;
+	}
+
+	@Override
+	public File getNativeDir() {
+		return nativeDir;
+	}
+
 }
