@@ -34,7 +34,7 @@
 
 // Copyright 2009 MX Telecom Ltd
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,9 +61,10 @@ public class WebappJniExtractor extends BaseJniExtractor {
 	private final File jniSubDir;
 
 	/**
-	 * @param classloaderName is a friendly name for your classloader which will
-	 *          be embedded in the directory name of the classloader-specific
-	 *          subdirectory which will be created.
+	 * @param classloaderName is a friendly name for your classloader which will be
+	 *                        embedded in the directory name of the
+	 *                        classloader-specific subdirectory which will be
+	 *                        created.
 	 */
 	public WebappJniExtractor(final String classloaderName) throws IOException {
 		nativeDir = getTempDir();
@@ -71,23 +72,21 @@ public class WebappJniExtractor extends BaseJniExtractor {
 		// another thread to create the directory.
 		nativeDir.mkdirs();
 		if (!nativeDir.isDirectory()) {
-			throw new IOException(
-				"Unable to create native library working directory " + nativeDir);
+			throw new IOException("Unable to create native library working directory " + nativeDir);
 		}
 
 		final long now = System.currentTimeMillis();
 		File trialJniSubDir;
 		int attempt = 0;
 		while (true) {
-			trialJniSubDir =
-				new File(nativeDir, classloaderName + "." + now + "." + attempt);
-			if (trialJniSubDir.mkdir()) break;
+			trialJniSubDir = new File(nativeDir, classloaderName + "." + now + "." + attempt);
+			if (trialJniSubDir.mkdir())
+				break;
 			if (trialJniSubDir.exists()) {
 				attempt++;
 				continue;
 			}
-			throw new IOException(
-				"Unable to create native library working directory " + trialJniSubDir);
+			throw new IOException("Unable to create native library working directory " + trialJniSubDir);
 		}
 		jniSubDir = trialJniSubDir;
 		jniSubDir.deleteOnExit();

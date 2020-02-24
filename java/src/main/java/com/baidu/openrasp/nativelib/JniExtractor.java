@@ -34,7 +34,7 @@
 
 // Copyright 2006 MX Telecom Ltd
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.File;
 import java.io.IOException;

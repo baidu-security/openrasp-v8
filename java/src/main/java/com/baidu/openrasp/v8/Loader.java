@@ -1,6 +1,6 @@
 package com.baidu.openrasp.v8;
 
-import org.scijava.nativelib.NativeLoader;
+import com.baidu.openrasp.nativelib.NativeLoader;
 
 public class Loader {
     private static boolean isLoad = false;

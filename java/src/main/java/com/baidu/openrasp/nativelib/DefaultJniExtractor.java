@@ -34,7 +34,7 @@
 
 // Copyright 2009 MX Telecom Ltd
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,8 +62,7 @@ public class DefaultJniExtractor extends BaseJniExtractor {
 		// another thread to create the directory.
 		nativeDir.mkdirs();
 		if (!nativeDir.isDirectory()) {
-			throw new IOException(
-				"Unable to create native library working directory " + nativeDir);
+			throw new IOException("Unable to create native library working directory " + nativeDir);
 		}
 		nativeDir.deleteOnExit();
 	}

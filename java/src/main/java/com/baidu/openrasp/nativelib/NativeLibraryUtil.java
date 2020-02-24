@@ -28,7 +28,7 @@
  * #L%
  */
 
-package org.scijava.nativelib;
+package com.baidu.openrasp.nativelib;
 
 import java.io.File;
 import java.io.IOException;
@@ -81,8 +81,7 @@ import java.util.logging.Logger;
 public class NativeLibraryUtil {
 
 	public static enum Architecture {
-		UNKNOWN, LINUX_32, LINUX_64, LINUX_ARM, LINUX_ARM64, WINDOWS_32, WINDOWS_64, OSX_32,
-			OSX_64, OSX_PPC, AIX_32, AIX_64
+		UNKNOWN, LINUX_32, LINUX_64, LINUX_ARM, LINUX_ARM64, WINDOWS_32, WINDOWS_64, OSX_32, OSX_64, OSX_PPC, AIX_32, AIX_64
 	}
 
 	private static enum Processor {
@@ -94,7 +93,7 @@ public class NativeLibraryUtil {
 
 	private static Architecture architecture = Architecture.UNKNOWN;
 	private static String archStr = null;
-	private static final Logger LOGGER = Logger.getLogger("org.scijava.nativelib.NativeLibraryUtil");
+	private static final Logger LOGGER = Logger.getLogger("com.baidu.openrasp.nativelib.NativeLibraryUtil");
 
 	/**
 	 * Determines the underlying hardware platform and architecture.
@@ -109,48 +108,38 @@ public class NativeLibraryUtil {
 				if (name.contains("nix") || name.contains("nux")) {
 					if (Processor.INTEL_32 == processor) {
 						architecture = Architecture.LINUX_32;
-					}
-					else if (Processor.INTEL_64 == processor) {
+					} else if (Processor.INTEL_64 == processor) {
 						architecture = Architecture.LINUX_64;
-					}
-					else if (Processor.ARM == processor) {
+					} else if (Processor.ARM == processor) {
 						architecture = Architecture.LINUX_ARM;
-					}
-					else if (Processor.AARCH_64 == processor) {
+					} else if (Processor.AARCH_64 == processor) {
 						architecture = Architecture.LINUX_ARM64;
 					}
-				}
-				else if (name.contains("aix")) {
+				} else if (name.contains("aix")) {
 					if (Processor.PPC == processor) {
 						architecture = Architecture.AIX_32;
-					}
-					else if (Processor.PPC_64 == processor) {
+					} else if (Processor.PPC_64 == processor) {
 						architecture = Architecture.AIX_64;
 					}
-				}
-				else if (name.contains("win")) {
+				} else if (name.contains("win")) {
 					if (Processor.INTEL_32 == processor) {
 						architecture = Architecture.WINDOWS_32;
-					}
-					else if (Processor.INTEL_64 == processor) {
+					} else if (Processor.INTEL_64 == processor) {
 						architecture = Architecture.WINDOWS_64;
 					}
-				}
-				else if (name.contains("mac")) {
+				} else if (name.contains("mac")) {
 					if (Processor.INTEL_32 == processor) {
 						architecture = Architecture.OSX_32;
-					}
-					else if (Processor.INTEL_64 == processor) {
+					} else if (Processor.INTEL_64 == processor) {
 						architecture = Architecture.OSX_64;
-					}
-					else if (Processor.PPC == processor) {
+					} else if (Processor.PPC == processor) {
 						architecture = Architecture.OSX_PPC;
 					}
 				}
 			}
 		}
-		LOGGER.log(Level.FINE, "architecture is " + architecture + " os.name is " +
-			System.getProperty("os.name").toLowerCase());
+		LOGGER.log(Level.FINE,
+				"architecture is " + architecture + " os.name is " + System.getProperty("os.name").toLowerCase());
 		return architecture;
 	}
 
@@ -168,35 +157,31 @@ public class NativeLibraryUtil {
 
 		if (arch.contains("arm")) {
 			processor = Processor.ARM;
-		}
-		else if (arch.contains("aarch64")) {
+		} else if (arch.contains("aarch64")) {
 			processor = Processor.AARCH_64;
-		}
-		else if (arch.contains("ppc")) {
+		} else if (arch.contains("ppc")) {
 			bits = 32;
 			if (arch.contains("64")) {
 				bits = 64;
 			}
 			processor = (32 == bits) ? Processor.PPC : Processor.PPC_64;
-		}
-		else if (arch.contains("86") || arch.contains("amd")) {
+		} else if (arch.contains("86") || arch.contains("amd")) {
 			bits = 32;
 			if (arch.contains("64")) {
 				bits = 64;
 			}
 			processor = (32 == bits) ? Processor.INTEL_32 : Processor.INTEL_64;
 		}
-		LOGGER.log(Level.FINE, "processor is " + processor + " os.arch is " +
-			System.getProperty("os.arch").toLowerCase());
+		LOGGER.log(Level.FINE, "processor is " + processor + " os.arch is " + System.getProperty("os.arch").toLowerCase());
 		return processor;
 	}
 
 	/**
 	 * Returns the path to the native library.
 	 * 
-	 * @param searchPath the path to search for &lt;platform&gt; directory.
-	 * 			Pass in <code>null</code> to get default path
-	 * 			(natives/&lt;platform&gt;).
+	 * @param searchPath the path to search for &lt;platform&gt; directory. Pass in
+	 *                   <code>null</code> to get default path
+	 *                   (natives/&lt;platform&gt;).
 	 *
 	 * @return path
 	 */
@@ -205,8 +190,8 @@ public class NativeLibraryUtil {
 			archStr = NativeLibraryUtil.getArchitecture().name().toLowerCase();
 
 		// foolproof
-		String fullSearchPath = (searchPath.equals("") || searchPath.endsWith(DELIM) ?
-				searchPath : searchPath + DELIM) + archStr + DELIM;
+		String fullSearchPath = (searchPath.equals("") || searchPath.endsWith(DELIM) ? searchPath : searchPath + DELIM)
+				+ archStr + DELIM;
 		LOGGER.log(Level.FINE, "platform specific path is " + fullSearchPath);
 		return fullSearchPath;
 	}
@@ -245,9 +230,9 @@ public class NativeLibraryUtil {
 
 	/**
 	 * Returns the Maven-versioned file name of the native library. In order for
-	 * this to work Maven needs to save its version number in the jar manifest.
-	 * The version of the library-containing jar and the version encoded in the
-	 * native library names should agree.
+	 * this to work Maven needs to save its version number in the jar manifest. The
+	 * version of the library-containing jar and the version encoded in the native
+	 * library names should agree.
 	 *
 	 * <pre>
 	 * {@code
@@ -273,14 +258,11 @@ public class NativeLibraryUtil {
 	 * </pre>
 	 *
 	 * @param libraryJarClass any class within the library-containing jar
-	 * @param libName name of library
+	 * @param libName         name of library
 	 * @return The Maven-versioned file name of the native library.
 	 */
-	public static String getVersionedLibraryName(final Class<?> libraryJarClass,
-		String libName)
-	{
-		final String version =
-			libraryJarClass.getPackage().getImplementationVersion();
+	public static String getVersionedLibraryName(final Class<?> libraryJarClass, String libName) {
+		final String version = libraryJarClass.getPackage().getImplementationVersion();
 		if (null != version && version.length() > 0) {
 			libName += "-" + version;
 		}
@@ -292,12 +274,10 @@ public class NativeLibraryUtil {
 	 * library-containing jar.
 	 *
 	 * @param libraryJarClass any class within the library-containing jar
-	 * @param libName name of library
+	 * @param libName         name of library
 	 * @return whether or not successful
 	 */
-	public static boolean loadVersionedNativeLibrary(
-		final Class<?> libraryJarClass, String libName)
-	{
+	public static boolean loadVersionedNativeLibrary(final Class<?> libraryJarClass, String libName) {
 		// append version information to native library name
 		libName = getVersionedLibraryName(libraryJarClass, libName);
 
@@ -308,22 +288,18 @@ public class NativeLibraryUtil {
 	 * Loads the native library.
 	 *
 	 * @param jniExtractor the extractor to use
-	 * @param libName name of library
-	 * @param searchPaths a list of additional paths to search for the library
+	 * @param libName      name of library
+	 * @param searchPaths  a list of additional paths to search for the library
 	 * @return whether or not successful
 	 */
-	public static boolean loadNativeLibrary(final JniExtractor jniExtractor,
-		final String libName, final String... searchPaths)
-	{
+	public static boolean loadNativeLibrary(final JniExtractor jniExtractor, final String libName,
+			final String... searchPaths) {
 		if (Architecture.UNKNOWN == getArchitecture()) {
-			LOGGER.log(Level.WARNING,
-				"No native library available for this platform.");
-		}
-		else {
+			LOGGER.log(Level.WARNING, "No native library available for this platform.");
+		} else {
 			try {
-				final List<String> libPaths = searchPaths == null ?
-						new LinkedList<String>() :
-						new LinkedList<String>(Arrays.asList(searchPaths));
+				final List<String> libPaths = searchPaths == null ? new LinkedList<String>()
+						: new LinkedList<String>(Arrays.asList(searchPaths));
 				libPaths.add(0, NativeLibraryUtil.DEFAULT_SEARCH_PATH);
 				// for backward compatibility
 				libPaths.add(1, "");
@@ -336,16 +312,13 @@ public class NativeLibraryUtil {
 
 				// search in each path in {natives/, /, META-INF/lib/, ...}
 				for (String libPath : libPaths) {
-					File extracted = jniExtractor.extractJni(
-							NativeLibraryUtil.getPlatformLibraryPath(libPath),
-							libName);
+					File extracted = jniExtractor.extractJni(NativeLibraryUtil.getPlatformLibraryPath(libPath), libName);
 					if (extracted != null) {
 						System.load(extracted.getAbsolutePath());
 						return true;
 					}
 				}
-			}
-			catch (final UnsatisfiedLinkError e) {
+			} catch (final UnsatisfiedLinkError e) {
 				LOGGER.log(Level.FINE, "Problem with library", e);
 			} catch (IOException e) {
 				LOGGER.log(Level.FINE, "Problem with extracting the library", e);
@@ -358,17 +331,14 @@ public class NativeLibraryUtil {
 	 * Loads the native library.
 	 *
 	 * @param libraryJarClass any class within the library-containing jar
-	 * @param libName name of library
+	 * @param libName         name of library
 	 * @return whether or not successful
 	 */
 	@Deprecated
-	public static boolean loadNativeLibrary(final Class<?> libraryJarClass,
-		final String libName)
-	{
+	public static boolean loadNativeLibrary(final Class<?> libraryJarClass, final String libName) {
 		try {
 			return NativeLibraryUtil.loadNativeLibrary(new DefaultJniExtractor(libraryJarClass), libName);
-		}
-		catch (final IOException e) {
+		} catch (final IOException e) {
 			LOGGER.log(Level.FINE, "IOException creating DefaultJniExtractor", e);
 		}
 		return false;
