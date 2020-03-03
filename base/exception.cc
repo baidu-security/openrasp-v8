@@ -41,12 +41,21 @@ Exception::Exception(v8::Isolate* isolate, v8::TryCatch& try_catch) : string() {
       linenum = message->GetLineNumber(context).FromMaybe(0);
     }
     ref.append(filename).append(":").append(to_string(linenum)).append("\n");
-    v8::String::Utf8Value sourceline(isolate, message->GetSourceLine(context).ToLocalChecked());
-    ref.append(*sourceline).append("\n");
-    int start = message->GetStartColumn(context).FromMaybe(-1);
-    int end = message->GetEndColumn(context).FromMaybe(-1);
-    if (start >= 0 && end >= 0) {
-      ref.append(start, ' ').append(end - start, '^').append("\n");
+    v8::Local<v8::String> line;
+    if (message->GetSourceLine(context).ToLocal(&line)) {
+      v8::String::Utf8Value val(isolate, line);
+      int start = 0, end = val.length();
+      if (end > 4 * 1024) {
+        start = message->GetStartColumn() - 1024;
+        end = message->GetEndColumn() + 1024;
+        if (start < 0) {
+          start = 0;
+        }
+        if (end > val.length()) {
+          end = val.length();
+        }
+      }
+      ref.append(*val + start, end - start).append("\n");
     }
     v8::Local<v8::Value> stack_trace_string;
     if (try_catch.StackTrace(context).ToLocal(&stack_trace_string) && stack_trace_string->IsString() &&

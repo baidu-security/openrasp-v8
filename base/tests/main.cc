@@ -263,16 +263,25 @@ TEST_CASE("Exception") {
   v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
   v8::Context::Scope context_scope(v8_context);
 
-  v8::TryCatch try_catch(isolate);
-  isolate->ExecScript("throw new Error('2333')", "2333.js");
-  REQUIRE(try_catch.HasCaught());
-  Exception e(isolate, try_catch);
-  REQUIRE(e == R"(2333.js:1
+  SECTION("NORMAL") {
+    v8::TryCatch try_catch(isolate);
+    isolate->ExecScript("throw new Error('2333')", "2333.js");
+    REQUIRE(try_catch.HasCaught());
+    Exception e(isolate, try_catch);
+    REQUIRE(e == R"(2333.js:1
 throw new Error('2333')
-^
 Error: 2333
     at 2333.js:1:7
 )");
+  }
+
+  SECTION("TRUNCATED") {
+    v8::TryCatch try_catch(isolate);
+    isolate->ExecScript(std::string("JSON.parse('begin").append(5 * 1024, 'a').append("end')"), "2333.js");
+    REQUIRE(try_catch.HasCaught());
+    Exception e(isolate, try_catch);
+    REQUIRE_THAT(e, !Catch::Matchers::Contains("end"));
+  }
 }
 
 TEST_CASE("TimeoutTask") {
