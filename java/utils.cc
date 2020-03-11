@@ -65,9 +65,6 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
     return info.GetReturnValue().Set(v8::Array::New(isolate));
   }
   auto value = maybe_value.ToLocalChecked();
-  if (!value->IsArray()) {
-    return info.GetReturnValue().Set(v8::Array::New(isolate));
-  }
   info.GetReturnValue().Set(value);
 }
 
