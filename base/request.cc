@@ -125,6 +125,15 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
   {
     v8::HandleScope handle_scope(isolate);
+    auto tmp = config->Get(context, NewV8Key(isolate, "connectTimeout")).FromMaybe(undefined);
+    if (tmp->IsInt32()) {
+      session.SetConnectTimeout(tmp->Int32Value(context).FromMaybe(1000));
+    } else {
+      session.SetConnectTimeout(1000);
+    }
+  }
+  {
+    v8::HandleScope handle_scope(isolate);
     auto tmp = config->Get(context, NewV8Key(isolate, "headers")).FromMaybe(undefined);
     if (tmp->IsObject()) {
       auto object = tmp.As<v8::Object>();

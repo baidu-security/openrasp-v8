@@ -21,6 +21,11 @@ add_custom_target(builtinjs2cheader
 target_include_directories(base PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(base builtinjs2cheader)
 
+
+target_include_directories(base PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cpr/include)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cpr/cpr CPR_SRCS)
+target_sources(base PRIVATE ${CPR_SRCS})
+
 # testing #
 option(BUILD_TESTING "Build the testing tree." OFF)
 option(BUILD_COVERAGE "Enable coverage reporting" OFF)
