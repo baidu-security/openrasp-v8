@@ -516,18 +516,18 @@ RASP.request({
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("Location":"/relative-redirect/1")==="));
+    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("location":"/relative-redirect/1")==="));
   }
   SECTION("undefined config") {
     auto maybe_rst = isolate->ExecScript(
         R"(
-RASP.request()
+RASP.request().catch(err => err.error.message)
           )",
         "request");
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
-    REQUIRE(promise->State() == v8::Promise::PromiseState::kRejected);
+    REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE(rst == "TypeError: Cannot convert undefined or null to object");
+    REQUIRE(rst == "Uncaught TypeError: Cannot convert undefined or null to object");
   }
   SECTION("empty config") {
     auto maybe_rst = isolate->ExecScript(

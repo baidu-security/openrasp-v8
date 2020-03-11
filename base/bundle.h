@@ -198,7 +198,7 @@ inline bool Initialize(size_t pool_size, Logger logger) {
     printf("%s", msg.c_str());
   });
   return v8::V8::Initialize();
-}  // namespace openrasp_v8
+}
 
 inline bool Dispose() {
   bool rst = v8::V8::Dispose();
