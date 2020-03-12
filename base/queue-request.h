@@ -15,31 +15,34 @@
  */
 
 #pragma once
-#include <cpr/cpr.h>
-#include <zlib.h>
-#include <algorithm>
-#include <string>
-#include "bundle.h"
+#include <memory>
+#include <mutex>
+#include <vector>
 
 namespace openrasp_v8 {
 
-class HTTPResponse : public cpr::Response {
+class HTTPRequest;
+class RequestQueue;
+class WorkerThread;
+class QueueRequest {
  public:
-  HTTPResponse() = default;
-  HTTPResponse(const cpr::Response& response) : cpr::Response(response) {}
-  v8::Local<v8::Object> ToObject(v8::Isolate* isolate);
-};
+  QueueRequest(uint32_t pool_size, uint32_t queue_size);
+  ~QueueRequest();
+  void Terminate();
+  bool Post(std::unique_ptr<HTTPRequest> request);
+  size_t GetQueuing();
 
-class HTTPRequest : public cpr::Session {
- public:
-  HTTPRequest() = default;
-  HTTPRequest(v8::Isolate* isolate, v8::Local<v8::Value> conf);
-  void SetMethod(const std::string& method) { this->method = method; }
-  HTTPResponse GetResponse();
+  static void Initialize(uint32_t pool_size, uint32_t queue_size);
+  static QueueRequest& GetInstance();
 
  private:
-  std::string method;
-  std::string error;
+  std::mutex mtx;
+  std::shared_ptr<RequestQueue> q;
+  std::vector<std::unique_ptr<WorkerThread>> pool;
+  bool terminated = false;
+
+  static size_t pool_size;
+  static size_t queue_size;
 };
 
 }  // namespace openrasp_v8

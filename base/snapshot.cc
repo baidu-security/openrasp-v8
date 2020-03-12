@@ -81,6 +81,11 @@ Snapshot::Snapshot(const std::string& config,
             context, NewV8Key(isolate, "request"),
             v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[2])).ToLocalChecked())
         .IsJust();
+    global
+        ->Set(
+            context, NewV8Key(isolate, "queue_request"),
+            v8::Function::New(context, reinterpret_cast<v8::FunctionCallback>(external_references[3])).ToLocalChecked())
+        .IsJust();
     if (isolate->ExecScript({reinterpret_cast<const char*>(gen_builtins), gen_builtins_len}, "builtins.js").IsEmpty()) {
       Exception e(isolate, try_catch);
       Platform::logger(e);

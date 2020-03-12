@@ -9,6 +9,7 @@
 
 using namespace openrasp_v8;
 
+std::mutex mtx;
 std::string message;
 void plugin_log(const std::string& msg) {
   message = msg;
@@ -359,7 +360,6 @@ TEST_CASE("Request", "[!mayfail]") {
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
   v8::Context::Scope context_scope(v8_context);
-  auto context = isolate->GetCurrentContext();
   SECTION("get") {
     auto maybe_rst = isolate->ExecScript(
         R"(
@@ -688,4 +688,66 @@ TEST_CASE("Plugins") {
     auto rst = isolate->Check(type, params, context);
     REQUIRE(rst->Length() == 2);
   }
+}
+
+TEST_CASE("QueueRequest") {
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  IsolatePtr ptr(isolate);
+  isolate->Initialize();
+  v8::Isolate::Scope isolate_scope(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
+  v8::Context::Scope context_scope(v8_context);
+  QueueRequest::Initialize(10, 1000);
+  message = "";
+  Platform::logger = [](const std::string& msg) {
+    std::lock_guard<std::mutex> lock(mtx);
+    message += msg;
+  };
+
+  SECTION("undefined config") {
+    isolate->ExecScript(
+        R"(
+  for (let i = 0; i < 100; i++) { RASP.queue_request() }
+          )",
+        "test");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    REQUIRE_THAT(message,
+                 Catch::Matchers::Contains(
+                     "queue request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"
+                     "queue request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"));
+  }
+
+  SECTION("400") {
+    isolate->ExecScript(
+        R"(
+  RASP.queue_request({url: 'https://httpbin.org/status/400'})
+            )",
+        "test");
+    for (int i = 0; i < 50; i++) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (message.find("400") != -1) {
+        break;
+      }
+    }
+    REQUIRE_THAT(message, Catch::Matchers::Contains("queue request status: 400"));
+  }
+
+  SECTION("ok") {
+    isolate->ExecScript(
+        R"(
+  RASP.queue_request({url: 'baidu.com'})
+            )",
+        "test");
+    for (int i = 0; i < 10; i++) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (!message.empty()) {
+        break;
+      }
+    }
+    REQUIRE(message.empty());
+  }
+
+  Platform::logger = plugin_log;
 }

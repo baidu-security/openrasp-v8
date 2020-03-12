@@ -38,6 +38,10 @@ global.RASP = class {
         return request(config)
     }
 
+    static queue_request(config) {
+        return queue_request(config)
+    }
+
     static get_jsengine() {
         return 'v8'
     }

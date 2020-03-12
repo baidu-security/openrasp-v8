@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "request.h"
 #include <string>
 #include "bundle.h"
-#include "request.h"
 
 namespace openrasp_v8 {
 
@@ -214,26 +214,6 @@ HTTPResponse HTTPRequest::GetResponse() {
     return Delete();
   } else {
     return Get();
-  }
-}
-
-void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  auto isolate = info.GetIsolate();
-  v8::TryCatch try_catch(isolate);
-  auto context = isolate->GetCurrentContext();
-  v8::Local<v8::Promise::Resolver> resolver;
-  if (!v8::Promise::Resolver::New(context).ToLocal(&resolver)) {
-    try_catch.ReThrow();
-    return;
-  }
-  info.GetReturnValue().Set(resolver->GetPromise());
-  HTTPRequest req(isolate, info[0]);
-  HTTPResponse res = req.GetResponse();
-  auto object = res.ToObject(isolate);
-  if (res.error) {
-    resolver->Reject(context, object).IsJust();
-  } else {
-    resolver->Resolve(context, object).IsJust();
   }
 }
 

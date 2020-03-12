@@ -1,5 +1,7 @@
 #include "bundle.h"
 #include "flex/flex.h"
+#include "queue-request.h"
+#include "request.h"
 
 namespace openrasp_v8 {
 
@@ -33,12 +35,36 @@ void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(arr);
 }
 
-void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info);
+void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  auto isolate = info.GetIsolate();
+  v8::TryCatch try_catch(isolate);
+  auto context = isolate->GetCurrentContext();
+  v8::Local<v8::Promise::Resolver> resolver;
+  if (!v8::Promise::Resolver::New(context).ToLocal(&resolver)) {
+    try_catch.ReThrow();
+    return;
+  }
+  info.GetReturnValue().Set(resolver->GetPromise());
+  HTTPRequest req(isolate, info[0]);
+  HTTPResponse res = req.GetResponse();
+  auto object = res.ToObject(isolate);
+  if (res.error) {
+    resolver->Reject(context, object).IsJust();
+  } else {
+    resolver->Resolve(context, object).IsJust();
+  }
+}
 
-intptr_t* Snapshot::external_references = new intptr_t[4]{
+void queue_request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  auto isolate = info.GetIsolate();
+  QueueRequest::GetInstance().Post(std::unique_ptr<HTTPRequest>(new HTTPRequest(isolate, info[0])));
+}
+
+intptr_t* Snapshot::external_references = new intptr_t[5]{
     reinterpret_cast<intptr_t>(log_callback),
     reinterpret_cast<intptr_t>(flex_callback),
     reinterpret_cast<intptr_t>(request_callback),
+    reinterpret_cast<intptr_t>(queue_request_callback),
     0,
 };
 }  // namespace openrasp_v8

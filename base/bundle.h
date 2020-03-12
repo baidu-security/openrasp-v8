@@ -28,6 +28,7 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
+#include "queue-request.h"
 
 namespace openrasp_v8 {
 
@@ -177,7 +178,7 @@ class TimeoutTask : public v8::Task {
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 };
 
-inline bool Initialize(size_t pool_size, Logger logger) {
+inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size = 1, size_t request_queue_size = 100) {
   std::string flags = "--stress-compaction --stress-compaction-random ";
   const char* env = std::getenv("OPENRASP_V8_OPTIONS");
   if (env) {
@@ -197,6 +198,7 @@ inline bool Initialize(size_t pool_size, Logger logger) {
     Platform::logger(msg);
     printf("%s", msg.c_str());
   });
+  QueueRequest::Initialize(request_pool_size, request_queue_size);
   return v8::V8::Initialize();
 }
 
