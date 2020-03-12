@@ -135,7 +135,7 @@ public class NativeLoader {
 		} catch (final UnsatisfiedLinkError e) {
 			if (NativeLibraryUtil.loadNativeLibrary(jniExtractor, libName, searchPaths))
 				return;
-			throw new IOException("Couldn't load library library " + libName, e);
+			throw new IOException("Couldn't load library " + libName, e);
 		}
 	}
 

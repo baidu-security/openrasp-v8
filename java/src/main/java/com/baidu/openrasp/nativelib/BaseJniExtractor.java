@@ -145,7 +145,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 	public File extractJni(final String libPath, final String libname)
 			throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
 		String mappedlibName = System.mapLibraryName(libname);
-		debug("mappedLib is " + mappedlibName);
+		info("mappedLib is " + mappedlibName);
 		/*
 		 * On Darwin, the default mapping is to .jnilib; but we use .dylibs so that
 		 * library interdependencies are handled correctly. if we don't find a .jnilib,
@@ -194,7 +194,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 			debug("URL path is " + lib.getPath());
 			return extractResource(getJniDir(), lib, mappedlibName);
 		}
-		debug("Couldn't find resource " + combinedPath);
+		info("Couldn't find resource " + combinedPath);
 		return null;
 	}
 
@@ -253,7 +253,7 @@ public abstract class BaseJniExtractor implements JniExtractor {
 
 			// make a lib file with exactly the same lib name
 			final File outfile = new File(getJniDir(), outputName);
-			debug("Extracting '" + resource + "' to '" + outfile.getAbsolutePath() + "'");
+			info("Extracting '" + resource + "' to '" + outfile.getAbsolutePath() + "'");
 
 			// copy resource stream to temporary file
 			FileOutputStream out = null;
@@ -343,6 +343,10 @@ public abstract class BaseJniExtractor implements JniExtractor {
 			}
 			out.write(tmp, 0, len);
 		}
+	}
+
+	private static void info(final String message) {
+		LOGGER.log(Level.INFO, message);
 	}
 
 	private static void debug(final String message) {

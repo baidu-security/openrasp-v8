@@ -319,9 +319,9 @@ public class NativeLibraryUtil {
 					}
 				}
 			} catch (final UnsatisfiedLinkError e) {
-				LOGGER.log(Level.FINE, "Problem with library", e);
+				LOGGER.log(Level.SEVERE, "Problem with library", e);
 			} catch (IOException e) {
-				LOGGER.log(Level.FINE, "Problem with extracting the library", e);
+				LOGGER.log(Level.SEVERE, "Problem with extracting the library", e);
 			} catch (IllegalAccessException e) {
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
