@@ -690,7 +690,7 @@ TEST_CASE("Plugins") {
   }
 }
 
-TEST_CASE("QueueRequest") {
+TEST_CASE("AsyncRequest") {
   Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   IsolatePtr ptr(isolate);
@@ -699,7 +699,7 @@ TEST_CASE("QueueRequest") {
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
   v8::Context::Scope context_scope(v8_context);
-  QueueRequest::Initialize(10, 1000);
+  AsyncRequest::ConfigInstance(10, 1000);
   message = "";
   Platform::logger = [](const std::string& msg) {
     std::lock_guard<std::mutex> lock(mtx);
@@ -709,20 +709,20 @@ TEST_CASE("QueueRequest") {
   SECTION("undefined config") {
     isolate->ExecScript(
         R"(
-  for (let i = 0; i < 100; i++) { RASP.queue_request() }
+  for (let i = 0; i < 100; i++) { RASP.request_async() }
           )",
         "test");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     REQUIRE_THAT(message,
                  Catch::Matchers::Contains(
-                     "queue request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"
-                     "queue request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"));
+                     "async request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"
+                     "async request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"));
   }
 
   SECTION("400") {
     isolate->ExecScript(
         R"(
-  RASP.queue_request({url: 'https://httpbin.org/status/400'})
+  RASP.request_async({url: 'https://httpbin.org/status/400'})
             )",
         "test");
     for (int i = 0; i < 50; i++) {
@@ -731,13 +731,13 @@ TEST_CASE("QueueRequest") {
         break;
       }
     }
-    REQUIRE_THAT(message, Catch::Matchers::Contains("queue request status: 400"));
+    REQUIRE_THAT(message, Catch::Matchers::Contains("async request status: 400"));
   }
 
   SECTION("ok") {
     isolate->ExecScript(
         R"(
-  RASP.queue_request({url: 'baidu.com'})
+        for (let i = 0; i < 4; i++) { RASP.request_async({url: 'baidu.com'}) }
             )",
         "test");
     for (int i = 0; i < 10; i++) {
@@ -746,7 +746,7 @@ TEST_CASE("QueueRequest") {
         break;
       }
     }
-    REQUIRE(message.empty());
+    REQUIRE_THAT(message, Catch::Matchers::Contains(""));
   }
 
   Platform::logger = plugin_log;

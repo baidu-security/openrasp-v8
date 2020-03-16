@@ -38,8 +38,8 @@ global.RASP = class {
         return request(config)
     }
 
-    static queue_request(config) {
-        return queue_request(config)
+    static request_async(config) {
+        return request_async(config)
     }
 
     static get_jsengine() {

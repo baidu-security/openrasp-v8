@@ -17,6 +17,7 @@
 #include "request.h"
 #include <string>
 #include "bundle.h"
+#include "thread-pool.h"
 
 namespace openrasp_v8 {
 
@@ -215,6 +216,37 @@ HTTPResponse HTTPRequest::GetResponse() {
   } else {
     return Get();
   }
+}
+
+size_t AsyncRequest::pool_size;
+size_t AsyncRequest::queue_cap;
+
+AsyncRequest::AsyncRequest(std::shared_ptr<ThreadPool> pool) : pool(pool) {}
+
+bool AsyncRequest::Submit(std::shared_ptr<HTTPRequest> request) {
+  return pool->Post([request]() {
+    auto response = request->GetResponse();
+    if (response.error) {
+      Platform::logger(std::string("async request failed: ") + response.error.message + std::string("\n"));
+    } else if (response.status_code != 200) {
+      Platform::logger(std::string("async request status: ") + std::to_string(response.status_code) +
+                       std::string(" body: ") + response.text.substr(0, 1024) + std::string("\n"));
+    }
+  });
+}
+
+size_t AsyncRequest::GetQueueSize() {
+  return pool->GetQueueSize();
+}
+
+void AsyncRequest::ConfigInstance(size_t pool_size, size_t queue_cap) {
+  AsyncRequest::pool_size = pool_size;
+  AsyncRequest::queue_cap = queue_cap;
+}
+
+AsyncRequest& AsyncRequest::GetInstance() {
+  static AsyncRequest instance(std::make_shared<ThreadPool>(pool_size, queue_cap));
+  return instance;
 }
 
 }  // namespace openrasp_v8

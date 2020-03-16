@@ -1,6 +1,5 @@
 #include "bundle.h"
 #include "flex/flex.h"
-#include "queue-request.h"
 #include "request.h"
 
 namespace openrasp_v8 {
@@ -55,16 +54,16 @@ void request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   }
 }
 
-void queue_request_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
+void request_async_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto isolate = info.GetIsolate();
-  QueueRequest::GetInstance().Post(std::unique_ptr<HTTPRequest>(new HTTPRequest(isolate, info[0])));
+  AsyncRequest::GetInstance().Submit(std::make_shared<HTTPRequest>(isolate, info[0]));
 }
 
 intptr_t* Snapshot::external_references = new intptr_t[5]{
     reinterpret_cast<intptr_t>(log_callback),
     reinterpret_cast<intptr_t>(flex_callback),
     reinterpret_cast<intptr_t>(request_callback),
-    reinterpret_cast<intptr_t>(queue_request_callback),
+    reinterpret_cast<intptr_t>(request_async_callback),
     0,
 };
 }  // namespace openrasp_v8

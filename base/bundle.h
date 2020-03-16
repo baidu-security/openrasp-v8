@@ -28,7 +28,6 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
-#include "queue-request.h"
 
 namespace openrasp_v8 {
 
@@ -178,7 +177,24 @@ class TimeoutTask : public v8::Task {
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 };
 
-inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size = 1, size_t request_queue_size = 100) {
+class ThreadPool;
+class HTTPRequest;
+class AsyncRequest {
+ public:
+  AsyncRequest(std::shared_ptr<ThreadPool> pool);
+  bool Submit(std::shared_ptr<HTTPRequest> request);
+  size_t GetQueueSize();
+
+  static void ConfigInstance(size_t pool_size, size_t queue_cap);
+  static AsyncRequest& GetInstance();
+
+ private:
+  std::shared_ptr<ThreadPool> pool;
+  static size_t pool_size;
+  static size_t queue_cap;
+};
+
+inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size = 1, size_t request_queue_cap = 100) {
   std::string flags = "--stress-compaction --stress-compaction-random ";
   const char* env = std::getenv("OPENRASP_V8_OPTIONS");
   if (env) {
@@ -198,7 +214,7 @@ inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size
     Platform::logger(msg);
     printf("%s", msg.c_str());
   });
-  QueueRequest::Initialize(request_pool_size, request_queue_size);
+  AsyncRequest::ConfigInstance(request_pool_size, request_queue_cap);
   return v8::V8::Initialize();
 }
 
