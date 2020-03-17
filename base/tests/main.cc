@@ -1,11 +1,14 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #define CATCH_CONFIG_ENABLE_BENCHMARKING
-#include "catch2/catch.hpp"
-
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <thread>
+
 #include "../bundle.h"
+#include "../request.h"
+#include "../thread-pool.h"
+#include "catch2/catch.hpp"
 
 using namespace openrasp_v8;
 
@@ -46,8 +49,7 @@ TEST_CASE("Bench", "[!benchmark]") {
     v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
     v8::Context::Scope context_scope(v8_context);
     auto type = NewV8String(isolate, "request");
-    auto json = NewV8String(isolate,
-                            R"({"action":"ignore","message":"1234567890","name":"test","confidence":0})");
+    auto json = NewV8String(isolate, R"({"action":"ignore","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
     context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).IsJust();
@@ -72,8 +74,7 @@ TEST_CASE("Bench", "[!benchmark]") {
     v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
     v8::Context::Scope context_scope(v8_context);
     auto type = NewV8String(isolate, "request");
-    auto json = NewV8String(isolate,
-                            R"({"action":"log","message":"1234567890","name":"test","confidence":0})");
+    auto json = NewV8String(isolate, R"({"action":"log","message":"1234567890","name":"test","confidence":0})");
     auto params = v8::JSON::Parse(v8_context, json).ToLocalChecked().As<v8::Object>();
     auto context = v8::Object::New(isolate);
     context->Set(v8_context, NewV8Key(isolate, "index"), v8::Int32::New(isolate, i)).IsJust();
@@ -228,6 +229,8 @@ TEST_CASE("Isolate") {
     REQUIRE_FALSE(isolate->IsExpired(snapshot.timestamp - 1));
     REQUIRE_FALSE(isolate->IsExpired(snapshot.timestamp));
   }
+
+  SECTION("IsDead") { REQUIRE(!isolate->IsDead()); }
 
   SECTION("Check") {
     auto type = NewV8String(isolate, "request");
@@ -749,5 +752,63 @@ TEST_CASE("AsyncRequest") {
     REQUIRE_THAT(message, Catch::Matchers::Contains(""));
   }
 
+  SECTION("AsyncRequest") {
+    auto req = std::make_shared<HTTPRequest>();
+    req->SetUrl("https://www.httpbin.org/get");
+    req->SetMethod("get");
+    REQUIRE(AsyncRequest::GetInstance().GetQueueSize() == 0);
+    REQUIRE(AsyncRequest::GetInstance().Submit(req));
+    REQUIRE(AsyncRequest::GetInstance().GetQueueSize() == 1);
+  }
+
   Platform::logger = plugin_log;
+}
+
+TEST_CASE("ThreadPool") {
+  SECTION("basic") {
+    auto pool = new ThreadPool(10, 20);
+    std::atomic<int> sum(0);
+    for (int i = 0; i < 20; i++) {
+      pool->Post([&sum, i] { sum.fetch_add(i); });
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    REQUIRE(sum.load() == 190);
+  }
+
+  SECTION("full") {
+    auto pool = new ThreadPool(1, 10);
+    std::promise<void> pro;
+    pool->Post([&pro] {
+      pro.set_value();
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    });
+    pro.get_future().get();
+    for (int i = 0; i < 10; i++) {
+      REQUIRE(pool->Post([] {}));
+    }
+    for (int i = 0; i < 10; i++) {
+      REQUIRE(!pool->Post([] {}));
+    }
+  }
+
+  SECTION("terminate") {
+    auto pool = new ThreadPool(10, 100);
+    for (int i = 0; i < 9; i++) {
+      pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(10)); });
+    }
+    std::promise<void> pro;
+    pool->Post([&pro] { pro.set_value(); });
+    for (int i = 0; i < 9; i++) {
+      pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(10)); });
+    }
+    pro.get_future().get();
+    auto begin = std::chrono::system_clock::now();
+    pool->Terminate();
+    REQUIRE(pool->GetQueueSize() >= 8);
+    REQUIRE(!pool->Post([] {}));
+    delete pool;
+    auto end = std::chrono::system_clock::now();
+    auto dur = end - begin;
+    REQUIRE(dur.count() < 100 * 1000);
+  }
 }
