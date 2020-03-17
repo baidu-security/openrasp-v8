@@ -61,12 +61,12 @@ class ThreadPool {
   Task GetNext() {
     std::unique_lock<std::mutex> lock(mtx);
     for (;;) {
-      if (!tasks.empty()) {
+      if (terminated) {
+        return nullptr;
+      } else if (!tasks.empty()) {
         auto task = std::move(tasks.front());
         tasks.pop();
         return task;
-      } else if (terminated) {
-        return nullptr;
       } else {
         cv.wait(lock);
       }
