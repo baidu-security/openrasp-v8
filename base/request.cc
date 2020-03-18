@@ -15,7 +15,9 @@
  */
 
 #include "request.h"
+
 #include <string>
+
 #include "bundle.h"
 #include "thread-pool.h"
 
@@ -246,7 +248,14 @@ void AsyncRequest::ConfigInstance(size_t pool_size, size_t queue_cap) {
 
 AsyncRequest& AsyncRequest::GetInstance() {
   static AsyncRequest instance(std::make_shared<ThreadPool>(pool_size, queue_cap));
+  if (!instance.pool) {
+    instance = AsyncRequest(std::make_shared<ThreadPool>(pool_size, queue_cap));
+  }
   return instance;
+}
+
+void AsyncRequest::Terminate() {
+  GetInstance().pool.reset();
 }
 
 }  // namespace openrasp_v8

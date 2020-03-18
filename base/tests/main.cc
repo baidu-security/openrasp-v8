@@ -803,9 +803,6 @@ TEST_CASE("ThreadPool") {
     }
     pro.get_future().get();
     auto begin = std::chrono::system_clock::now();
-    pool->Terminate();
-    REQUIRE(pool->GetQueueSize() >= 8);
-    REQUIRE(!pool->Post([] {}));
     delete pool;
     auto end = std::chrono::system_clock::now();
     auto dur = end - begin;

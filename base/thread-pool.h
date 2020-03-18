@@ -38,7 +38,11 @@ class ThreadPool {
   }
 
   ~ThreadPool() {
-    Terminate();
+    {
+      std::lock_guard<std::mutex> lock(mtx);
+      terminated = true;
+    }
+    cv.notify_all();
     for (auto& t : threads) {
       if (t.joinable()) {
         t.join();
@@ -78,14 +82,6 @@ class ThreadPool {
       std::lock_guard<std::mutex> lock(mtx);
       return tasks.size();
     }
-  }
-
-  void Terminate() {
-    {
-      std::lock_guard<std::mutex> lock(mtx);
-      terminated = true;
-    }
-    cv.notify_all();
   }
 
  private:

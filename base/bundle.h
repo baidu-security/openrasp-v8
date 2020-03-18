@@ -20,6 +20,7 @@
 #include <libplatform/libplatform.h>
 #include <v8-platform.h>
 #include <v8.h>
+
 #include <chrono>
 #include <functional>
 #include <future>
@@ -187,6 +188,7 @@ class AsyncRequest {
 
   static void ConfigInstance(size_t pool_size, size_t queue_cap);
   static AsyncRequest& GetInstance();
+  static void Terminate();
 
  private:
   std::shared_ptr<ThreadPool> pool;
