@@ -113,11 +113,11 @@ HTTPRequest::HTTPRequest(v8::Isolate* isolate, v8::Local<v8::Value> conf) {
       header.emplace("content-type", "application/json");
     } else if (tmp->IsString()) {
       body = cpr::Body(*v8::String::Utf8Value(isolate, tmp));
-    } else if (tmp->IsArrayBuffer()) {
-      auto arraybuffer = tmp.As<v8::ArrayBuffer>();
-      auto content = arraybuffer->GetContents();
-      body = cpr::Body(static_cast<const char*>(content.Data()), content.ByteLength());
-      header.emplace("content-type", "application/octet-stream");
+      // } else if (tmp->IsArrayBuffer()) {
+      //   auto arraybuffer = tmp.As<v8::ArrayBuffer>();
+      //   auto content = arraybuffer->GetContents();
+      //   body = cpr::Body(static_cast<const char*>(content.Data()), content.ByteLength());
+      //   header.emplace("content-type", "application/octet-stream");
     }
     if (body.size() != 0) {
       if (config->Get(context, NewV8Key(isolate, "deflate")).FromMaybe(undefined)->IsTrue()) {
@@ -220,8 +220,8 @@ HTTPResponse HTTPRequest::GetResponse() {
   }
 }
 
-size_t AsyncRequest::pool_size;
-size_t AsyncRequest::queue_cap;
+size_t AsyncRequest::pool_size = 1;
+size_t AsyncRequest::queue_cap = 1;
 
 AsyncRequest::AsyncRequest(std::shared_ptr<ThreadPool> pool) : pool(pool) {}
 
