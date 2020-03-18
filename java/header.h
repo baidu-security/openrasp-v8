@@ -17,10 +17,12 @@
 #pragma once
 
 #include <jni.h>
+
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <thread>
+
 #include "base/bundle.h"
 
 // fix 32 bit jdk's runtime stack
@@ -118,8 +120,8 @@ class ExternalOneByteStringResource : public v8::String::ExternalOneByteStringRe
     if (jbuf_size < 0) {
       return;
     }
-    if (jbuf_size > 4 * 1024 * 1024) {
-      jbuf_size = 4 * 1024 * 1024;
+    if (jbuf_size > openrasp_v8::max_buffer_size) {
+      jbuf_size = openrasp_v8::max_buffer_size;
     }
     buf = new char[jbuf_size];
     if (buf == nullptr) {

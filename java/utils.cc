@@ -16,6 +16,7 @@
 #include <codecvt>
 #include <locale>
 #include <vector>
+
 #include "header.h"
 
 using namespace openrasp_v8;
@@ -73,8 +74,8 @@ std::string Jstring2String(JNIEnv* env, jstring str) {
   if (size < 0) {
     return {};
   }
-  if (size > 4 * 1024 * 1024) {
-    size = 4 * 1024 * 1024;
+  if (size > max_buffer_size) {
+    size = max_buffer_size;
   }
   std::vector<char16_t> u16(size);
   env->GetStringRegion(str, 0, size, reinterpret_cast<jchar*>(u16.data()));
@@ -101,8 +102,8 @@ v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
   if (size < 0) {
     return {};
   }
-  if (size > 4 * 1024 * 1024) {
-    size = 4 * 1024 * 1024;
+  if (size > max_buffer_size) {
+    size = max_buffer_size;
   }
   std::vector<jchar> u16(size);
   env->GetStringRegion(jstr, 0, size, u16.data());

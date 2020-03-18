@@ -853,6 +853,7 @@ TEST_CASE("HeapLimit") {
 }
 
 #ifndef _WIN32
+#include <sys/wait.h>
 TEST_CASE("Fork") {
   Snapshot snapshot("global.fork = true;", std::vector<PluginFile>(), "1.2.3", 1000);
   Platform::Get()->Shutdown();

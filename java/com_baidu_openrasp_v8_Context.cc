@@ -15,6 +15,7 @@
  */
 
 #include "com_baidu_openrasp_v8_Context.h"
+
 #include "header.h"
 
 static std::vector<std::string> stringKeys;
@@ -125,8 +126,8 @@ static void buffer_getter(v8::Local<v8::Name> name, const v8::PropertyCallbackIn
   if (jbuf_size <= 0) {
     return;
   }
-  if (jbuf_size > 4 * 1024 * 1024) {
-    jbuf_size = 4 * 1024 * 1024;
+  if (jbuf_size > openrasp_v8::max_buffer_size) {
+    jbuf_size = openrasp_v8::max_buffer_size;
   }
   auto buffer = v8::ArrayBuffer::New(isolate, jbuf_size);
   jenv->GetByteArrayRegion(jbuf, 0, jbuf_size, reinterpret_cast<jbyte*>(buffer->GetContents().Data()));
