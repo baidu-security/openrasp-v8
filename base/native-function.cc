@@ -26,8 +26,9 @@ void flex_callback(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
   flex_token_result token_result = flex_lexing(input, input_len, *lexer_mode);
 
-  auto arr = v8::Array::New(isolate, token_result.result_len);
-  for (int i = 0; i < token_result.result_len; i++) {
+  size_t len = std::min(uint32_t(input_len), token_result.result_len);
+  auto arr = v8::Array::New(isolate, len);
+  for (int i = 0; i < len; i++) {
     arr->Set(context, i, v8::Integer::New(isolate, token_result.result[i])).IsJust();
   }
   free(token_result.result);
