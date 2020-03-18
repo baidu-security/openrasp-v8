@@ -227,9 +227,6 @@ v8::MaybeLocal<v8::Value> Isolate::Log(v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   auto console_log = isolate->GetData()->console_log.Get(isolate);
   auto rst = console_log->Call(context, console_log, 1, &value);
-  while (Platform::Get()->PumpMessageLoop(isolate)) {
-    continue;
-  }
   return handle_scope.EscapeMaybe(rst);
 }
 

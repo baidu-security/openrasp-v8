@@ -32,8 +32,10 @@
 
 namespace openrasp_v8 {
 
-inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, size_t len = -1) {
-  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, len)
+constexpr int max_buffer_size = 4 * 1024 * 1024;
+
+inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, int len = -1) {
+  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, std::min(max_buffer_size, len))
       .FromMaybe(v8::String::Empty(isolate));
 }
 
@@ -41,8 +43,9 @@ inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const std::string& s
   return NewV8Key(isolate, str.c_str(), str.length());
 }
 
-inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, size_t len = -1) {
-  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, len).FromMaybe(v8::String::Empty(isolate));
+inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, int len = -1) {
+  return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, std::min(max_buffer_size, len))
+      .FromMaybe(v8::String::Empty(isolate));
 }
 
 inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const std::string& str) {
@@ -81,7 +84,7 @@ class Platform : public v8::Platform {
   v8::TracingController* GetTracingController() override;
   v8::Platform::StackTracePrinter GetStackTracePrinter() override;
   // v8::PageAllocator* GetPageAllocator() override;
-  bool OnCriticalMemoryPressure(size_t length) override;
+  // bool OnCriticalMemoryPressure(size_t length) override;
 
   static Platform* New(int thread_pool_size);
   static Platform* Get();
@@ -89,7 +92,7 @@ class Platform : public v8::Platform {
   void Shutdown();
 
   static Logger logger;
-  static CriticalMemoryPressureCallback criticalMemoryPressureCallback;
+  // static CriticalMemoryPressureCallback criticalMemoryPressureCallback;
 
  private:
   static std::unique_ptr<Platform> instance;
@@ -205,17 +208,17 @@ inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size
   v8::V8::SetFlagsFromString(flags.data(), flags.size());
   Platform::logger = logger;
   v8::V8::InitializePlatform(Platform::New(pool_size));
-  v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
-    std::string msg = "\nDebug check failed: ";
-    msg += message;
-    msg += ", in ";
-    msg += file;
-    msg += ", line ";
-    msg += std::to_string(line);
-    msg += "\n";
-    Platform::logger(msg);
-    printf("%s", msg.c_str());
-  });
+  // v8::V8::SetDcheckErrorHandler([](const char* file, int line, const char* message) {
+  //   std::string msg = "\nDebug check failed: ";
+  //   msg += message;
+  //   msg += ", in ";
+  //   msg += file;
+  //   msg += ", line ";
+  //   msg += std::to_string(line);
+  //   msg += "\n";
+  //   Platform::logger(msg);
+  //   printf("%s", msg.c_str());
+  // });
   AsyncRequest::ConfigInstance(request_pool_size, request_queue_cap);
   return v8::V8::Initialize();
 }
