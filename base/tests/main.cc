@@ -286,6 +286,17 @@ Error: 2333
     Exception e(isolate, try_catch);
     REQUIRE_THAT(e, !Catch::Matchers::Contains("end"));
   }
+
+  SECTION("NON") {
+    v8::TryCatch try_catch(isolate);
+    Exception e(isolate, try_catch);
+    REQUIRE(e == "");
+  }
+
+  SECTION("Native Error") {
+    v8::MaybeLocal<v8::Value>().ToLocalChecked();
+    REQUIRE_THAT(message, Catch::Matchers::Contains("Native error"));
+  }
 }
 
 TEST_CASE("TimeoutTask") {
@@ -484,7 +495,8 @@ RASP.request({
         R"(
 RASP.request({
     url: 'https://www.httpbin.org/get',
-    timeout: 10
+    timeout: 10,
+    connectTimeout: 1000
 }).catch(err => Promise.reject(JSON.stringify(err)))
           )",
         "request");
@@ -519,7 +531,7 @@ RASP.request({
     auto promise = maybe_rst.ToLocalChecked().As<v8::Promise>();
     REQUIRE(promise->State() == v8::Promise::PromiseState::kFulfilled);
     auto rst = std::string(*v8::String::Utf8Value(isolate, promise->Result()));
-    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("location":"/relative-redirect/1")==="));
+    REQUIRE_THAT(rst, Catch::Matchers::Contains(R"===("/relative-redirect/1")==="));
   }
   SECTION("undefined config") {
     auto maybe_rst = isolate->ExecScript(
@@ -753,6 +765,7 @@ TEST_CASE("AsyncRequest") {
   }
 
   SECTION("AsyncRequest") {
+    AsyncRequest::GetInstance().Terminate();
     auto req = std::make_shared<HTTPRequest>();
     req->SetUrl("https://www.httpbin.org/get");
     req->SetMethod("get");
@@ -809,3 +822,67 @@ TEST_CASE("ThreadPool") {
     REQUIRE(dur.count() < 100 * 1000);
   }
 }
+
+TEST_CASE("HeapLimit") {
+  Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
+  auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+  REQUIRE(isolate != nullptr);
+  IsolatePtr ptr(isolate);
+  isolate->Initialize();
+  v8::Isolate::Scope isolate_scope(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
+  v8::Context::Scope context_scope(v8_context);
+
+  auto t = new char[1024 * 1024 * 10];
+  auto a = NewV8String(isolate, t, 1024 * 1024 * 10);
+  delete[] t;
+  v8::TryCatch try_catch(isolate);
+  isolate->ExecScript(R"==(
+        let arr = []
+        let i = 0
+        for (;;) {
+          arr.push(new Array(i).fill(i))
+          i++
+        }
+      )==",
+                      "limit");
+  REQUIRE(isolate->GetData()->is_oom);
+  Exception e(isolate, try_catch);
+  REQUIRE(e == "Terminated\n");
+}
+
+#ifndef _WIN32
+TEST_CASE("Fork") {
+  Snapshot snapshot("global.fork = true;", std::vector<PluginFile>(), "1.2.3", 1000);
+  Platform::Get()->Shutdown();
+  AsyncRequest::Terminate();
+  pid_t pid = fork();
+  REQUIRE(pid >= 0);
+  if (pid != 0) {
+    int status;
+    REQUIRE(waitpid(pid, &status, WUNTRACED | WCONTINUED) != -1);
+    REQUIRE(WEXITSTATUS(status) == 0);
+  } else {
+    freopen("/dev/null", "w", stdout);
+    Platform::Get()->Startup();
+    auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
+    REQUIRE(isolate != nullptr);
+    IsolatePtr ptr(isolate);
+    isolate->Initialize();
+    v8::Isolate::Scope isolate_scope(isolate);
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Context> v8_context = isolate->GetData()->context.Get(isolate);
+    v8::Context::Scope context_scope(v8_context);
+    v8::TryCatch try_catch(isolate);
+    auto rst = isolate->ExecScript("global.fork", "test").ToLocalChecked();
+    REQUIRE(rst->IsTrue());
+
+    std::promise<void> pro;
+    Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), 100)));
+    isolate->ExecScript("for(;;);", "loop");
+    pro.set_value();
+    REQUIRE(isolate->GetData()->is_timeout);
+  }
+}
+#endif
