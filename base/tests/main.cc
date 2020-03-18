@@ -779,12 +779,14 @@ TEST_CASE("AsyncRequest") {
 
 TEST_CASE("ThreadPool") {
   SECTION("basic") {
-    auto pool = new ThreadPool(10, 20);
+    auto pool = new ThreadPool(10, 21);
     std::atomic<int> sum(0);
     for (int i = 0; i < 20; i++) {
       pool->Post([&sum, i] { sum.fetch_add(i); });
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::promise<void> pro;
+    pool->Post([&pro] { pro.set_value(); });
+    pro.get_future().get();
     REQUIRE(sum.load() == 190);
   }
 
@@ -806,20 +808,23 @@ TEST_CASE("ThreadPool") {
 
   SECTION("terminate") {
     auto pool = new ThreadPool(10, 100);
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 10; i++) {
       pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(10)); });
     }
     std::promise<void> pro;
     pool->Post([&pro] { pro.set_value(); });
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 10; i++) {
       pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(10)); });
+    }
+    for (int i = 0; i < 10; i++) {
+      pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); });
     }
     pro.get_future().get();
     auto begin = std::chrono::system_clock::now();
     delete pool;
     auto end = std::chrono::system_clock::now();
     auto dur = end - begin;
-    REQUIRE(dur.count() < 100 * 1000);
+    REQUIRE(dur.count() < 1000 * 1000);
   }
 }
 
