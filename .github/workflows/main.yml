@@ -9,7 +9,7 @@ on: push
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  build-linux:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -45,3 +45,32 @@ jobs:
       with:
         name: java_natives_linux.tar.gz
         path: dist/java_natives_linux.tar.gz
+
+  build-windows:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: cache windows prebuilts
+      uses: actions/cache@v1
+      with:
+        path: ~/cache/openrasp-v8-prebuilts-7.8-windows.tar.gz
+        key: openrasp-v8-prebuilts-7.8-windows
+
+    - name: setup
+      run: |
+        prebuilts/fetch_prebuilts.sh
+    
+    - name: build
+      run: bash ./.travis/windows.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_windows.tar.gz
+        path: dist/java_natives_windows.tar.gz
