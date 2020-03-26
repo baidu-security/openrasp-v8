@@ -6,7 +6,7 @@ pushd `git rev-parse --show-toplevel`
 
 mkdir -p build64 && pushd $_
 
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -Ax64 -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON -A x64 -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..
 
 cmake --build . --config RelWithDebInfo
 
@@ -16,7 +16,7 @@ popd
 
 mkdir -p build32 && pushd $_
 
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON -A Win32 -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..
 
 cmake --build . --config RelWithDebInfo
 
@@ -30,9 +30,9 @@ mkdir -p java/src/main/resources/natives/windows_64 && cp build64/java/RelWithDe
 
 pushd java
 
-JAVA_HOME="/c/Program Files (x86)/Java/jdk1.8.0_211" mvn test install
+# JAVA_HOME="/c/Program Files (x86)/Java/jdk1.8.0_211" mvn test install
 
-JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test install
+# JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test install
 
 popd
 
