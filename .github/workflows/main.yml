@@ -40,11 +40,11 @@ jobs:
     - name: build
       run: bash ./.travis/linux.sh
     
-    - name: upload artifact
+    - name: upload linux artifact
       uses: actions/upload-artifact@v1
       with:
-        name: java_natives_linux.tar.gz
-        path: dist/java_natives_linux.tar.gz
+        name: java_natives_linux
+        path: java/src/main/resources/natives
 
   build-osx:
     # The type of runner that the job will run on
@@ -69,11 +69,11 @@ jobs:
     - name: build
       run: bash ./.travis/osx.sh
     
-    - name: upload artifact
+    - name: upload osx artifact
       uses: actions/upload-artifact@v1
       with:
-        name: java_natives_osx.tar.gz
-        path: dist/java_natives_osx.tar.gz
+        name: java_natives_osx
+        path: java/src/main/resources/natives
 
   build-windows:
     # The type of runner that the job will run on
@@ -98,11 +98,11 @@ jobs:
     - name: build
       run: bash ./.travis/windows.sh
     
-    - name: upload artifact
+    - name: upload windows artifact
       uses: actions/upload-artifact@v1
       with:
-        name: java_natives_windows.tar.gz
-        path: dist/java_natives_windows.tar.gz
+        name: java_natives_windows
+        path: java/src/main/resources/natives
 
   build-jar:
     needs: [build-linux, build-osx, build-windows]
@@ -119,26 +119,20 @@ jobs:
     - name: download linux artifact
       uses: actions/download-artifact@v1
       with:
-        name: java_natives_linux.tar.gz
-        path: /tmp/java_natives_linux.tar.gz
-
-    - name: download windows artifact
-      uses: actions/download-artifact@v1
-      with:
-        name: java_natives_windows.tar.gz
-        path: /tmp/java_natives_windows.tar.gz
+        name: java_natives_linux
+        path: java/src/main/resources/natives
 
     - name: download osx artifact
       uses: actions/download-artifact@v1
       with:
-        name: java_natives_osx.tar.gz
-        path: /tmp/java_natives_osx.tar.gz
+        name: java_natives_osx
+        path: java/src/main/resources/natives
 
-    - name: extract java natives
-      run: |
-        tar zxf /tmp/java_natives_linux.tar.gz -C $ROOT/java/src/main/resources
-        tar zxf /tmp/java_natives_windows.tar.gz -C $ROOT/java/src/main/resources
-        tar zxf /tmp/java_natives_osx.tar.gz -C $ROOT/java/src/main/resources
+    - name: download windows artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows
+        path: java/src/main/resources/natives
 
     - name: build
       run: |
