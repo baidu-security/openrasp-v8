@@ -4,7 +4,7 @@ set -e
  
 ROOT=$(git rev-parse --show-toplevel || pwd)
 
-if [ $TRAVIS ]; then
+if [ $GITHUB_WORKFLOW ]; then
   DIR=$HOME/cache
   mkdir -p $DIR
 else

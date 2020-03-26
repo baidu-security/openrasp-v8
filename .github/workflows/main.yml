@@ -18,7 +18,19 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - name: checkout
       uses: actions/checkout@v2
-    
+
+    - name: cache centos6 sysroot
+      uses: actions/cache@v1
+      with:
+        path: $HOME/cache/centos6-sysroot.tar.gz
+        key: centos6-sysroot
+
+    - name: cache linux prebuilts
+      uses: actions/cache@v1
+      with:
+        path: $HOME/cache/openrasp-v8-prebuilts-7.8-linux.tar.gz
+        key: openrasp-v8-prebuilts-7.8-linux
+
     - name: setup
       run: |
         sudo apt install -yq g++-multilib
