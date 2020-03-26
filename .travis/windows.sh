@@ -12,6 +12,8 @@ cmake --build . --config RelWithDebInfo
 
 cmake --build . --config RelWithDebInfo --target RUN_TESTS
 
+file java/RelWithDebInfo/openrasp_v8_java.dll
+
 popd
 
 mkdir -p build32 && pushd $_
@@ -21,6 +23,8 @@ cmake -DCMAKE_VERBOSE_MAKEFILE=ON -A Win32 -DBUILD_TESTING=ON -DENABLE_LANGUAGES
 cmake --build . --config RelWithDebInfo
 
 cmake --build . --config RelWithDebInfo --target RUN_TESTS
+
+file java/RelWithDebInfo/openrasp_v8_java.dll
 
 popd
 

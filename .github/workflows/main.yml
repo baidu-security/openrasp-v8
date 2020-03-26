@@ -105,8 +105,10 @@ jobs:
         path: dist/java_natives_windows.tar.gz
 
   build-jar:
+    needs: [build-linux, build-osx, build-windows]
+
     # The type of runner that the job will run on
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
