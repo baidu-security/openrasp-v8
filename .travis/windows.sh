@@ -34,6 +34,8 @@ pushd java
 
 # JAVA_HOME="/c/Program Files/Java/jdk1.8.0_211" mvn test install
 
+mvn test install
+
 popd
 
 rm -rf dist
