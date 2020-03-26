@@ -28,3 +28,9 @@ jobs:
     
     - name: build
       run: bash ./.travis/linux.sh
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_linux.tar.gz
+        path: dist/java_natives_linux.tar.gz
