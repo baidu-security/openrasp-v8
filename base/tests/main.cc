@@ -705,7 +705,7 @@ TEST_CASE("Plugins") {
   }
 }
 
-TEST_CASE("AsyncRequest") {
+TEST_CASE("AsyncRequest", "[!mayfail]") {
   Snapshot snapshot("", std::vector<PluginFile>(), "1.2.3", 1000);
   auto isolate = Isolate::New(&snapshot, snapshot.timestamp);
   IsolatePtr ptr(isolate);

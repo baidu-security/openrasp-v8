@@ -64,7 +64,7 @@ jobs:
 
     - name: setup
       run: |
-        prebuilts/fetch_prebuilts.sh
+        bash ./prebuilts/fetch_prebuilts.sh
     
     - name: build
       run: bash ./.travis/windows.sh
