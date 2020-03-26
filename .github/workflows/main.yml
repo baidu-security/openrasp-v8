@@ -103,3 +103,49 @@ jobs:
       with:
         name: java_natives_windows.tar.gz
         path: dist/java_natives_windows.tar.gz
+
+  build-jar:
+    # The type of runner that the job will run on
+    runs-on: linux-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: checkout
+      uses: actions/checkout@v2
+    
+    - name: download linux artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux.tar.gz
+        path: /tmp/java_natives_linux.tar.gz
+
+    - name: download windows artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows.tar.gz
+        path: /tmp/java_natives_windows.tar.gz
+
+    - name: download osx artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_osx.tar.gz
+        path: /tmp/java_natives_osx.tar.gz
+
+    - name: extract java natives
+      run: |
+        tar zxf /tmp/java_natives_linux.tar.gz -C $ROOT/java/src/main/resources
+        tar zxf /tmp/java_natives_windows.tar.gz -C $ROOT/java/src/main/resources
+        tar zxf /tmp/java_natives_osx.tar.gz -C $ROOT/java/src/main/resources
+
+    - name: build
+      run: |
+        cd java
+        mvn test package
+        cd -
+
+    - name: upload jar
+      uses: actions/upload-artifact@v1
+      with:
+        name: v8-1.0-SNAPSHOT.jar
+        path: java/target/v8-1.0-SNAPSHOT.jar
