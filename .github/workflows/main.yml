@@ -13,11 +13,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: cache
-      uses: actions/cache@v1
-      with:
-        path: ~/cache
-        key: ${{ runner.os }}-cache
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
 
     - name: setup
       run: |
@@ -40,11 +40,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: cache
-      uses: actions/cache@v1
-      with:
-        path: ~/cache
-        key: ${{ runner.os }}-cache
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
 
     - name: setup
       run: |
@@ -66,11 +66,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: cache
-      uses: actions/cache@v1
-      with:
-        path: ~/cache
-        key: ${{ runner.os }}-cache
+    # - name: cache
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
 
     - name: setup
       run: |
@@ -91,11 +91,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: cache windows prebuilts
-      uses: actions/cache@v1
-      with:
-        path: ~/cache
-        key: ${{ runner.os }}-cache
+    # - name: cache windows prebuilts
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
 
     - name: setup
       run: |
@@ -116,11 +116,11 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: cache windows prebuilts
-      uses: actions/cache@v1
-      with:
-        path: ~/cache
-        key: ${{ runner.os }}-cache
+    # - name: cache windows prebuilts
+    #   uses: actions/cache@v1
+    #   with:
+    #     path: ~/cache
+    #     key: ${{ runner.os }}-cache
 
     - name: setup
       run: |
