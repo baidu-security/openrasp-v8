@@ -20,6 +20,6 @@ popd
 
 mkdir -p java/src/main/resources/natives/linux_32 && cp build32/java/libopenrasp_v8_java.so $_
 
-pushd java
+# pushd java
 
-mvn test
+# mvn test

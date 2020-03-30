@@ -20,6 +20,6 @@ popd
 
 mkdir -p java/src/main/resources/natives/windows_32 && cp build32/java/RelWithDebInfo/openrasp_v8_java.dll $_
 
-pushd java
+# pushd java
 
-mvn test
+# mvn test
