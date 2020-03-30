@@ -4,6 +4,13 @@ matrix:
   - os: linux
     dist: xenial
     jdk: openjdk8
+    before_install:
+    - vendors/fetch_centos6_sysroot.sh
+    - prebuilts/fetch_prebuilts.sh
+    script: travis_retry scripts/linux64.sh
+  - os: linux
+    dist: xenial
+    jdk: openjdk8
     addons:
       apt:
         packages:
@@ -11,6 +18,7 @@ matrix:
     before_install:
     - vendors/fetch_centos6_sysroot.sh
     - prebuilts/fetch_prebuilts.sh
+    script: travis_retry scripts/linux32.sh
   - os: osx
     osx_image: xcode9.3
     addons:
@@ -20,17 +28,24 @@ matrix:
         update: true
     before_install:
     - prebuilts/fetch_prebuilts.sh
+    script: travis_retry scripts/osx64.sh
   - os: windows
     before_install:
     - choco config set cacheLocation $HOME/cache/
-    - choco install -y jdk8 -params "both=true" --version 8.0.211
-    - choco install -y maven --version 3.6.1
+    - choco install -y jdk8
+    - choco install -y maven
     - prebuilts/fetch_prebuilts.sh
+    script: travis_retry scripts/windows64.sh
+  - os: windows
+    before_install:
+    - choco config set cacheLocation $HOME/cache/
+    - choco install -y jdk8 --forcex86
+    - choco install -y maven
+    - prebuilts/fetch_prebuilts.sh
+    script: travis_retry scripts/windows32.sh
 cache:
   directories:
   - $HOME/cache/
-script:
-- travis_retry .travis/$TRAVIS_OS_NAME.sh
 deploy:
   provider: releases
   api_key:

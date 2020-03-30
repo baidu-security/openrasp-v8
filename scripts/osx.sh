@@ -4,9 +4,11 @@ set -ev
 
 pushd `git rev-parse --show-toplevel`
 
+rm -rf build64
+
 mkdir -p build64 && pushd $_
 
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=java ..
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON -DENABLE_LANGUAGES=all ..
 
 make VERBOSE=1 -j
 
@@ -18,12 +20,4 @@ mkdir -p java/src/main/resources/natives/osx_64 && cp build64/java/libopenrasp_v
 
 pushd java
 
-mvn test install
-
-popd
-
-rm -rf dist
-
-mkdir dist
-
-tar zcf dist/java_natives_osx.tar.gz -C java/src/main/resources ./natives
+mvn test
