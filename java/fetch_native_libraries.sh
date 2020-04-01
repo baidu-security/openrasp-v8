@@ -2,7 +2,7 @@
 
 set -ev
 ROOT=$(git rev-parse --show-toplevel)
-TAG=$(git describe --tags --abbrev=0)
+TAG=$(git describe --exact-match --tags || echo snapshot)
 if [ $TRAVIS ]; then
   DIR=$HOME/cache
   mkdir -p $DIR
@@ -10,9 +10,6 @@ else
   DIR=/tmp
 fi
 echo $ROOT $TAG $DIR
-for OS in linux osx windows
-do
-  curl -# -k -L -o $DIR/java_natives_$OS.tar.gz.download -z $DIR/java_natives_$OS.tar.gz https://github.com/baidu-security/openrasp-v8/releases/download/$TAG/java_natives_$OS.tar.gz
-  [[ -f $DIR/java_natives_$OS.tar.gz.download ]] && mv $DIR/java_natives_$OS.tar.gz.download $DIR/java_natives_$OS.tar.gz
-  tar zxf $DIR/java_natives_$OS.tar.gz -C $ROOT/java/src/main/resources
-done
+curl -R -# -k -L -o $DIR/java_natives_$TAG.tar.gz.download -z $DIR/java_natives_$TAG.tar.gz https://github.com/baidu-security/openrasp-v8/releases/download/$TAG/java_natives.tar.gz
+[[ -f $DIR/java_natives_$TAG.tar.gz.download ]] && cp -p $DIR/java_natives_$TAG.tar.gz.download $DIR/java_natives_$TAG.tar.gz && rm $DIR/java_natives_$TAG.tar.gz.download
+tar zxf $DIR/java_natives_$TAG.tar.gz -C $ROOT/java/src/main/resources

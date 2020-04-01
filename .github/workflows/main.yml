@@ -8,7 +8,7 @@ on: push
 
 jobs:
   build-linux32:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -28,14 +28,14 @@ jobs:
     - name: build
       run: bash scripts/linux32.sh
     
-    - name: upload linux artifact
+    - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: java_natives_linux32
         path: java/src/main/resources/natives
 
   build-linux64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -54,7 +54,7 @@ jobs:
     - name: build
       run: bash scripts/linux64.sh
     
-    - name: upload linux artifact
+    - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: java_natives_linux64
@@ -79,14 +79,14 @@ jobs:
     - name: build
       run: bash scripts/osx64.sh
     
-    - name: upload osx artifact
+    - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: java_natives_osx64
         path: java/src/main/resources/natives
 
   build-windows32:
-    runs-on: windows-latest
+    runs-on: windows-2016
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -104,14 +104,14 @@ jobs:
     - name: build
       run: bash scripts/windows32.sh
     
-    - name: upload windows artifact
+    - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: java_natives_windows32
         path: java/src/main/resources/natives
 
   build-windows64:
-    runs-on: windows-latest
+    runs-on: windows-2016
     steps:
     - name: checkout
       uses: actions/checkout@v2
@@ -129,62 +129,65 @@ jobs:
     - name: build
       run: bash scripts/windows64.sh
     
-    - name: upload windows artifact
+    - name: upload artifact
       uses: actions/upload-artifact@v1
       with:
         name: java_natives_windows64
         path: java/src/main/resources/natives
 
-  # build-jar:
-  #   needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
+  upload:
+    needs: [build-linux32, build-linux64, build-osx64, build-windows32, build-windows64]
 
-  #   # The type of runner that the job will run on
-  #   runs-on: ubuntu-latest
+    # The type of runner that the job will run on
+    runs-on: ubuntu-16.04
 
-  #   # Steps represent a sequence of tasks that will be executed as part of the job
-  #   steps:
-  #   # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-  #   - name: checkout
-  #     uses: actions/checkout@v2
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - name: checkout
+      uses: actions/checkout@v2
     
-  #   - name: download linux artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_linux32
-  #       path: java/src/main/resources/natives
+    - name: download linux32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux32
+        path: java/src/main/resources/natives
 
-  #   - name: download linux artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_linux64
-  #       path: java/src/main/resources/natives
+    - name: download linux64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linux64
+        path: java/src/main/resources/natives
 
-  #   - name: download osx artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_osx64
-  #       path: java/src/main/resources/natives
+    - name: download osx64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_osx64
+        path: java/src/main/resources/natives
 
-  #   - name: download windows artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_windows32
-  #       path: java/src/main/resources/natives
+    - name: download windows32 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows32
+        path: java/src/main/resources/natives
 
-  #   - name: download windows artifact
-  #     uses: actions/download-artifact@v1
-  #     with:
-  #       name: java_natives_windows64
-  #       path: java/src/main/resources/natives
+    - name: download windows64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_windows64
+        path: java/src/main/resources/natives
 
-  #   - name: build
-  #     run: |
-  #       cd java
-  #       mvn test package
-  #       cd -
+    - name: compress
+      run: tar zcf java_natives.tar.gz -C java/src/main/resources ./natives
 
-  #   - name: upload jar
-  #     uses: actions/upload-artifact@v1
-  #     with:
-  #       name: v8-1.0-SNAPSHOT.jar
-  #       path: java/target/v8-1.0-SNAPSHOT.jar
+    - name: setup github-release
+      run: go get github.com/aktau/github-release
+
+    - name: upload snapshot
+      run: |
+        $(go env GOPATH)/bin/github-release edit -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -d "https://github.com/baidu-security/openrasp-v8/tree/$GITHUB_SHA" -p
+        $(go env GOPATH)/bin/github-release upload -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -n java_natives.tar.gz -f java_natives.tar.gz -R
+
+    - name: upload release
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: $(go env GOPATH)/bin/github-release upload -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t ${GITHUB_REF/refs\/tags\//} -n java_natives.tar.gz -f java_natives.tar.gz
