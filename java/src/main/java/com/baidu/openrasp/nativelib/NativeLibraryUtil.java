@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,6 +50,10 @@ import java.util.logging.Logger;
  *   linux_32
  *     libxxx[-vvv].so
  *   linux_64
+ *     libxxx[-vvv].so
+ *   linux_musl32
+ *     libxxx[-vvv].so
+ *   linux_musl64
  *     libxxx[-vvv].so
  *   linux_arm
  *     libxxx[-vvv].so
@@ -81,7 +86,8 @@ import java.util.logging.Logger;
 public class NativeLibraryUtil {
 
 	public static enum Architecture {
-		UNKNOWN, LINUX_32, LINUX_64, LINUX_ARM, LINUX_ARM64, WINDOWS_32, WINDOWS_64, OSX_32, OSX_64, OSX_PPC, AIX_32, AIX_64
+		UNKNOWN, LINUX_32, LINUX_64, LINUX_MUSL32, LINUX_MUSL64, LINUX_ARM, LINUX_ARM64, WINDOWS_32, WINDOWS_64, OSX_32,
+		OSX_64, OSX_PPC, AIX_32, AIX_64
 	}
 
 	private static enum Processor {
@@ -106,7 +112,23 @@ public class NativeLibraryUtil {
 			if (Processor.UNKNOWN != processor) {
 				final String name = System.getProperty("os.name").toLowerCase();
 				if (name.contains("nix") || name.contains("nux")) {
-					if (Processor.INTEL_32 == processor) {
+					Boolean isMusl = false;
+					try {
+						ProcessBuilder builder = new ProcessBuilder();
+						builder.command("sh", "-c", "case `ldd --version 2>&1` in *musl*) exit 0 ;; *) exit 1 ;; esac");
+						Process process = builder.start();
+						process.waitFor(100, TimeUnit.MILLISECONDS);
+						isMusl = process.exitValue() == 0;
+					} catch (Exception e) {
+						LOGGER.log(Level.WARNING, "Problem with detecting libc", e);
+					}
+					if (isMusl) {
+						if (Processor.INTEL_32 == processor) {
+							architecture = Architecture.LINUX_MUSL32;
+						} else if (Processor.INTEL_64 == processor) {
+							architecture = Architecture.LINUX_MUSL64;
+						}
+					} else if (Processor.INTEL_32 == processor) {
 						architecture = Architecture.LINUX_32;
 					} else if (Processor.INTEL_64 == processor) {
 						architecture = Architecture.LINUX_64;
@@ -209,6 +231,8 @@ public class NativeLibraryUtil {
 			case AIX_64:
 			case LINUX_32:
 			case LINUX_64:
+			case LINUX_MUSL32:
+			case LINUX_MUSL64:
 			case LINUX_ARM:
 			case LINUX_ARM64:
 				name = "lib" + libName + ".so";
