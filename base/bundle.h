@@ -224,6 +224,7 @@ inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size
 }
 
 inline bool Dispose() {
+  AsyncRequest::GetInstance().Terminate();
   bool rst = v8::V8::Dispose();
   v8::V8::ShutdownPlatform();
   return rst;
