@@ -60,6 +60,25 @@ jobs:
         name: java_natives_linux64
         path: java/src/main/resources/natives
 
+  build-linuxmusl64:
+    runs-on: ubuntu-16.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: build
+      run: |
+        wget https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz -O vendors/alpine-env/apache-maven-3.6.3-bin.tar.gz
+        wget https://packages.baidu.com/app/cmake-3.17.1-Linux-musl.tar.gz -O vendors/alpine-env/cmake-3.17.1-Linux-musl.tar.gz
+        docker build -t openrasp-v8-alpine-env vendors/alpine-env
+        docker run --rm -v `pwd`:/openrasp-v8 -w /openrasp-v8 openrasp-v8-alpine-env "/openrasp-v8/scripts/linuxmusl64.sh"
+    
+    - name: upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: java_natives_linuxmusl64
+        path: java/src/main/resources/natives
+
   build-osx64:
     runs-on: macos-latest
     steps:
@@ -157,6 +176,12 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: java_natives_linux64
+        path: java/src/main/resources/natives
+
+    - name: download linuxmusl64 artifact
+      uses: actions/download-artifact@v1
+      with:
+        name: java_natives_linuxmusl64
         path: java/src/main/resources/natives
 
     - name: download osx64 artifact
