@@ -17,6 +17,8 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
   FILENAME="openrasp-v8-prebuilts-7.8-darwin.tar.gz"
 elif [[ "$OSTYPE" == "msys" ]]; then
   FILENAME="openrasp-v8-prebuilts-7.8-windows.tar.gz"
+elif [[ "$OSTYPE" == "linux-musl" ]]; then
+  FILENAME="openrasp-v8-prebuilts-7.8-linux-musl.tar.gz"
 else
   echo "Unsupported os type"
   exit 1
