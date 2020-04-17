@@ -4,6 +4,16 @@ set -ev
 
 pushd `git rev-parse --show-toplevel`
 
+if [[ ! -f "/etc/alpine-release" ]]; then
+  pushd vendors/alpine-env
+  curl -# -k -L -z apache-maven-3.6.3-bin.tar.gz -O https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+  curl -# -k -L -z cmake-3.17.1-Linux-musl.tar.gz -O https://packages.baidu.com/app/cmake-3.17.1-Linux-musl.tar.gz
+  docker build -t openrasp-v8-alpine-env .
+  popd
+  docker run --rm -v `pwd`:/openrasp-v8 -w /openrasp-v8 openrasp-v8-alpine-env "/openrasp-v8/scripts/linuxmusl64.sh"
+  exit 0
+fi
+
 rm -rf build64
 
 mkdir -p build64 && pushd $_
