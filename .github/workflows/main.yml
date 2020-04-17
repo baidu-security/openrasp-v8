@@ -206,7 +206,7 @@ jobs:
 
     - name: upload snapshot
       run: |
-        $(go env GOPATH)/bin/github-release edit -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -d "https://github.com/baidu-security/openrasp-v8/tree/$GITHUB_SHA\n$(date)" -p
+        $(go env GOPATH)/bin/github-release edit -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -d "https://github.com/baidu-security/openrasp-v8/tree/$GITHUB_SHA $(date)" -p
         $(go env GOPATH)/bin/github-release upload -s ${{ secrets.GITHUB_TOKEN }} -u baidu-security -r openrasp-v8 -t snapshot -n java_natives.tar.gz -f java_natives.tar.gz -R
 
     - name: upload release

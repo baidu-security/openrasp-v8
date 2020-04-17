@@ -819,11 +819,11 @@ TEST_CASE("ThreadPool") {
       pool->Post([] { std::this_thread::sleep_for(std::chrono::milliseconds(1000)); });
     }
     pro.get_future().get();
-    auto begin = std::chrono::system_clock::now();
+    auto begin = std::chrono::high_resolution_clock::now();
     delete pool;
-    auto end = std::chrono::system_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     auto dur = end - begin;
-    REQUIRE(dur.count() < 1000 * 1000);
+    REQUIRE(dur.count() < 100 * 1000 * 1000);
   }
 }
 
