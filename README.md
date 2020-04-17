@@ -1,4 +1,6 @@
-# openrasp-v8
+# openrasp-v8 
+
+![CI](https://github.com/baidu-security/openrasp-v8/workflows/CI/badge.svg)
 
 Google V8 JavaScript engine with OpenRASP builtins, and bridges that are used to embed V8 within languages which are supported by [OpenRASP](https://github.com/baidu/openrasp).
 
@@ -32,6 +34,7 @@ For convenience of build, we have built some third-party libraries to static lib
 
 - Linux x64
 - Linux x86
+- Linux musl
 - OSX x64
 - Windows x64
 - Windows x86
@@ -71,4 +74,3 @@ The openrasp-v8 specified cmake variables:
 - BUILD_COVERAGE
 
   Boolean option for whether the coverage will be built
-
