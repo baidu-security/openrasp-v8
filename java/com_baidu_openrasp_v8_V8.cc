@@ -15,6 +15,7 @@
  */
 
 #include "com_baidu_openrasp_v8_V8.h"
+
 #include "header.h"
 
 using namespace openrasp_v8;
@@ -27,16 +28,18 @@ ALIGN_FUNCTION JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
- * Signature: (I)Z
+ * Signature: (III)Z
  */
 ALIGN_FUNCTION JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize(JNIEnv* env,
                                                                                    jclass cls,
-                                                                                   jint jsize) {
+                                                                                   jint isolate_pool_size,
+                                                                                   jint request_pool_size,
+                                                                                   jint request_queue_size) {
   if (!is_initialized) {
-    isolate_pool::size = jsize;
+    isolate_pool::size = isolate_pool_size;
     v8_class = V8Class(env);
     ctx_class = ContextClass(env);
-    is_initialized = Initialize(0, plugin_log);
+    is_initialized = Initialize(0, plugin_log, request_pool_size, request_queue_size);
   }
   return is_initialized;
 }

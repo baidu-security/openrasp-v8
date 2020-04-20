@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     com_baidu_openrasp_v8_V8
  * Method:    Initialize
- * Signature: (I)Z
+ * Signature: (III)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_baidu_openrasp_v8_V8_Initialize
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jint, jint, jint);
 
 /*
  * Class:     com_baidu_openrasp_v8_V8

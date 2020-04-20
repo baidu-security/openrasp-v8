@@ -10,7 +10,8 @@ public class V8 {
 
     private static boolean isLoad = false;
 
-    public synchronized static native boolean Initialize(int isolate_pool_size);
+    public synchronized static native boolean Initialize(int isolate_pool_size, int request_pool_size,
+            int request_queue_size);
 
     public synchronized static native boolean Dispose();
 
@@ -30,7 +31,7 @@ public class V8 {
     }
 
     public synchronized static boolean Initialize() {
-        return Initialize(Runtime.getRuntime().availableProcessors());
+        return Initialize(Runtime.getRuntime().availableProcessors(), 4, 1000);
     }
 
     @Deprecated
