@@ -117,8 +117,7 @@ public class NativeLibraryUtil {
 						ProcessBuilder builder = new ProcessBuilder();
 						builder.command("sh", "-c", "case `ldd --version 2>&1` in *musl*) exit 0 ;; *) exit 1 ;; esac");
 						Process process = builder.start();
-						process.waitFor(100, TimeUnit.MILLISECONDS);
-						isMusl = process.exitValue() == 0;
+						isMusl = process.waitFor() == 0;
 					} catch (Exception e) {
 						LOGGER.log(Level.WARNING, "Problem with detecting libc", e);
 					}
