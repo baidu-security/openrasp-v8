@@ -70,31 +70,46 @@ void GetStack(v8::Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Value
 }
 
 std::string Jstring2String(JNIEnv* env, jstring str) {
-  auto size = env->GetStringLength(str);
-  if (size < 0) {
-    return {};
-  }
-  if (size > max_buffer_size) {
-    size = max_buffer_size;
-  }
-  std::vector<char16_t> u16(size);
-  env->GetStringRegion(str, 0, size, reinterpret_cast<jchar*>(u16.data()));
+  try {
+    auto size = env->GetStringLength(str);
+    if (size < 0) {
+      return {};
+    }
+    if (size > max_buffer_size) {
+      size = max_buffer_size;
+    }
+    std::vector<char16_t> u16(size);
+    env->GetStringRegion(str, 0, size, reinterpret_cast<jchar*>(u16.data()));
 #ifdef _WIN32
-  return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(
-      std::wstring(u16.begin(), u16.end()));
+    return std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.to_bytes(
+        std::wstring(u16.begin(), u16.end()));
 #else
-  return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(u16.data(), u16.data() + size);
+    return std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.to_bytes(u16.data(), u16.data() + size);
 #endif
+  } catch (std::exception& exception) {
+    std::string s;
+    auto utf = env->GetStringUTFChars(str, nullptr);
+    auto size = env->GetStringUTFLength(str);
+    if (utf && size > 0) {
+      s = std::string(utf, size < max_buffer_size ? size : max_buffer_size);
+    }
+    env->ReleaseStringUTFChars(str, utf);
+    return s;
+  }
 }
 
 jstring String2Jstring(JNIEnv* env, const std::string& str) {
+  try {
 #ifdef _WIN32
-  std::wstring ws = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
-  std::u16string u16(ws.begin(), ws.end());
+    std::wstring ws = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(str);
+    std::u16string u16(ws.begin(), ws.end());
 #else
-  std::u16string u16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(str);
+    std::u16string u16 = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>{}.from_bytes(str);
 #endif
-  return env->NewString(reinterpret_cast<const jchar*>(u16.data()), u16.size());
+    return env->NewString(reinterpret_cast<const jchar*>(u16.data()), u16.size());
+  } catch (std::exception& exception) {
+    return env->NewStringUTF(str.data());
+  }
 }
 
 v8::MaybeLocal<v8::String> Jstring2V8string(JNIEnv* env, jstring jstr) {
