@@ -34,6 +34,7 @@ namespace openrasp_v8 {
 
 constexpr int max_buffer_size = 4 * 1024 * 1024;
 
+// 作为key的string会直接在旧生代创建
 inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const char* str, int len = -1) {
   return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kInternalized, std::min(max_buffer_size, len))
       .FromMaybe(v8::String::Empty(isolate));
@@ -43,6 +44,7 @@ inline v8::Local<v8::String> NewV8Key(v8::Isolate* isolate, const std::string& s
   return NewV8Key(isolate, str.c_str(), str.length());
 }
 
+// 普通string，创建在新生代
 inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const char* str, int len = -1) {
   return v8::String::NewFromUtf8(isolate, str, v8::NewStringType::kNormal, std::min(max_buffer_size, len))
       .FromMaybe(v8::String::Empty(isolate));
@@ -52,14 +54,20 @@ inline v8::Local<v8::String> NewV8String(v8::Isolate* isolate, const std::string
   return NewV8String(isolate, str.c_str(), str.length());
 }
 
+// 提取v8的exception，格式化成string
 class Exception : public std::string {
  public:
   Exception(v8::Isolate* isolate, v8::TryCatch& try_catch);
 };
 
+// 日志回调
 typedef void (*Logger)(const std::string& message);
+// 内存压力回调
 typedef bool (*CriticalMemoryPressureCallback)(size_t length);
 
+// v8::Platform为v8运行时提供平台相关的接口，如时钟，线程池等
+// v8提供了默认的platform，但是不支持在运行时关闭后台线程池，在php
+// fork时会出异常，所以重新包装默认platform，提供开关线程池等操作 下面一些方法被注释是因为有默认值，不需重新实现
 class Platform : public v8::Platform {
  public:
   explicit Platform(int thread_pool_size);
@@ -101,6 +109,7 @@ class Platform : public v8::Platform {
   std::unique_ptr<v8::platform::tracing::TracingController> tracing_controller;
 };
 
+// 插件文件对象
 class PluginFile {
  public:
   PluginFile(const std::string& filename, const std::string& source) : filename(filename), source(source){};
@@ -108,23 +117,29 @@ class PluginFile {
   std::string source;
 };
 
+// v8::Isolate只能通过v8::Isolate::New工厂函数创建，所以下面v8::Isolate的子类openrasp::Isolate不能增加对象
+// 只能通过v8::Isolate::SetData方法向其对象绑定数据
+// IsolateData是需要绑定到Isolate的数据的集合
+// v8::Persistent和v8::Local都是js对象的容器，区别是作用域，操作v8::Persistent的对象时必须先传换成v8::Local
 class IsolateData {
  public:
-  v8::Isolate::CreateParams create_params;
-  v8::Persistent<v8::Context> context;
-  v8::Persistent<v8::Object> RASP;
-  v8::Persistent<v8::Function> check;
-  v8::Persistent<v8::Function> console_log;
-  v8::Persistent<v8::Object> request_context;
-  v8::Persistent<v8::ObjectTemplate> request_context_templ;
-  v8::HeapStatistics hs;
-  std::unordered_set<std::string> check_points;
-  bool is_timeout = false;
-  bool is_oom = false;
-  uint64_t timestamp = 0;
-  void* custom_data = nullptr;
+  v8::Isolate::CreateParams create_params;     // v8::Isolate::New的参数
+  v8::Persistent<v8::Context> context;         // v8的context对象，执行js代码需要在一个v8 context中
+  v8::Persistent<v8::Object> RASP;             // js中RASP类
+  v8::Persistent<v8::Function> check;          // 缓存方法，调用时不必到js中获取
+  v8::Persistent<v8::Function> console_log;    // 缓存方法，调用时不必到js中获取
+  v8::Persistent<v8::Object> request_context;  // 在一个请求生命周期内缓存的插件context对象
+  v8::Persistent<v8::ObjectTemplate> request_context_templ;  // 插件context对象的构造模版
+  v8::HeapStatistics hs;                                     // 保存v8堆栈采样信息的对象
+  std::unordered_set<std::string> check_points;              // 所有检测点名称
+  bool is_timeout = false;                                   // 超时标志
+  bool is_oom = false;                                       // 内存满标志
+  uint64_t timestamp = 0;                                    // 创建时间
+  void* custom_data = nullptr;                               // php或java环境中额外非公共的数据
 };
 
+// v8::StartupData是一个构造好的js运行环境的快照
+// Snapshot增加了数据保存和载入方法
 class Snapshot : public v8::StartupData {
  public:
   uint64_t timestamp = 0;
@@ -143,6 +158,8 @@ class Snapshot : public v8::StartupData {
   bool IsExpired(uint64_t timestamp) const { return timestamp > this->timestamp; };
 };
 
+// v8::Isolate是一个独立的js运行环境，使用时必须绑定到线程
+// Isolate增加了一些工具方法，因为不能够增加对象，所以通过SetData，GetData来绑定获取数据
 class Isolate : public v8::Isolate {
  public:
   static Isolate* New(Snapshot* snapshot_blob, uint64_t timestamp);
@@ -154,6 +171,7 @@ class Isolate : public v8::Isolate {
   void Dispose();
   bool IsDead();
   bool IsExpired(uint64_t timestamp);
+  // 废弃，使用返回v8::MaybeLocal的方法
   v8::Local<v8::Array> Check(v8::Local<v8::String> request_type,
                              v8::Local<v8::Object> request_params,
                              v8::Local<v8::Object> request_context,
@@ -170,6 +188,7 @@ class Isolate : public v8::Isolate {
   v8::MaybeLocal<v8::Value> Log(v8::Local<v8::Value> value);
 };
 
+// 中断超时的js执行，任务在v8::Platform的后台线程池中执行
 class TimeoutTask : public v8::Task {
  public:
   TimeoutTask(Isolate* isolate, std::future<void> fut, int milliseconds = 100);
@@ -181,6 +200,7 @@ class TimeoutTask : public v8::Task {
   std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
 };
 
+// 为异步request请求提供线程池和队列
 class ThreadPool;
 class HTTPRequest;
 class AsyncRequest {
@@ -199,7 +219,9 @@ class AsyncRequest {
   static size_t queue_cap;
 };
 
+// v8整体（不是isolate）初始化过程
 inline bool Initialize(size_t pool_size, Logger logger, size_t request_pool_size = 1, size_t request_queue_cap = 100) {
+  // 这两个flag关闭新生代，只使用老生代，更省内存
   std::string flags = "--stress-compaction --stress-compaction-random ";
   const char* env = std::getenv("OPENRASP_V8_OPTIONS");
   if (env) {

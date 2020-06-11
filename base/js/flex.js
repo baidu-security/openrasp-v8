@@ -1,5 +1,6 @@
 /**
- * @file
+ * @file flex.js
+ * 包装native的flex_tokenize方法
  */
 'use strict';
 

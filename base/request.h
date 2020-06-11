@@ -17,12 +17,14 @@
 #pragma once
 #include <cpr/cpr.h>
 #include <zlib.h>
+
 #include <algorithm>
 #include <string>
+
 #include "bundle.h"
 
 namespace openrasp_v8 {
-
+// HTTP部分基于libcurl的c++接口cpr
 class HTTPResponse : public cpr::Response {
  public:
   HTTPResponse() = default;

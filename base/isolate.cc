@@ -18,13 +18,14 @@
 
 namespace openrasp_v8 {
 
+// 创建isolate对象
 Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   static v8::ArrayBuffer::Allocator* array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
   IsolateData* data = new IsolateData();
   data->create_params.array_buffer_allocator = array_buffer_allocator;
   data->create_params.snapshot_blob = snapshot_blob;
-  data->create_params.external_references = snapshot_blob->external_references;
-  // set a very low value, v8 will adjust to min limit
+  data->create_params.external_references = snapshot_blob->external_references;  // native方法的指针
+  // 设置新生代，老生代大小，目前已经不需要了
   // data->create_params.constraints.set_max_young_generation_size_in_bytes(1);
   // data->create_params.constraints.set_max_old_generation_size_in_bytes(20 * 1024 * 1024);
   // data->create_params.constraints.set_initial_old_generation_size_in_bytes(1024 * 1024 / 2);
@@ -45,6 +46,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
     Platform::logger(msg);
     printf("%s", msg.c_str());
   });
+  // 每次GC后对isolate的堆采样，超出20M终止执行
   isolate->AddGCEpilogueCallback(
       [](v8::Isolate* isolate, v8::GCType type, v8::GCCallbackFlags flags, void* d) {
         auto data = reinterpret_cast<IsolateData*>(d);
@@ -56,6 +58,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
         }
       },
       data);
+  // 这个回调通知堆栈快到上限了，马上就要崩了，返回比当前上限更大的值可临时增大上限
   isolate->AddNearHeapLimitCallback(
       [](void* data, size_t current_heap_limit, size_t initial_heap_limit) -> size_t {
         Platform::logger("Near v8 isolate heap limit\n");
@@ -71,6 +74,7 @@ Isolate* Isolate::New(Snapshot* snapshot_blob, uint64_t timestamp) {
   return isolate;
 }
 
+// 初始化isolate对象
 void Isolate::Initialize() {
   v8::HandleScope handle_scope(this);
   v8::Local<v8::Context> context = v8::Context::New(this);
@@ -86,7 +90,6 @@ void Isolate::Initialize() {
                          ->Get(context, NewV8Key(this, "log"))
                          .ToLocalChecked()
                          .As<v8::Function>();
-
   auto check_points = RASP->Get(context, NewV8Key(this, "checkPoints"))
                           .ToLocalChecked()
                           .As<v8::Object>()
@@ -124,6 +127,7 @@ bool Isolate::IsExpired(uint64_t timestamp) {
   return timestamp > GetData()->timestamp;
 }
 
+// 执行检测
 v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
                                          v8::Local<v8::String> request_type,
                                          v8::Local<v8::Object> request_params,
@@ -136,10 +140,12 @@ v8::MaybeLocal<v8::Array> Isolate::Check(v8::Local<v8::Context> context,
   auto check = data->check.Get(isolate);
   v8::Local<v8::Value> argv[]{request_type, request_params, request_context};
 
+  // 提交后台超时任务
   std::promise<void> pro;
   Platform::Get()->CallOnWorkerThread(std::unique_ptr<v8::Task>(new TimeoutTask(isolate, pro.get_future(), timeout)));
   auto maybe_rst = check->Call(context, check, 3, argv);
   pro.set_value();
+  // 必须pump剩余任务
   while (Platform::Get()->PumpMessageLoop(isolate)) {
     continue;
   }
@@ -196,6 +202,7 @@ v8::Local<v8::Array> Isolate::Check(v8::Local<v8::String> request_type,
   }
 }
 
+// 执行任意js代码
 v8::MaybeLocal<v8::Value> Isolate::ExecScript(const std::string& source, const std::string& filename, int line_offset) {
   auto isolate = this;
   v8::EscapableHandleScope handle_scope(isolate);

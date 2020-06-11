@@ -1,5 +1,6 @@
 /**
- * @file
+ * @file rasp.js
+ * RASP类
  */
 'use strict';
 
@@ -50,6 +51,7 @@ global.RASP = class {
         return version
     }
 
+    // 注册检测函数
     register(checkPoint, checkProcess) {
         if (typeof (checkPoint) !== 'string' || checkPoint.length == 0) {
             throw new TypeError('Check point name must be a string');
@@ -68,6 +70,7 @@ global.RASP = class {
         });
     }
 
+    // 加上插件名称前缀
     log() {
         let len = arguments.length;
         let args = Array(len);
@@ -77,10 +80,13 @@ global.RASP = class {
         console.log.apply(console, ['[' + this.name + ']'].concat(args));
     }
 
+    // 规范返回给c++的对象结构
     make_result(result) {
+        // 不拦截和无日志的情况直接返回undefined，减少数据传递
         if (typeof result !== 'object' || result.action === 'ignore') {
             return;
         }
+        // 非promise和promise两种情况
         if (typeof result.then !== 'function') {
             result.action = result.action || 'log';
             result.message = result.message || '';
@@ -88,6 +94,7 @@ global.RASP = class {
             result.confidence = result.confidence || 0;
             return result;
         } else {
+            // promise对象fullfill后再make_result
             return result.then(rst => {
                 return this.make_result(rst)
             }).catch(err => {

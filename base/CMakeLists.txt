@@ -12,6 +12,7 @@ target_link_libraries(base PUBLIC prebuilts)
 
 set(JS_SRCS console.js flex.js rasp.js)
 list(TRANSFORM JS_SRCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/js/)
+# 使用xxd把文件内容转换为c字符数组
 find_program(XXD xxd ${PREBUILTS_PREFIX}/bin)
 add_custom_target(builtinjs2cheader
     COMMAND rm -rf gen && mkdir gen
@@ -21,7 +22,7 @@ add_custom_target(builtinjs2cheader
 target_include_directories(base PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(base builtinjs2cheader)
 
-
+# 添加cpr源码一起编译
 target_include_directories(base PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cpr/include)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/../vendors/cpr/cpr CPR_SRCS)
 target_sources(base PRIVATE ${CPR_SRCS})
