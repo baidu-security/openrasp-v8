@@ -47,3 +47,4 @@ dist
 prebuilts/*
 !prebuilts/CMakeLists.txt
 !prebuilts/fetch_prebuilts.sh
+!prebuilts/fetch_php_staticlibs.sh

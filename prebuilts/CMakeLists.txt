@@ -28,6 +28,14 @@ if(NOT ${SYSTEM_NAME} STREQUAL "windows")
     endif()
 endif()
 
+if(ENABLE_IAST AND ${ENABLE_LANGUAGES} STREQUAL "php")
+    message(STATUS "Fetch php7 static library")
+    execute_process(COMMAND bash "-c" "${CMAKE_CURRENT_SOURCE_DIR}/fetch_php_staticlibs.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/.. RESULT_VARIABLE ret)
+    if(NOT ret EQUAL "0")
+        message(FATAL_ERROR "Failed to fetch php7 static library")
+    endif()
+endif()
+
 file(REMOVE_RECURSE ${PREBUILTS_PREFIX}/include/cpr ${LIBS_PREFIX}/libcpr.a)
 
 add_library(prebuilts INTERFACE)

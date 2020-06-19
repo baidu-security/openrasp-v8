@@ -6,6 +6,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 project(openrasp-v8 LANGUAGES CXX)
 
+option(ENABLE_IAST "enable IAST" OFF)
+
 enable_testing()
 
 if (ENABLE_LANGUAGES STREQUAL "all")
