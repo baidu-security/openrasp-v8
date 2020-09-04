@@ -730,8 +730,8 @@ TEST_CASE("AsyncRequest") {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     REQUIRE_THAT(message,
                  Catch::Matchers::Contains(
-                     "async request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"
-                     "async request failed: Uncaught TypeError: Cannot convert undefined or null to object\n"));
+                     "async request failed; url: , errMsg: Uncaught TypeError: Cannot convert undefined or null to object\n"
+                     "async request failed; url: , errMsg: Uncaught TypeError: Cannot convert undefined or null to object\n"));
   }
 
   SECTION("400", "[!mayfail]") {

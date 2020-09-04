@@ -76,7 +76,8 @@ HTTPRequest::HTTPRequest(v8::Isolate* isolate, v8::Local<v8::Value> conf) {
     v8::HandleScope handle_scope(isolate);
     auto tmp = config->Get(context, NewV8Key(isolate, "url")).FromMaybe(undefined);
     if (tmp->IsString()) {
-      SetUrl(*v8::String::Utf8Value(isolate, tmp));
+      url = *v8::String::Utf8Value(isolate, tmp);
+      SetUrl(url);
     }
   }
   {
@@ -220,6 +221,10 @@ HTTPResponse HTTPRequest::GetResponse() {
   }
 }
 
+std::string HTTPRequest::GetUrl() const {
+  return this->url;
+}
+
 size_t AsyncRequest::pool_size = 1;
 size_t AsyncRequest::queue_cap = 1;
 
@@ -229,10 +234,11 @@ bool AsyncRequest::Submit(std::shared_ptr<HTTPRequest> request) {
   return pool->Post([request]() {
     auto response = request->GetResponse();
     if (response.error) {
-      Platform::logger(std::string("async request failed: ") + response.error.message + std::string("\n"));
+      Platform::logger(std::string("async request failed; url: ") + request->GetUrl() +
+                       ", errMsg: " + response.error.message + std::string("\n"));
     } else if (response.status_code != 200) {
-      Platform::logger(std::string("async request status: ") + std::to_string(response.status_code) +
-                       std::string(" body: ") + response.text.substr(0, 1024) + std::string("\n"));
+      Platform::logger(std::string("async request status: ") + std::to_string(response.status_code) + ", url: " +
+                       request->GetUrl() + ", body: " + response.text.substr(0, 1024) + std::string("\n"));
     }
   });
 }

@@ -38,9 +38,11 @@ class HTTPRequest : public cpr::Session {
   HTTPRequest(v8::Isolate* isolate, v8::Local<v8::Value> conf);
   void SetMethod(const std::string& method) { this->method = method; }
   HTTPResponse GetResponse();
+  std::string GetUrl() const;
 
  private:
   std::string method;
+  std::string url;
   std::string error;
 };
 
